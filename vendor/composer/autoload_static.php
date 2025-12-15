@@ -454,13 +454,13 @@ class ComposerStaticInit7e8c3c14ff33b199b4a0838993eb8423
         ),
         'Spatie\\LaravelIgnition\\' => 
         array (
-            0 => __DIR__ . '/..' . '/spatie/laravel-ignition/src',
-            1 => __DIR__ . '/..' . '/spatie/error-solutions/legacy/laravel-ignition',
+            0 => __DIR__ . '/..' . '/spatie/error-solutions/legacy/laravel-ignition',
+            1 => __DIR__ . '/..' . '/spatie/laravel-ignition/src',
         ),
         'Spatie\\Ignition\\' => 
         array (
-            0 => __DIR__ . '/..' . '/spatie/ignition/src',
-            1 => __DIR__ . '/..' . '/spatie/error-solutions/legacy/ignition',
+            0 => __DIR__ . '/..' . '/spatie/error-solutions/legacy/ignition',
+            1 => __DIR__ . '/..' . '/spatie/ignition/src',
         ),
         'Spatie\\FlareClient\\' => 
         array (
@@ -994,6 +994,7 @@ class ComposerStaticInit7e8c3c14ff33b199b4a0838993eb8423
         'App\\Http\\Controllers\\ProductStockController' => __DIR__ . '/../..' . '/app/Http/Controllers/ProductStockController.php',
         'App\\Http\\Controllers\\ProposalController' => __DIR__ . '/../..' . '/app/Http/Controllers/ProposalController.php',
         'App\\Http\\Controllers\\ProposalProductController' => __DIR__ . '/../..' . '/app/Http/Controllers/ProposalProductController.php',
+        'App\\Http\\Controllers\\PurchaseOrderController' => __DIR__ . '/../..' . '/app/Http/Controllers/PurchaseOrderController.php',
         'App\\Http\\Controllers\\RazorpayPaymentController' => __DIR__ . '/../..' . '/app/Http/Controllers/RazorpayPaymentController.php',
         'App\\Http\\Controllers\\ReportController' => __DIR__ . '/../..' . '/app/Http/Controllers/ReportController.php',
         'App\\Http\\Controllers\\RetainerController' => __DIR__ . '/../..' . '/app/Http/Controllers/RetainerController.php',
@@ -11376,6 +11377,9 @@ class ComposerStaticInit7e8c3c14ff33b199b4a0838993eb8423
         'Termwind\\ValueObjects\\Node' => __DIR__ . '/..' . '/nunomaduro/termwind/src/ValueObjects/Node.php',
         'Termwind\\ValueObjects\\Style' => __DIR__ . '/..' . '/nunomaduro/termwind/src/ValueObjects/Style.php',
         'Termwind\\ValueObjects\\Styles' => __DIR__ . '/..' . '/nunomaduro/termwind/src/ValueObjects/Styles.php',
+        'Tests\\Feature\\ExampleTest' => __DIR__ . '/../..' . '/tests/Feature/ExampleTest.php',
+        'Tests\\TestCase' => __DIR__ . '/../..' . '/tests/TestCase.php',
+        'Tests\\Unit\\ExampleTest' => __DIR__ . '/../..' . '/tests/Unit/ExampleTest.php',
         'TheSeer\\Tokenizer\\Exception' => __DIR__ . '/..' . '/theseer/tokenizer/src/Exception.php',
         'TheSeer\\Tokenizer\\NamespaceUri' => __DIR__ . '/..' . '/theseer/tokenizer/src/NamespaceUri.php',
         'TheSeer\\Tokenizer\\NamespaceUriException' => __DIR__ . '/..' . '/theseer/tokenizer/src/NamespaceUriException.php',

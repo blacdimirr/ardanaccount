@@ -15,7 +15,7 @@ class CreateVendersTable extends Migration
     {
         Schema::create('venders', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->integer('vender_id');
+            $table->unsignedBigInteger('vender_id')->unique();
             $table->string('name');
             $table->string('email');
             $table->string('tax_number')->nullable();
