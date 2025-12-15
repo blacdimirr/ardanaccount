@@ -40,8 +40,6 @@
 
                                                         <th> {{__('Category')}}</th>
                                                         <th width="40%"> {{__('Description')}}</th>
-                                                        <th>{{ __('NCF Type') }}</th>
-                                                        <th>{{ __('NCF Number') }}</th>
                                                         <th> {{__('Amount')}}</th>
                                                         <th> {{__('Date')}}</th>
                                                         <th> {{__('Project')}}</th>
@@ -58,15 +56,6 @@
                                                         <tr>
                                                             <td>{{  (!empty($expense->category)?$expense->category->name:'')}}</td>
                                                             <td>{{ $expense->description }}</td>
-                                                            <td>{{ $expense->ncfType->code ?? '' }}</td>
-                                                            <td>
-                                                                <div class="d-flex flex-column">
-                                                                    <span>{{ $expense->ncf_number }}</span>
-                                                                    @if(!empty($expense->ncf_series))
-                                                                        <small class="text-muted">{{ $expense->ncf_series }}</small>
-                                                                    @endif
-                                                                </div>
-                                                            </td>
                                                             <td>{{ Auth::user()->priceFormat($expense->amount) }} </td>
                                                             <td>{{ Auth::user()->dateFormat($expense->date) }}</td>
                                                             <td>{{ $expense->projects->name }}</td>
