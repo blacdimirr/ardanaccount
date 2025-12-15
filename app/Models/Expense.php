@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Expense extends Model
 {
     protected $fillable = [
-        'category_id','description','amount','date','project_id','user_id','attachment','created_by'
+        'category_id','description','ncf_type_id','ncf_series','ncf_number','amount','date','project_id','user_id','attachment','created_by'
     ];
 
     public function category(){
@@ -18,5 +18,10 @@ class Expense extends Model
     }
     public function user(){
         return $this->hasOne('App\Models\User','id','user_id');
+    }
+
+    public function ncfType()
+    {
+        return $this->belongsTo(NcfType::class, 'ncf_type_id');
     }
 }
