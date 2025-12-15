@@ -599,6 +599,27 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
+                                        {{ Form::label('ncf_type_id', __('NCF Type'), ['class' => 'form-label']) }}
+                                        {{ Form::select('ncf_type_id', $ncfTypes, $invoice->ncf_type_id, ['class' => 'form-control select']) }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ Form::label('ncf_series_id', __('NCF Series / Range'), ['class' => 'form-label']) }}
+                                        {{ Form::select('ncf_series_id', $ncfSeries, $invoice->ncf_series_id, ['class' => 'form-control select']) }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ Form::label('ncf_number', __('NCF Number'), ['class' => 'form-label']) }}
+                                        <div class="form-icon-user">
+                                            <span><i class="ti ti-hash"></i></span>
+                                            {{ Form::text('ncf_number', $invoice->ncf_number, ['class' => 'form-control', 'placeholder'=>__('Enter NCF Number')]) }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
                                         {{ Form::label('ref_number', __('Ref Number'), ['class' => 'form-label']) }}
                                         <div class="form-icon-user">
                                             <span><i class="ti ti-joint"></i></span>

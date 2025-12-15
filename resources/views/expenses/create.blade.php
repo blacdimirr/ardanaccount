@@ -19,6 +19,36 @@
         @enderror
     </div>
     <div class="form-group  col-md-6">
+        {{ Form::label('ncf_type_id', __('NCF Type')) }}
+        {{ Form::select('ncf_type_id', $ncfTypes, null, ['class' => 'form-control']) }}
+        @error('ncf_type_id')
+        <span class="invalid-ncf_type_id" role="alert">
+            <strong class="text-danger">{{ $message }}</strong>
+        </span>
+        @enderror
+    </div>
+    <div class="form-group  col-md-6">
+        {{ Form::label('ncf_series', __('NCF Series')) }}
+        {{ Form::text('ncf_series', '', ['class' => 'form-control','placeholder'=>__('Series as provided by vendor')]) }}
+        @error('ncf_series')
+        <span class="invalid-ncf_series" role="alert">
+            <strong class="text-danger">{{ $message }}</strong>
+        </span>
+        @enderror
+    </div>
+    <div class="form-group  col-md-6">
+        {{ Form::label('ncf_number', __('NCF Number')) }}
+        <div class="form-icon-user">
+            <span><i class="ti ti-hash"></i></span>
+            {{ Form::text('ncf_number', '', ['class' => 'form-control','placeholder'=>__('Enter NCF number from vendor invoice')]) }}
+        </div>
+        @error('ncf_number')
+        <span class="invalid-ncf_number" role="alert">
+            <strong class="text-danger">{{ $message }}</strong>
+        </span>
+        @enderror
+    </div>
+    <div class="form-group  col-md-6">
         {{ Form::label('date', __('Date')) }}
         {{ Form::text('date', '', array('class' => 'form-control pc-datepicker-1','required'=>'required')) }}
         @error('date')
