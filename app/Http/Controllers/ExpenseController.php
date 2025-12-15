@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Expense;
 use App\Models\ExpensesCategory;
-use App\Models\NcfType;
 use App\Models\Projects;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -40,10 +39,8 @@ class ExpenseController extends Controller
             $category = ExpensesCategory::where('created_by', '=', \Auth::user()->creatorId())->get()->pluck('name', 'id');
             $projects = \Auth::user()->projects->pluck('name', 'id');
             $users    = User::where('created_by', '=', \Auth::user()->creatorId())->where('type', '!=', 'client')->get()->pluck('name', 'id');
-            $ncfTypes = NcfType::orderBy('code')->get()->pluck('code', 'id');
-            $ncfTypes->prepend(__('Select NCF Type'), '');
 
-            return view('expenses.create', compact('category', 'projects', 'users', 'ncfTypes'));
+            return view('expenses.create', compact('category', 'projects', 'users'));
         }
         else
         {
@@ -62,9 +59,6 @@ class ExpenseController extends Controller
                 'amount' => 'required',
                 'date' => 'required',
                 'project_id' => 'required',
-                'ncf_type_id' => 'nullable|exists:ncf_types,id',
-                'ncf_number' => 'nullable|string|max:50',
-                'ncf_series' => 'nullable|string|max:50',
             ];
             if($request->attachment)
             {
@@ -83,9 +77,6 @@ class ExpenseController extends Controller
             $expense              = new Expense();
             $expense->category_id = $request->category_id;
             $expense->description = $request->description;
-            $expense->ncf_type_id = $request->ncf_type_id;
-            $expense->ncf_series  = $request->ncf_series;
-            $expense->ncf_number  = $request->ncf_number;
             $expense->amount      = $request->amount;
             $expense->date        = $request->date;
             $expense->project     = $request->project_id;
@@ -119,10 +110,8 @@ class ExpenseController extends Controller
                 $category = ExpensesCategory::where('created_by', '=', \Auth::user()->creatorId())->get()->pluck('name', 'id');
                 $projects = \Auth::user()->projects->pluck('name', 'id');
                 $users    = User::where('created_by', '=', \Auth::user()->creatorId())->where('type', '!=', 'client')->get()->pluck('name', 'id');
-                $ncfTypes = NcfType::orderBy('code')->get()->pluck('code', 'id');
-                $ncfTypes->prepend(__('Select NCF Type'), '');
 
-                return view('expenses.edit', compact('expense', 'category', 'projects', 'users', 'ncfTypes'));
+                return view('expenses.edit', compact('expense', 'category', 'projects', 'users'));
             }
             else
             {
@@ -149,9 +138,6 @@ class ExpenseController extends Controller
                     'amount' => 'required',
                     'date' => 'required',
                     'project_id' => 'required',
-                    'ncf_type_id' => 'nullable|exists:ncf_types,id',
-                    'ncf_number' => 'nullable|string|max:50',
-                    'ncf_series' => 'nullable|string|max:50',
                 ];
                 if($request->attachment)
                 {
@@ -168,9 +154,6 @@ class ExpenseController extends Controller
                 }
                 $expense->category_id = $request->category_id;
                 $expense->description = $request->description;
-                $expense->ncf_type_id = $request->ncf_type_id;
-                $expense->ncf_series  = $request->ncf_series;
-                $expense->ncf_number  = $request->ncf_number;
                 $expense->amount      = $request->amount;
                 $expense->date        = $request->date;
                 $expense->project     = $request->project_id;
