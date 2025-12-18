@@ -264,6 +264,32 @@ $('.cp_link_document_auth_approved').on('click', function() {
                                     </div>
                                 </div>
                             </div>
+                            @if ($bill->ncf_type_id || $bill->ncf_number || $bill->ncf_series_id)
+                                <div class="row mt-2">
+                                    <div class="col text-end">
+                                        <div class="d-flex align-items-center justify-content-end flex-wrap gap-3">
+                                            <div>
+                                                <small>
+                                                    <strong>{{ __('NCF Type') }} :</strong><br>
+                                                    {{ optional($bill->ncfType)->code ?? __('Not provided') }}
+                                                </small>
+                                            </div>
+                                            <div>
+                                                <small>
+                                                    <strong>{{ __('NCF Series') }} :</strong><br>
+                                                    {{ optional($bill->ncfSeries)->series ?? __('Not provided') }}
+                                                </small>
+                                            </div>
+                                            <div>
+                                                <small>
+                                                    <strong>{{ __('NCF Number') }} :</strong><br>
+                                                    {{ $bill->ncf_number ?? __('Not provided') }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
 
 
                             <div class="row">

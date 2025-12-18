@@ -9,6 +9,8 @@ use App\Models\CustomField;
 use App\Models\Invoice;
 use App\Models\InvoicePayment;
 use App\Models\InvoiceProduct;
+use App\Models\NcfSeries;
+use App\Models\NcfType;
 use App\Models\ProductService;
 use App\Models\ProductServiceCategory;
 use App\Models\StockReport;
@@ -87,7 +89,24 @@ class InvoiceController extends Controller
             $product_services = ProductService::where('created_by', \Auth::user()->creatorId())->get()->pluck('name', 'id');
             $product_services->prepend('--', '');
 
-            return view('invoice.create', compact('customers', 'invoice_number', 'product_services', 'category', 'customFields', 'customerId'));
+            $ncfTypes = NcfType::where(function ($query) {
+                $query->where('created_by', \Auth::user()->creatorId())
+                    ->orWhere('created_by', 0);
+            })->pluck('code', 'id');
+            $ncfTypes->prepend(__('Select NCF Type'), '');
+
+            $ncfSeries = NcfSeries::with('type')->where(function ($query) {
+                $query->where('created_by', \Auth::user()->creatorId())
+                    ->orWhere('created_by', 0);
+            })->get()->mapWithKeys(function ($series) {
+                $label = trim((optional($series->type)->code ? $series->type->code . ' - ' : '') . ($series->series ?? __('Series')));
+                $range = $series->start_number . ' - ' . $series->end_number;
+
+                return [$series->id => $label . ' (' . $range . ')'];
+            });
+            $ncfSeries->prepend(__('Select NCF Series'), '');
+
+            return view('invoice.create', compact('customers', 'invoice_number', 'product_services', 'category', 'customFields', 'customerId', 'ncfTypes', 'ncfSeries'));
         } else {
             return response()->json(['error' => __('Permission denied.')], 401);
         }
@@ -139,6 +158,9 @@ class InvoiceController extends Controller
                     'due_date' => 'required',
                     'category_id' => 'required',
                     'items' => 'required',
+                    'ncf_type_id' => 'nullable|exists:ncf_types,id',
+                    'ncf_series_id' => 'nullable|exists:ncf_series,id',
+                    'ncf_number' => 'nullable|string|max:50',
 
                 ]
             );
@@ -157,6 +179,9 @@ class InvoiceController extends Controller
             $invoice->due_date       = $request->due_date;
             $invoice->category_id    = $request->category_id;
             $invoice->ref_number     = $request->ref_number;
+            $invoice->ncf_type_id    = $request->ncf_type_id;
+            $invoice->ncf_series_id  = $request->ncf_series_id;
+            $invoice->ncf_number     = $request->ncf_number;
             $invoice->discount_apply = isset($request->discount_apply) ? 1 : 0;
             $invoice->created_by     = \Auth::user()->creatorId();
 
@@ -239,9 +264,26 @@ class InvoiceController extends Controller
             $category->prepend('Select Category', '');
             $product_services = ProductService::where('created_by', \Auth::user()->creatorId())->get()->pluck('name', 'id');
 
+            $ncfTypes = NcfType::where(function ($query) {
+                $query->where('created_by', \Auth::user()->creatorId())
+                    ->orWhere('created_by', 0);
+            })->pluck('code', 'id');
+            $ncfTypes->prepend(__('Select NCF Type'), '');
+
+            $ncfSeries = NcfSeries::with('type')->where(function ($query) {
+                $query->where('created_by', \Auth::user()->creatorId())
+                    ->orWhere('created_by', 0);
+            })->get()->mapWithKeys(function ($series) {
+                $label = trim((optional($series->type)->code ? $series->type->code . ' - ' : '') . ($series->series ?? __('Series')));
+                $range = $series->start_number . ' - ' . $series->end_number;
+
+                return [$series->id => $label . ' (' . $range . ')'];
+            });
+            $ncfSeries->prepend(__('Select NCF Series'), '');
+
             $invoice->customField = CustomField::getData($invoice, 'invoice');
             $customFields         = CustomField::where('created_by', '=', \Auth::user()->creatorId())->where('module', '=', 'invoice')->get();
-            return view('invoice.edit', compact('customers', 'product_services', 'invoice', 'invoice_number', 'category', 'customFields'));
+            return view('invoice.edit', compact('customers', 'product_services', 'invoice', 'invoice_number', 'category', 'customFields', 'ncfTypes', 'ncfSeries'));
         } else {
             return response()->json(['error' => __('Permission denied.')], 401);
         }
@@ -260,6 +302,9 @@ class InvoiceController extends Controller
                         'due_date' => 'required',
                         'category_id' => 'required',
                         'items' => 'required',
+                        'ncf_type_id' => 'nullable|exists:ncf_types,id',
+                        'ncf_series_id' => 'nullable|exists:ncf_series,id',
+                        'ncf_number' => 'nullable|string|max:50',
                     ]
                 );
                 if ($validator->fails()) {
@@ -271,6 +316,9 @@ class InvoiceController extends Controller
                 $invoice->issue_date     = $request->issue_date;
                 $invoice->due_date       = $request->due_date;
                 $invoice->ref_number     = $request->ref_number;
+                $invoice->ncf_type_id    = $request->ncf_type_id;
+                $invoice->ncf_series_id  = $request->ncf_series_id;
+                $invoice->ncf_number     = $request->ncf_number;
                 $invoice->discount_apply = isset($request->discount_apply) ? 1 : 0;
                 $invoice->category_id    = $request->category_id;
                 $invoice->save();
