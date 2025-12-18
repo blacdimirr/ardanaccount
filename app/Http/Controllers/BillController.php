@@ -11,6 +11,8 @@ use App\Models\CustomField;
 use App\Models\Mail\BillPaymentCreate;
 use App\Models\Mail\BillSend;
 use App\Models\Mail\VenderBillSend;
+use App\Models\NcfSeries;
+use App\Models\NcfType;
 use App\Models\ProductService;
 use App\Models\ProductServiceCategory;
 use App\Models\StockReport;
@@ -108,7 +110,24 @@ class BillController extends Controller
             $subAccounts->where('chart_of_accounts.created_by', \Auth::user()->creatorId());
             $subAccounts = $subAccounts->get()->toArray();
 
-            return view('bill.create', compact('venders', 'bill_number', 'product_services', 'category', 'customFields', 'vendorId', 'chartAccounts', 'subAccounts'));
+            $ncfTypes = NcfType::where(function ($query) {
+                $query->where('created_by', \Auth::user()->creatorId())
+                    ->orWhere('created_by', 0);
+            })->pluck('code', 'id');
+            $ncfTypes->prepend(__('Select NCF Type'), '');
+
+            $ncfSeries = NcfSeries::with('type')->where(function ($query) {
+                $query->where('created_by', \Auth::user()->creatorId())
+                    ->orWhere('created_by', 0);
+            })->get()->mapWithKeys(function ($series) {
+                $label = trim((optional($series->type)->code ? $series->type->code . ' - ' : '') . ($series->series ?? __('Series')));
+                $range = $series->start_number . ' - ' . $series->end_number;
+
+                return [$series->id => $label . ' (' . $range . ')'];
+            });
+            $ncfSeries->prepend(__('Select NCF Series'), '');
+
+            return view('bill.create', compact('venders', 'bill_number', 'product_services', 'category', 'customFields', 'vendorId', 'chartAccounts', 'subAccounts', 'ncfTypes', 'ncfSeries'));
         } else {
             return response()->json(['error' => __('Permission denied.')], 401);
         }
@@ -134,6 +153,9 @@ class BillController extends Controller
                     'items.*.itemTaxPrice' => 'nullable|numeric|min:0',
                     // si te la envían por cada ítem:
                     'items.*.category_id'  => 'nullable|integer',
+                    'ncf_type_id' => 'nullable|exists:ncf_types,id',
+                    'ncf_series_id' => 'nullable|exists:ncf_series,id',
+                    'ncf_number' => 'nullable|string',
                 ]
             );
 
@@ -152,9 +174,12 @@ class BillController extends Controller
             $bill->due_date       = $request->due_date;
 
             $bill->order_number   = !empty($request->order_number) ? $request->order_number : 0;
+            $bill->ncf_type_id    = $request->ncf_type_id;
+            $bill->ncf_series_id  = $request->ncf_series_id;
+            $bill->ncf_number     = $request->ncf_number;
             $bill->discount_apply = isset($request->discount_apply) ? 1 : 0;
             $bill->created_by     = \Auth::user()->creatorId();
-            $bill->save();            
+            $bill->save();
             Utility::starting_number($bill->bill_id + 1, 'bill');
             if (!empty($request->customField)){
                 CustomField::saveData($bill, $request->customField);
@@ -422,7 +447,7 @@ class BillController extends Controller
                 }
             }
 
-            return view('bill.edit', compact('venders', 'product_services', 'bill', 'bill_number', 'category', 'customFields', 'chartAccounts', 'items', 'subAccounts', 'estatus','has_retention'));
+            return view('bill.edit', compact('venders', 'product_services', 'bill', 'bill_number', 'category', 'customFields', 'chartAccounts', 'items', 'subAccounts', 'estatus','has_retention', 'ncfTypes', 'ncfSeries'));
         } else {
             return response()->json(['error' => __('Permission denied.')], 401);
         }
@@ -445,6 +470,9 @@ class BillController extends Controller
                 'bill_date' => 'required|date',
                 'due_date'  => 'required|date',
                 'items'     => 'required|array|min:1',
+                'ncf_type_id' => 'nullable|exists:ncf_types,id',
+                'ncf_series_id' => 'nullable|exists:ncf_series,id',
+                'ncf_number' => 'nullable|string',
             ],
             [
                 'required' => 'El :attribute campo es requerido'
@@ -472,6 +500,9 @@ class BillController extends Controller
         $bill->due_date     = $request->due_date;
         $bill->order_number = $request->order_number;
         $bill->has_retention = $request->has_retention?$request->has_retention:0;
+        $bill->ncf_type_id   = $request->ncf_type_id;
+        $bill->ncf_series_id = $request->ncf_series_id;
+        $bill->ncf_number    = $request->ncf_number;
         $bill->status    = $request->estatus_id; // ← INTENCIONALMENTE NO SE TOCA
         $bill->save();
 
