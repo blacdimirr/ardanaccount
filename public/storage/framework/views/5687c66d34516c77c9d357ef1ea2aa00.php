@@ -1,0 +1,2 @@
+<span class="text-danger">*</span>
+<?php /**PATH C:\Users\willt\Desktop\Workspace Bladimir\codecanyon-aIPVP9oe-accountgo-accounting-and-billing-tool\main-file\resources\views/components/required.blade.php ENDPATH**/ ?>
