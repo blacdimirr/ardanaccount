@@ -189,9 +189,9 @@ class BillController extends Controller
             $bill->due_date       = $request->due_date;
 
             $bill->order_number   = !empty($request->order_number) ? $request->order_number : 0;
-            $bill->ncf_type_id    = $ncfData['type_id'] ?? $request->ncf_type_id;
-            $bill->ncf_series_id  = $ncfData['series_id'] ?? $request->ncf_series_id;
-            $bill->ncf_number     = $ncfData['number'] ?? $request->ncf_number;
+            $bill->ncf_type_id    = $request->ncf_type_id;
+            $bill->ncf_series_id  = $request->ncf_series_id;
+            $bill->ncf_number     = $request->ncf_number;
             $bill->discount_apply = isset($request->discount_apply) ? 1 : 0;
             $bill->created_by     = \Auth::user()->creatorId();
             $bill->save();
@@ -528,9 +528,9 @@ class BillController extends Controller
         $bill->due_date     = $request->due_date;
         $bill->order_number = $request->order_number;
         $bill->has_retention = $request->has_retention?$request->has_retention:0;
-        $bill->ncf_type_id   = $ncfData['type_id'] ?? $request->ncf_type_id;
-        $bill->ncf_series_id = $ncfData['series_id'] ?? $request->ncf_series_id;
-        $bill->ncf_number    = $ncfData['number'] ?? $request->ncf_number;
+        $bill->ncf_type_id   = $request->ncf_type_id;
+        $bill->ncf_series_id = $request->ncf_series_id;
+        $bill->ncf_number    = $request->ncf_number;
         $bill->status    = $request->estatus_id; // ← INTENCIONALMENTE NO SE TOCA
         $bill->save();
 
