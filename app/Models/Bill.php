@@ -139,7 +139,9 @@ class Bill extends Model
             $due += $payment->amount;
         }
 
-        return ($this->getTotal() - $due) - ($this->billTotalDebitNote());
+        $withheldTotal = ($this->itbis_withheld_total ?? 0) + ($this->isr_withheld_total ?? 0);
+
+        return (($this->getTotal() - $withheldTotal) - $due) - ($this->billTotalDebitNote());
     }
 
     public function category()
