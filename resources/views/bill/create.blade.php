@@ -233,6 +233,7 @@
                     $(row).find('.tax').val(tax);
                     $(row).find('.unit').html(item.unit);
                     $(row).find('.discount').val(0);
+                    $(row).find('.itemCategoryId').val(item.product.category_id || '');
 
                     var inputs = $(".amount");
                     var subTotal = 0;
@@ -257,6 +258,7 @@
                         Campos borrados
 
                     */
+                    recalcRetentionsAndFinal();
                 },
             });
         });
@@ -594,35 +596,75 @@
     </script>
 
     <script>
-        /** Calcula y pinta:
-         *  - Retención 5% sobre neto (subTotal)
-         *  - Retención 30% sobre ITBIS (totalTax)
-         *  - Total con impuestos (subTotal + totalTax)
-         *  - Pago final = (subTotal + totalTax) - ret5 - ret30
-         */
+        const retentionRules = @json($retentionRules->map(function($rule){
+            return [
+                'supplier_type' => $rule->supplier_type,
+                'service_category_id' => $rule->service_category_id,
+                'itbis_retention_rate' => (float) $rule->itbis_retention_rate,
+                'isr_retention_rate' => (float) $rule->isr_retention_rate,
+            ];
+        }));
+        const productCategoryMap = @json($productCategoryMap);
+
+        function resolveRetentionRule(categoryId, supplierType) {
+            const matches = retentionRules.filter(function(rule){
+                const categoryMatches = rule.service_category_id === null || rule.service_category_id === '' || String(rule.service_category_id) === String(categoryId ?? '');
+                const supplierMatches = rule.supplier_type === null || rule.supplier_type === '' || rule.supplier_type === supplierType;
+                return categoryMatches && supplierMatches;
+            }).sort(function(a,b){
+                const aScore = (a.service_category_id ? 2 : 0) + (a.supplier_type ? 1 : 0);
+                const bScore = (b.service_category_id ? 2 : 0) + (b.supplier_type ? 1 : 0);
+                return bScore - aScore;
+            });
+
+            return matches.length > 0 ? matches[0] : null;
+        }
+
         function recalcRetentionsAndFinal() {
-            var sub = parseFloat(($('.subTotal').text() || "0").replace(/,/g, '')) || 0; // Neto sin ITBIS
-            var tax = parseFloat(($('.totalTax').text() || "0").replace(/,/g, '')) || 0; // ITBIS total
-            var grossWithTax = sub + tax;
+            const supplierType = ($("input[name='supplier_type']").val() || '').trim() || null;
+            let subtotal = 0;
+            let itbisBilled = 0;
+            let itbisWithheld = 0;
+            let isrWithheld = 0;
 
-            var ret5 = +(sub * 0.05).toFixed(2); // 5% sobre neto
-            var ret30 = +(tax * 0.30).toFixed(2); // 30% sobre ITBIS
+            $('tr[data-repeater-item]').each(function(){
+                const row = $(this);
+                const qty = parseFloat(row.find('.quantity').val()) || 0;
+                const price = parseFloat(row.find('.price').val()) || 0;
+                const discount = parseFloat(row.find('.discount').val()) || 0;
+                const base = Math.max(0, (qty * price) - discount);
+                const taxAmount = parseFloat(row.find('.itemTaxPrice').val()) || 0;
+                let categoryId = row.find('.itemCategoryId').val() || row.find('.item option:selected').data('category-id') || null;
+                if (!categoryId) {
+                    const productId = row.find('.item').val();
+                    if (productCategoryMap && productCategoryMap[productId]) {
+                        categoryId = productCategoryMap[productId];
+                        row.find('.itemCategoryId').val(categoryId);
+                    }
+                }
+                const rule = resolveRetentionRule(categoryId, supplierType);
+                const itbisRate = rule ? parseFloat(rule.itbis_retention_rate || 0) : 0;
+                const isrRate = rule ? parseFloat(rule.isr_retention_rate || 0) : 0;
 
-            if ($("input[name='has_retention']:checked").val()) {
-                var finalPayable = +(grossWithTax - ret5 - ret30).toFixed(2);
-                $('.retentionNet').text(ret5.toFixed(2));
-                $('.retencion5Input').val(ret5.toFixed(2));
-            } else {
-                var finalPayable = +(grossWithTax - ret30).toFixed(2);
-            }
+                subtotal += base;
+                itbisBilled += taxAmount;
+                itbisWithheld += (taxAmount * (itbisRate / 100));
+                isrWithheld += (base * (isrRate / 100));
+            });
 
-            // Pinta (si quieres ver el signo menos visualmente, antepón '–' en el text)
-            $('.retentionIva').text(ret30.toFixed(2));
+            const taxTotal = parseFloat(($('.totalTax').text() || "0").replace(/,/g, '')) || 0;
+            const grossWithTax = subtotal + taxTotal;
+            const finalPayable = grossWithTax - itbisWithheld - isrWithheld;
+
+            $('.itbisBilled').text((itbisBilled || taxTotal).toFixed(2));
+            $('.itbisWithheld').text(itbisWithheld.toFixed(2));
+            $('.isrWithheld').text(isrWithheld.toFixed(2));
             $('.totalAmount').text(grossWithTax.toFixed(2));
             $('.finalPayable').text(finalPayable.toFixed(2));
 
-            // Inputs ocultos para backend
-            $('.retencion30Input').val(ret30.toFixed(2));
+            $('.itbisBilledInput').val(itbisBilled.toFixed(2));
+            $('.itbisWithheldInput').val(itbisWithheld.toFixed(2));
+            $('.isrWithheldInput').val(isrWithheld.toFixed(2));
             $('.finalPayableInput').val(finalPayable.toFixed(2));
         }
 
@@ -631,6 +673,10 @@
             // if ($("input[name='has_retention']:checked").val()) {
                 recalcRetentionsAndFinal();
             // }
+        });
+
+        $(document).on('keyup change', "input[name='supplier_type']", function () {
+            recalcRetentionsAndFinal();
         });
 
         $("input[name='has_retention']").on('change', function() {
@@ -690,6 +736,16 @@
                             </div>
                             <div id="vender_detail" class="d-none">
                             </div>
+                            <div class="form-group">
+                                {{ Form::label('supplier_type', __('Supplier / service type (retention)'), ['class' => 'form-label']) }}
+                                {{ Form::text('supplier_type', null, ['class' => 'form-control', 'list' => 'supplier-types-list', 'placeholder' => __('Ej. Profesional independiente, bienes gravados, etc.')]) }}
+                                <datalist id="supplier-types-list">
+                                    @foreach($availableSupplierTypes as $type)
+                                        <option value="{{ $type }}"></option>
+                                    @endforeach
+                                </datalist>
+                                <small class="text-muted">{{ __('Define el tipo para aplicar las reglas de ITBIS/ISR retenido.') }}</small>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <div class="row">
@@ -736,6 +792,27 @@
                                         <div class="form-icon-user">
                                             {{ Form::text('order_number', '', ['class' => 'form-control', 'placeholder' => __('Enter Order Number')]) }}
                                         </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ Form::label('ncf_type_id', __('NCF Type'), ['class' => 'form-label']) }}
+                                        {{ Form::select('ncf_type_id', $ncfTypes, null, ['class' => 'form-control select']) }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ Form::label('ncf_series_id', __('NCF Series / Range'), ['class' => 'form-label']) }}
+                                        {{ Form::select('ncf_series_id', $ncfSeries, null, ['class' => 'form-control select']) }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ Form::label('ncf_number', __('NCF Number'), ['class' => 'form-label']) }}
+                                        <div class="form-icon-user">
+                                            {{ Form::text('ncf_number', null, ['class' => 'form-control', 'placeholder' => __('Enter supplier NCF (text allowed)')]) }}
+                                        </div>
+                                        <small class="text-muted">{{ __('Proveedor emite el NCF para gastos; se guarda como texto.') }}</small>
                                     </div>
                                 </div>
                                 @if (!$customFields->isEmpty())
@@ -812,13 +889,14 @@
 
                                     <td>
                                         <div class="form-group">
-                                            <div class="input-group flex-nowrap">
-                                                <div class="taxes"></div>
-                                                {{ Form::hidden('tax', '', ['class' => 'form-control tax']) }}
-                                                {{ Form::hidden('itemTaxPrice', '', ['class' => 'form-control itemTaxPrice']) }}
-                                                {{ Form::hidden('itemTaxRate', '', ['class' => 'form-control itemTaxRate']) }}
+                                                <div class="input-group flex-nowrap">
+                                                    <div class="taxes"></div>
+                                                    {{ Form::hidden('tax', '', ['class' => 'form-control tax']) }}
+                                                    {{ Form::hidden('itemTaxPrice', '', ['class' => 'form-control itemTaxPrice']) }}
+                                                    {{ Form::hidden('itemTaxRate', '', ['class' => 'form-control itemTaxRate']) }}
+                                                    {{ Form::hidden('category_id', '', ['class' => 'form-control itemCategoryId']) }}
+                                                </div>
                                             </div>
-                                        </div>
                                     </td>
 
                                     <td class="text-end amount">
@@ -919,25 +997,37 @@
                                     <td>&nbsp;</td>
                                     <td>&nbsp;</td>
                                     <td></td>
-                                    <td class="text-danger">
-                                        <strong>{{ __('Retención 5% (sobre neto)') }}
+                                    <td class="text-primary">
+                                        <strong>{{ __('ITBIS facturado') }}
                                             ({{ \Auth::user()->currencySymbol() }})</strong>
                                     </td>
-                                    <td class="text-end retentionNet">0.00</td>
+                                    <td class="text-end itbisBilled">0.00</td>
                                     <td></td>
                                 </tr>
 
-                                <!-- NUEVO: Retención 30% sobre impuestos (ITBIS) -->
                                 <tr>
                                     <td>&nbsp;</td>
                                     <td>&nbsp;</td>
                                     <td>&nbsp;</td>
                                     <td></td>
                                     <td class="text-danger">
-                                        <strong>{{ __('Retención 30% (sobre ITBIS)') }}
+                                        <strong>{{ __('ITBIS retenido') }}
                                             ({{ \Auth::user()->currencySymbol() }})</strong>
                                     </td>
-                                    <td class="text-end retentionIva">0.00</td>
+                                    <td class="text-end itbisWithheld">0.00</td>
+                                    <td></td>
+                                </tr>
+
+                                <tr>
+                                    <td>&nbsp;</td>
+                                    <td>&nbsp;</td>
+                                    <td>&nbsp;</td>
+                                    <td></td>
+                                    <td class="text-danger">
+                                        <strong>{{ __('ISR retenido') }}
+                                            ({{ \Auth::user()->currencySymbol() }})</strong>
+                                    </td>
+                                    <td class="text-end isrWithheld">0.00</td>
                                     <td></td>
                                 </tr>
 
@@ -972,8 +1062,10 @@
                                 <!-- (Opcional) inputs ocultos para enviar a backend -->
                                 <tr class="d-none">
                                     <td colspan="7">
-                                        <input type="hidden" name="retencion_5" class="retencion5Input" value="0">
-                                        <input type="hidden" name="retencion_30_itbis" class="retencion30Input"
+                                        <input type="hidden" name="itbis_billed_total" class="itbisBilledInput" value="0">
+                                        <input type="hidden" name="itbis_withheld_total" class="itbisWithheldInput"
+                                            value="0">
+                                        <input type="hidden" name="isr_withheld_total" class="isrWithheldInput"
                                             value="0">
                                         <input type="hidden" name="pago_final_proveedor" class="finalPayableInput"
                                             value="0">

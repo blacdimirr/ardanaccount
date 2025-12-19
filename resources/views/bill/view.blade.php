@@ -264,6 +264,32 @@ $('.cp_link_document_auth_approved').on('click', function() {
                                     </div>
                                 </div>
                             </div>
+                            @if ($bill->ncf_type_id || $bill->ncf_number || $bill->ncf_series_id)
+                                <div class="row mt-2">
+                                    <div class="col text-end">
+                                        <div class="d-flex align-items-center justify-content-end flex-wrap gap-3">
+                                            <div>
+                                                <small>
+                                                    <strong>{{ __('NCF Type') }} :</strong><br>
+                                                    {{ optional($bill->ncfType)->code ?? __('Not provided') }}
+                                                </small>
+                                            </div>
+                                            <div>
+                                                <small>
+                                                    <strong>{{ __('NCF Series') }} :</strong><br>
+                                                    {{ optional($bill->ncfSeries)->series ?? __('Not provided') }}
+                                                </small>
+                                            </div>
+                                            <div>
+                                                <small>
+                                                    <strong>{{ __('NCF Number') }} :</strong><br>
+                                                    {{ $bill->ncf_number ?? __('Not provided') }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
 
 
                             <div class="row">
@@ -515,8 +541,28 @@ $('.cp_link_document_auth_approved').on('click', function() {
                                             @endif
                                             <tr>
                                                 <td colspan="8"></td>
+                                                <td class="text-end"><b>{{ __('ITBIS facturado') }}</b></td>
+                                                <td class="text-end">{{ \Auth::user()->priceFormat($bill->itbis_billed_total ?? 0) }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="8"></td>
+                                                <td class="text-end"><b>{{ __('ITBIS retenido') }}</b></td>
+                                                <td class="text-end">{{ \Auth::user()->priceFormat($bill->itbis_withheld_total ?? 0) }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="8"></td>
+                                                <td class="text-end"><b>{{ __('ISR retenido') }}</b></td>
+                                                <td class="text-end">{{ \Auth::user()->priceFormat($bill->isr_withheld_total ?? 0) }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="8"></td>
                                                 <td class="blue-text text-end"><b>{{__('Total')}}</b></td>
                                                 <td class="blue-text text-end">{{\Auth::user()->priceFormat($bill->getTotal())}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="8"></td>
+                                                <td class="blue-text text-end"><b>{{ __('Pago final al proveedor') }}</b></td>
+                                                <td class="blue-text text-end">{{ \Auth::user()->priceFormat($bill->getTotal() - (($bill->itbis_withheld_total ?? 0) + ($bill->isr_withheld_total ?? 0))) }}</td>
                                             </tr>
                                             <tr>
                                                 <td colspan="8"></td>
