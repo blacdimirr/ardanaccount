@@ -36,6 +36,8 @@ use Exception;
 use Carbon\Carbon;
 use CoinGate\Exception\Api\BadRequest;
 use NumberToWords\NumberToWords;
+use App\Exceptions\NcfException;
+use App\Services\NcfAssignmentService;
 
 class BillController extends Controller
 {
@@ -163,6 +165,19 @@ class BillController extends Controller
                 $messages = $validator->getMessageBag();
 
                 return redirect()->back()->with('error', $messages->first());
+            }
+
+            $ncfData = null;
+            $shouldAssignNcf = $request->filled('ncf_series_id') && empty($request->ncf_number);
+            if ($shouldAssignNcf) {
+                try {
+                    $ncfData = app(NcfAssignmentService::class)->assignNextNumber(
+                        (int) $request->ncf_series_id,
+                        $request->ncf_type_id ? (int) $request->ncf_type_id : null
+                    );
+                } catch (NcfException $exception) {
+                    return redirect()->back()->withInput()->with('error', $exception->getMessage());
+                }
             }
 
             $bill            = new Bill();
@@ -493,6 +508,19 @@ class BillController extends Controller
                 
             // return redirect()->route('bill.index')->with('error', $validator->getMessageBag()->first());
         }        
+
+        $ncfData = null;
+        $shouldAssignNcf = $request->filled('ncf_series_id') && (empty($request->ncf_number) || (int) $request->ncf_series_id !== (int) $bill->ncf_series_id);
+        if ($shouldAssignNcf) {
+            try {
+                $ncfData = app(NcfAssignmentService::class)->assignNextNumber(
+                    (int) $request->ncf_series_id,
+                    $request->ncf_type_id ? (int) $request->ncf_type_id : null
+                );
+            } catch (NcfException $exception) {
+                return redirect()->back()->withInput()->with('error', $exception->getMessage());
+            }
+        }
 
         // 1) Actualiza solo datos "cabezales" (NO status)
         $bill->vender_id    = $request->vender_id;

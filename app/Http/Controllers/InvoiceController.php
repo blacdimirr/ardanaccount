@@ -30,6 +30,8 @@ use App\Models\CreditNote;
 use App\Models\TransactionLines;
 use App\Models\Status;
 use Exception;
+use App\Exceptions\NcfException;
+use App\Services\NcfAssignmentService;
 
 class InvoiceController extends Controller
 {
@@ -168,6 +170,18 @@ class InvoiceController extends Controller
                 $messages = $validator->getMessageBag();
 
                 return redirect()->back()->with('error', $messages->first());
+            }
+
+            $ncfData = null;
+            if ($request->filled('ncf_series_id')) {
+                try {
+                    $ncfData = app(NcfAssignmentService::class)->assignNextNumber(
+                        (int) $request->ncf_series_id,
+                        $request->ncf_type_id ? (int) $request->ncf_type_id : null
+                    );
+                } catch (NcfException $exception) {
+                    return redirect()->back()->withInput()->with('error', $exception->getMessage());
+                }
             }
             $status = Status::getAllAsArray();
 
@@ -311,6 +325,19 @@ class InvoiceController extends Controller
                     $messages = $validator->getMessageBag();
 
                     return redirect()->route('invoice.index')->with('error', $messages->first());
+                }
+
+                $ncfData = null;
+                $shouldAssignNcf = $request->filled('ncf_series_id') && ($invoice->ncf_number === null || (int) $request->ncf_series_id !== (int) $invoice->ncf_series_id);
+                if ($shouldAssignNcf) {
+                    try {
+                        $ncfData = app(NcfAssignmentService::class)->assignNextNumber(
+                            (int) $request->ncf_series_id,
+                            $request->ncf_type_id ? (int) $request->ncf_type_id : null
+                        );
+                    } catch (NcfException $exception) {
+                        return redirect()->back()->withInput()->with('error', $exception->getMessage());
+                    }
                 }
                 $invoice->customer_id    = $request->customer_id;
                 $invoice->issue_date     = $request->issue_date;

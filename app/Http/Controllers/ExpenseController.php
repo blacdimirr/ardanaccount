@@ -9,6 +9,8 @@ use App\Models\NcfType;
 use App\Models\Projects;
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Exceptions\NcfException;
+use App\Services\NcfAssignmentService;
 
 class ExpenseController extends Controller
 {
@@ -94,6 +96,19 @@ class ExpenseController extends Controller
                 $messages = $validator->getMessageBag();
 
                 return redirect()->route('expenses.index')->with('error', $messages->first());
+            }
+
+            $ncfData = null;
+            $shouldAssignNcf = $request->filled('ncf_series_id') && empty($request->ncf_number);
+            if ($shouldAssignNcf) {
+                try {
+                    $ncfData = app(NcfAssignmentService::class)->assignNextNumber(
+                        (int) $request->ncf_series_id,
+                        $request->ncf_type_id ? (int) $request->ncf_type_id : null
+                    );
+                } catch (NcfException $exception) {
+                    return redirect()->back()->withInput()->with('error', $exception->getMessage());
+                }
             }
 
             $expense              = new Expense();
@@ -196,6 +211,22 @@ class ExpenseController extends Controller
                     $messages = $validator->getMessageBag();
 
                     return redirect()->route('expenses.index')->with('error', $messages->first());
+                }
+
+                $ncfData = null;
+                $shouldAssignNcf = $request->filled('ncf_series_id')
+                    && empty($request->ncf_number)
+                    && ((int) $request->ncf_series_id !== (int) $expense->ncf_series_id || empty($expense->ncf_number));
+
+                if ($shouldAssignNcf) {
+                    try {
+                        $ncfData = app(NcfAssignmentService::class)->assignNextNumber(
+                            (int) $request->ncf_series_id,
+                            $request->ncf_type_id ? (int) $request->ncf_type_id : null
+                        );
+                    } catch (NcfException $exception) {
+                        return redirect()->back()->withInput()->with('error', $exception->getMessage());
+                    }
                 }
                 $expense->category_id = $request->category_id;
                 $expense->description = $request->description;
