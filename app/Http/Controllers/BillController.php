@@ -203,6 +203,19 @@ class BillController extends Controller
                 $retentionRules
             );
 
+            $ncfData = null;
+            $shouldAssignNcf = $request->filled('ncf_series_id') && empty($request->ncf_number);
+            if ($shouldAssignNcf) {
+                try {
+                    $ncfData = app(NcfAssignmentService::class)->assignNextNumber(
+                        (int) $request->ncf_series_id,
+                        $request->ncf_type_id ? (int) $request->ncf_type_id : null
+                    );
+                } catch (NcfException $exception) {
+                    return redirect()->back()->withInput()->with('error', $exception->getMessage());
+                }
+            }
+
             $bill            = new Bill();
             $bill->bill_id   = $this->billNumber();
             $bill->vender_id = $request->vender_id;
@@ -454,6 +467,23 @@ class BillController extends Controller
             $subAccounts->where('chart_of_accounts.parent', '!=', 0);
             $subAccounts->where('chart_of_accounts.created_by', \Auth::user()->creatorId());
             $subAccounts = $subAccounts->get()->toArray();
+
+            $ncfTypes = NcfType::where(function ($query) {
+                $query->where('created_by', \Auth::user()->creatorId())
+                    ->orWhere('created_by', 0);
+            })->pluck('code', 'id');
+            $ncfTypes->prepend(__('Select NCF Type'), '');
+
+            $ncfSeries = NcfSeries::with('type')->where(function ($query) {
+                $query->where('created_by', \Auth::user()->creatorId())
+                    ->orWhere('created_by', 0);
+            })->get()->mapWithKeys(function ($series) {
+                $label = trim((optional($series->type)->code ? $series->type->code . ' - ' : '') . ($series->series ?? __('Series')));
+                $range = $series->start_number . ' - ' . $series->end_number;
+
+                return [$series->id => $label . ' (' . $range . ')'];
+            });
+            $ncfSeries->prepend(__('Select NCF Series'), '');
 
             //for item and account show in repeater
             $item      = $bill->items;
