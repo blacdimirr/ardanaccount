@@ -114,9 +114,9 @@ class ExpenseController extends Controller
             $expense              = new Expense();
             $expense->category_id = $request->category_id;
             $expense->description = $request->description;
-            $expense->ncf_type_id = $request->ncf_type_id;
-            $expense->ncf_series_id = $request->ncf_series_id;
-            $expense->ncf_number  = $request->ncf_number;
+            $expense->ncf_type_id = $ncfData['type_id'] ?? $request->ncf_type_id;
+            $expense->ncf_series_id = $ncfData['series_id'] ?? $request->ncf_series_id;
+            $expense->ncf_number  = $ncfData['number'] ?? $request->ncf_number;
             $expense->amount      = $request->amount;
             $expense->date        = $request->date;
             $expense->project     = $request->project_id;
@@ -230,9 +230,9 @@ class ExpenseController extends Controller
                 }
                 $expense->category_id = $request->category_id;
                 $expense->description = $request->description;
-                $expense->ncf_type_id = $request->ncf_type_id;
-                $expense->ncf_series_id = $request->ncf_series_id;
-                $expense->ncf_number  = $request->ncf_number;
+                $expense->ncf_type_id = $ncfData['type_id'] ?? $request->ncf_type_id;
+                $expense->ncf_series_id = $ncfData['series_id'] ?? $request->ncf_series_id;
+                $expense->ncf_number  = $ncfData['number'] ?? $request->ncf_number;
                 $expense->amount      = $request->amount;
                 $expense->date        = $request->date;
                 $expense->project     = $request->project_id;

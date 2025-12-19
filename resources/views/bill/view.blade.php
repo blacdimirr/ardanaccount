@@ -541,8 +541,28 @@ $('.cp_link_document_auth_approved').on('click', function() {
                                             @endif
                                             <tr>
                                                 <td colspan="8"></td>
+                                                <td class="text-end"><b>{{ __('ITBIS facturado') }}</b></td>
+                                                <td class="text-end">{{ \Auth::user()->priceFormat($bill->itbis_billed_total ?? 0) }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="8"></td>
+                                                <td class="text-end"><b>{{ __('ITBIS retenido') }}</b></td>
+                                                <td class="text-end">{{ \Auth::user()->priceFormat($bill->itbis_withheld_total ?? 0) }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="8"></td>
+                                                <td class="text-end"><b>{{ __('ISR retenido') }}</b></td>
+                                                <td class="text-end">{{ \Auth::user()->priceFormat($bill->isr_withheld_total ?? 0) }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="8"></td>
                                                 <td class="blue-text text-end"><b>{{__('Total')}}</b></td>
                                                 <td class="blue-text text-end">{{\Auth::user()->priceFormat($bill->getTotal())}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="8"></td>
+                                                <td class="blue-text text-end"><b>{{ __('Pago final al proveedor') }}</b></td>
+                                                <td class="blue-text text-end">{{ \Auth::user()->priceFormat($bill->getTotal() - (($bill->itbis_withheld_total ?? 0) + ($bill->isr_withheld_total ?? 0))) }}</td>
                                             </tr>
                                             <tr>
                                                 <td colspan="8"></td>

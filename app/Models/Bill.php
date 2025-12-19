@@ -21,6 +21,10 @@ class Bill extends Model
         'ncf_type_id',
         'ncf_series_id',
         'ncf_number',
+        'supplier_type',
+        'itbis_billed_total',
+        'itbis_withheld_total',
+        'isr_withheld_total',
     ];
 
     public function ncfType()

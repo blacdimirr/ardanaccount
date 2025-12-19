@@ -193,9 +193,9 @@ class InvoiceController extends Controller
             $invoice->due_date       = $request->due_date;
             $invoice->category_id    = $request->category_id;
             $invoice->ref_number     = $request->ref_number;
-            $invoice->ncf_type_id    = $request->ncf_type_id;
-            $invoice->ncf_series_id  = $request->ncf_series_id;
-            $invoice->ncf_number     = $request->ncf_number;
+            $invoice->ncf_type_id    = $ncfData['type_id'] ?? $request->ncf_type_id;
+            $invoice->ncf_series_id  = $ncfData['series_id'] ?? $request->ncf_series_id;
+            $invoice->ncf_number     = $ncfData['number'] ?? $request->ncf_number;
             $invoice->discount_apply = isset($request->discount_apply) ? 1 : 0;
             $invoice->created_by     = \Auth::user()->creatorId();
 
@@ -343,9 +343,9 @@ class InvoiceController extends Controller
                 $invoice->issue_date     = $request->issue_date;
                 $invoice->due_date       = $request->due_date;
                 $invoice->ref_number     = $request->ref_number;
-                $invoice->ncf_type_id    = $request->ncf_type_id;
-                $invoice->ncf_series_id  = $request->ncf_series_id;
-                $invoice->ncf_number     = $request->ncf_number;
+                $invoice->ncf_type_id    = $ncfData['type_id'] ?? $request->ncf_type_id;
+                $invoice->ncf_series_id  = $ncfData['series_id'] ?? $request->ncf_series_id;
+                $invoice->ncf_number     = $ncfData['number'] ?? $request->ncf_number;
                 $invoice->discount_apply = isset($request->discount_apply) ? 1 : 0;
                 $invoice->category_id    = $request->category_id;
                 $invoice->save();

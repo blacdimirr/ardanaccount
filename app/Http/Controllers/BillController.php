@@ -32,6 +32,9 @@ use App\Models\ChartOfAccount;
 use App\Models\DebitNote;
 use App\Models\Status;
 use App\Models\TransactionLines;
+use App\Models\RetentionRule;
+use App\Models\RetentionCertificate;
+use App\Services\RetentionCalculator;
 use Exception;
 use Carbon\Carbon;
 use CoinGate\Exception\Api\BadRequest;
@@ -100,6 +103,7 @@ class BillController extends Controller
                 ->pluck('name', 'id')
                 ->prepend('Select Item', '');
             $product_services->prepend('Select Item', '');
+            $productCategoryMap = ProductService::where('created_by', \Auth::user()->creatorId())->pluck('category_id', 'id');
 
             $chartAccounts = ChartOfAccount::select(\DB::raw('CONCAT(code, " - ", name) AS code_name, id'))
                 ->where('created_by', \Auth::user()->creatorId())->get()
@@ -128,8 +132,13 @@ class BillController extends Controller
                 return [$series->id => $label . ' (' . $range . ')'];
             });
             $ncfSeries->prepend(__('Select NCF Series'), '');
+            $retentionRules = RetentionRule::where(function ($query) {
+                $query->where('created_by', \Auth::user()->creatorId())
+                    ->orWhere('created_by', 0);
+            })->get();
+            $availableSupplierTypes = $retentionRules->whereNotNull('supplier_type')->pluck('supplier_type')->unique()->values();
 
-            return view('bill.create', compact('venders', 'bill_number', 'product_services', 'category', 'customFields', 'vendorId', 'chartAccounts', 'subAccounts', 'ncfTypes', 'ncfSeries'));
+            return view('bill.create', compact('venders', 'bill_number', 'product_services', 'category', 'customFields', 'vendorId', 'chartAccounts', 'subAccounts', 'ncfTypes', 'ncfSeries', 'retentionRules', 'availableSupplierTypes', 'productCategoryMap'));
         } else {
             return response()->json(['error' => __('Permission denied.')], 401);
         }
@@ -158,6 +167,7 @@ class BillController extends Controller
                     'ncf_type_id' => 'nullable|exists:ncf_types,id',
                     'ncf_series_id' => 'nullable|exists:ncf_series,id',
                     'ncf_number' => 'nullable|string',
+                    'supplier_type' => 'nullable|string|max:100',
                 ]
             );
 
@@ -166,6 +176,32 @@ class BillController extends Controller
 
                 return redirect()->back()->with('error', $messages->first());
             }
+            $products = $request->items;
+            $retentionRules = RetentionRule::where(function ($query) {
+                $query->where('created_by', \Auth::user()->creatorId())
+                    ->orWhere('created_by', 0);
+            })->get();
+            $vendor = Vender::find($request->vender_id);
+            $retentionCalculator = app(RetentionCalculator::class);
+
+            $ncfData = null;
+            $shouldAssignNcf = $request->filled('ncf_series_id') && empty($request->ncf_number);
+            if ($shouldAssignNcf) {
+                try {
+                    $ncfData = app(NcfAssignmentService::class)->assignNextNumber(
+                        (int) $request->ncf_series_id,
+                        $request->ncf_type_id ? (int) $request->ncf_type_id : null
+                    );
+                } catch (NcfException $exception) {
+                    return redirect()->back()->withInput()->with('error', $exception->getMessage());
+                }
+            }
+
+            $retentionTotals = $retentionCalculator->calculateForBill(
+                $products,
+                $request->supplier_type ?: ($vendor?->supplier_type ?? null),
+                $retentionRules
+            );
 
             $ncfData = null;
             $shouldAssignNcf = $request->filled('ncf_series_id') && empty($request->ncf_number);
@@ -189,17 +225,21 @@ class BillController extends Controller
             $bill->due_date       = $request->due_date;
 
             $bill->order_number   = !empty($request->order_number) ? $request->order_number : 0;
-            $bill->ncf_type_id    = $request->ncf_type_id;
-            $bill->ncf_series_id  = $request->ncf_series_id;
-            $bill->ncf_number     = $request->ncf_number;
+            $bill->ncf_type_id    = $ncfData['type_id'] ?? $request->ncf_type_id;
+            $bill->ncf_series_id  = $ncfData['series_id'] ?? $request->ncf_series_id;
+            $bill->ncf_number     = $ncfData['number'] ?? $request->ncf_number;
+            $bill->supplier_type  = $request->supplier_type ?: ($vendor?->supplier_type ?? null);
+            $bill->itbis_billed_total = $retentionTotals['itbis_billed_total'];
+            $bill->itbis_withheld_total = $retentionTotals['itbis_withheld_total'];
+            $bill->isr_withheld_total = $retentionTotals['isr_withheld_total'];
             $bill->discount_apply = isset($request->discount_apply) ? 1 : 0;
             $bill->created_by     = \Auth::user()->creatorId();
             $bill->save();
+            $this->syncRetentionCertificate($bill);
             Utility::starting_number($bill->bill_id + 1, 'bill');
             if (!empty($request->customField)){
                 CustomField::saveData($bill, $request->customField);
             }
-            $products = $request->items;
 
             $total_amount = 0;
 
@@ -412,6 +452,7 @@ class BillController extends Controller
                 ->orderBy('name', 'asc')
                 ->get()
                 ->pluck('name', 'id');
+            $productCategoryMap = ProductService::where('created_by', \Auth::user()->creatorId())->pluck('category_id', 'id');
 
             $bill->customField = CustomField::getData($bill, 'bill');
             $customFields      = CustomField::where('created_by', '=', \Auth::user()->creatorId())->where('module', '=', 'bill')->get();
@@ -479,7 +520,28 @@ class BillController extends Controller
                 }
             }
 
-            return view('bill.edit', compact('venders', 'product_services', 'bill', 'bill_number', 'category', 'customFields', 'chartAccounts', 'items', 'subAccounts', 'estatus','has_retention', 'ncfTypes', 'ncfSeries'));
+            $ncfTypes = NcfType::where(function ($query) {
+                $query->where('created_by', \Auth::user()->creatorId())
+                    ->orWhere('created_by', 0);
+            })->pluck('code', 'id');
+            $ncfTypes->prepend(__('Select NCF Type'), '');
+            $ncfSeries = NcfSeries::with('type')->where(function ($query) {
+                $query->where('created_by', \Auth::user()->creatorId())
+                    ->orWhere('created_by', 0);
+            })->get()->mapWithKeys(function ($series) {
+                $label = trim((optional($series->type)->code ? $series->type->code . ' - ' : '') . ($series->series ?? __('Series')));
+                $range = $series->start_number . ' - ' . $series->end_number;
+
+                return [$series->id => $label . ' (' . $range . ')'];
+            });
+            $ncfSeries->prepend(__('Select NCF Series'), '');
+            $retentionRules = RetentionRule::where(function ($query) {
+                $query->where('created_by', \Auth::user()->creatorId())
+                    ->orWhere('created_by', 0);
+            })->get();
+            $availableSupplierTypes = $retentionRules->whereNotNull('supplier_type')->pluck('supplier_type')->unique()->values();
+
+            return view('bill.edit', compact('venders', 'product_services', 'bill', 'bill_number', 'category', 'customFields', 'chartAccounts', 'items', 'subAccounts', 'estatus','has_retention', 'ncfTypes', 'ncfSeries', 'retentionRules', 'availableSupplierTypes', 'productCategoryMap'));
         } else {
             return response()->json(['error' => __('Permission denied.')], 401);
         }
@@ -505,6 +567,7 @@ class BillController extends Controller
                 'ncf_type_id' => 'nullable|exists:ncf_types,id',
                 'ncf_series_id' => 'nullable|exists:ncf_series,id',
                 'ncf_number' => 'nullable|string',
+                'supplier_type' => 'nullable|string|max:100',
             ],
             [
                 'required' => 'El :attribute campo es requerido'
@@ -526,6 +589,14 @@ class BillController extends Controller
             // return redirect()->route('bill.index')->with('error', $validator->getMessageBag()->first());
         }        
 
+        $products = $request->items;
+        $retentionRules = RetentionRule::where(function ($query) {
+            $query->where('created_by', \Auth::user()->creatorId())
+                ->orWhere('created_by', 0);
+        })->get();
+        $vendor = Vender::find($request->vender_id);
+        $retentionCalculator = app(RetentionCalculator::class);
+
         $ncfData = null;
         $shouldAssignNcf = $request->filled('ncf_series_id') && (empty($request->ncf_number) || (int) $request->ncf_series_id !== (int) $bill->ncf_series_id);
         if ($shouldAssignNcf) {
@@ -539,17 +610,28 @@ class BillController extends Controller
             }
         }
 
+        $retentionTotals = $retentionCalculator->calculateForBill(
+            $products,
+            $request->supplier_type ?: ($vendor?->supplier_type ?? null),
+            $retentionRules
+        );
+
         // 1) Actualiza solo datos "cabezales" (NO status)
         $bill->vender_id    = $request->vender_id;
         $bill->bill_date    = $request->bill_date;
         $bill->due_date     = $request->due_date;
         $bill->order_number = $request->order_number;
         $bill->has_retention = $request->has_retention?$request->has_retention:0;
-        $bill->ncf_type_id   = $request->ncf_type_id;
-        $bill->ncf_series_id = $request->ncf_series_id;
-        $bill->ncf_number    = $request->ncf_number;
+        $bill->ncf_type_id   = $ncfData['type_id'] ?? $request->ncf_type_id;
+        $bill->ncf_series_id = $ncfData['series_id'] ?? $request->ncf_series_id;
+        $bill->ncf_number    = $ncfData['number'] ?? $request->ncf_number;
+        $bill->supplier_type = $request->supplier_type ?: ($vendor?->supplier_type ?? null);
+        $bill->itbis_billed_total = $retentionTotals['itbis_billed_total'];
+        $bill->itbis_withheld_total = $retentionTotals['itbis_withheld_total'];
+        $bill->isr_withheld_total = $retentionTotals['isr_withheld_total'];
         $bill->status    = $request->estatus_id; // ← INTENCIONALMENTE NO SE TOCA
         $bill->save();
+        $this->syncRetentionCertificate($bill);
 
         // Campos personalizados
         if (!empty($request->customField)){
@@ -741,6 +823,7 @@ class BillController extends Controller
             $quantity            = 1;
             $taxPrice            = ($taxRate / 100) * ($salePrice * $quantity) ?? 0;
             $data['totalAmount'] = ($salePrice * $quantity) ?? 0;
+            $data['category_id'] = $product->category_id;
             return json_encode($data);
         } catch (Exception $e) {
             return response()->json(['status' => false, 'message' => __('Something went wrong.')]);
@@ -766,6 +849,29 @@ class BillController extends Controller
         } else {
             return response()->json(['status' => false, 'message' => __('Permission denied.')]);
         }
+    }
+
+    protected function syncRetentionCertificate(Bill $bill): void
+    {
+        $totalRetained = ($bill->itbis_withheld_total ?? 0) + ($bill->isr_withheld_total ?? 0);
+
+        if ($totalRetained <= 0) {
+            RetentionCertificate::where('bill_id', $bill->id)->delete();
+
+            return;
+        }
+
+        RetentionCertificate::updateOrCreate(
+            ['bill_id' => $bill->id],
+            [
+                'vender_id' => $bill->vender_id,
+                'supplier_type' => $bill->supplier_type,
+                'itbis_amount' => $bill->itbis_withheld_total,
+                'isr_amount' => $bill->isr_withheld_total,
+                'issued_at' => $bill->bill_date,
+                'created_by' => $bill->created_by,
+            ]
+        );
     }
 
    public function sent($id)
