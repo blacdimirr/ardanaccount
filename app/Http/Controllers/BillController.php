@@ -203,19 +203,6 @@ class BillController extends Controller
                 $retentionRules
             );
 
-            $ncfData = null;
-            $shouldAssignNcf = $request->filled('ncf_series_id') && empty($request->ncf_number);
-            if ($shouldAssignNcf) {
-                try {
-                    $ncfData = app(NcfAssignmentService::class)->assignNextNumber(
-                        (int) $request->ncf_series_id,
-                        $request->ncf_type_id ? (int) $request->ncf_type_id : null
-                    );
-                } catch (NcfException $exception) {
-                    return redirect()->back()->withInput()->with('error', $exception->getMessage());
-                }
-            }
-
             $bill            = new Bill();
             $bill->bill_id   = $this->billNumber();
             $bill->vender_id = $request->vender_id;

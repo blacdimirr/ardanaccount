@@ -592,11 +592,13 @@
         });
 
         // for item SearchBox ( this function is  custom Js )
-        JsSearchBox();
+        if (typeof JsSearchBox === 'function') {
+            JsSearchBox();
+        }
     </script>
 
     <script>
-        const retentionRules = @json($retentionRules->map(function($rule){
+        const retentionRules = @json(($retentionRules ?? collect())->map(function($rule){
             return [
                 'supplier_type' => $rule->supplier_type,
                 'service_category_id' => $rule->service_category_id,
@@ -604,7 +606,7 @@
                 'isr_retention_rate' => (float) $rule->isr_retention_rate,
             ];
         }));
-        const productCategoryMap = @json($productCategoryMap);
+        const productCategoryMap = @json($productCategoryMap ?? []);
 
         function resolveRetentionRule(categoryId, supplierType) {
             const matches = retentionRules.filter(function(rule){
