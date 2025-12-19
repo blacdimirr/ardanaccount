@@ -455,6 +455,23 @@ class BillController extends Controller
             $subAccounts->where('chart_of_accounts.created_by', \Auth::user()->creatorId());
             $subAccounts = $subAccounts->get()->toArray();
 
+            $ncfTypes = NcfType::where(function ($query) {
+                $query->where('created_by', \Auth::user()->creatorId())
+                    ->orWhere('created_by', 0);
+            })->pluck('code', 'id');
+            $ncfTypes->prepend(__('Select NCF Type'), '');
+
+            $ncfSeries = NcfSeries::with('type')->where(function ($query) {
+                $query->where('created_by', \Auth::user()->creatorId())
+                    ->orWhere('created_by', 0);
+            })->get()->mapWithKeys(function ($series) {
+                $label = trim((optional($series->type)->code ? $series->type->code . ' - ' : '') . ($series->series ?? __('Series')));
+                $range = $series->start_number . ' - ' . $series->end_number;
+
+                return [$series->id => $label . ' (' . $range . ')'];
+            });
+            $ncfSeries->prepend(__('Select NCF Series'), '');
+
             //for item and account show in repeater
             $item      = $bill->items;
             $accounts  = $bill->accounts;
