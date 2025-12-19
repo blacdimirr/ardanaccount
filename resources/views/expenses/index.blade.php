@@ -39,7 +39,10 @@
                                                     <tr>
 
                                                         <th> {{__('Category')}}</th>
-                                                        <th width="40%"> {{__('Description')}}</th>
+                                                        <th width="25%"> {{__('Description')}}</th>
+                                                        <th>{{ __('NCF Type') }}</th>
+                                                        <th>{{ __('NCF Series') }}</th>
+                                                        <th>{{ __('NCF Number') }}</th>
                                                         <th> {{__('Amount')}}</th>
                                                         <th> {{__('Date')}}</th>
                                                         <th> {{__('Project')}}</th>
@@ -56,6 +59,9 @@
                                                         <tr>
                                                             <td>{{  (!empty($expense->category)?$expense->category->name:'')}}</td>
                                                             <td>{{ $expense->description }}</td>
+                                                            <td>{{ optional($expense->ncfType)->code ?? '-' }}</td>
+                                                            <td>{{ optional($expense->ncfSeries)->series ?? '-' }}</td>
+                                                            <td>{{ $expense->ncf_number ?? '-' }}</td>
                                                             <td>{{ Auth::user()->priceFormat($expense->amount) }} </td>
                                                             <td>{{ Auth::user()->dateFormat($expense->date) }}</td>
                                                             <td>{{ $expense->projects->name }}</td>

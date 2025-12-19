@@ -45,6 +45,19 @@
         </span>
         @enderror
     </div>
+    <div class="form-group col-md-6">
+        {{ Form::label('ncf_type_id', __('NCF Type')) }}
+        {{ Form::select('ncf_type_id', $ncfTypes, null, ['class' => 'form-control']) }}
+    </div>
+    <div class="form-group col-md-6">
+        {{ Form::label('ncf_series_id', __('NCF Series / Range')) }}
+        {{ Form::select('ncf_series_id', $ncfSeries, null, ['class' => 'form-control']) }}
+    </div>
+    <div class="form-group col-md-6">
+        {{ Form::label('ncf_number', __('NCF Number')) }}
+        {{ Form::text('ncf_number', null, ['class' => 'form-control', 'placeholder' => __('Enter supplier NCF (text allowed)')]) }}
+        <small class="text-muted">{{ __('Se almacena como texto porque el NCF lo emite el proveedor.') }}</small>
+    </div>
     <div class="form-group  col-md-6">
         {{ Form::label('attachment', __('Attachment')) }}
         {{ Form::file('attachment', array('class' => 'form-control','accept'=>'.jpeg,.jpg,.png,.doc,.pdf')) }}

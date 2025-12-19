@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\NcfSeries;
+use App\Models\NcfType;
 
 class Expense extends Model
 {
     protected $fillable = [
-        'category_id','description','amount','date','project_id','user_id','attachment','created_by'
+        'category_id','description','amount','date','project_id','user_id','attachment','created_by','ncf_type_id','ncf_series_id','ncf_number'
     ];
 
     public function category(){
@@ -18,5 +20,15 @@ class Expense extends Model
     }
     public function user(){
         return $this->hasOne('App\Models\User','id','user_id');
+    }
+
+    public function ncfType()
+    {
+        return $this->belongsTo(NcfType::class, 'ncf_type_id');
+    }
+
+    public function ncfSeries()
+    {
+        return $this->belongsTo(NcfSeries::class, 'ncf_series_id');
     }
 }

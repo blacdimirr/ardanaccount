@@ -698,6 +698,28 @@
                                 </div>
 
                                 <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ Form::label('ncf_type_id', __('NCF Type'), ['class' => 'form-label']) }}
+                                        {{ Form::select('ncf_type_id', $ncfTypes, $bill->ncf_type_id, ['class' => 'form-control select']) }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ Form::label('ncf_series_id', __('NCF Series / Range'), ['class' => 'form-label']) }}
+                                        {{ Form::select('ncf_series_id', $ncfSeries, $bill->ncf_series_id, ['class' => 'form-control select']) }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ Form::label('ncf_number', __('NCF Number'), ['class' => 'form-label']) }}
+                                        <div class="form-icon-user">
+                                            {{ Form::text('ncf_number', $bill->ncf_number, ['class' => 'form-control', 'placeholder' => __('Enter supplier NCF (text allowed)')]) }}
+                                        </div>
+                                        <small class="text-muted">{{ __('Proveedor emite el NCF para gastos; se guarda como texto.') }}</small>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
                                     <div class="form-group" id="estatus-box">
                                         {{ Form::label('estatus_id', __('Estatus'), ['class' => 'form-label']) }}
                                         {{ Form::select('estatus_id', $estatus, $bill->status, ['class' => 'form-control select', 'id' => 'estatus', 'data-url' => route('bill.estatus_bills'), 'required' => 'required']) }}
