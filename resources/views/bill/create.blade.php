@@ -7,6 +7,9 @@
     <li class="breadcrumb-item"><a href="{{ route('bill.index') }}">{{ __('Bill') }}</a></li>
 @endsection
 @push('script-page')
+        <!-- jQuery base primero -->
+    <script src="{{ asset('js/jquery.min.js') }}"></script>
+
     <script src="{{ asset('js/jquery-ui.min.js') }}"></script>
     <script src="{{ asset('js/jquery.repeater.min.js') }}"></script>
     <script src="{{ asset('js/jquery-searchbox.js') }}"></script>
@@ -597,15 +600,22 @@
         }
     </script>
 
+    @php
+        $retentionRulesJs = ($retentionRules ?? collect())
+            ->map(function ($rule) {
+                return [
+                    'supplier_type' => $rule->supplier_type,
+                    'service_category_id' => $rule->service_category_id,
+                    'itbis_retention_rate' => (float) $rule->itbis_retention_rate,
+                    'isr_retention_rate' => (float) $rule->isr_retention_rate,
+                ];
+            })
+            ->values()
+            ->all();
+    @endphp
+
     <script>
-        const retentionRules = @json(($retentionRules ?? collect())->map(function($rule){
-            return [
-                'supplier_type' => $rule->supplier_type,
-                'service_category_id' => $rule->service_category_id,
-                'itbis_retention_rate' => (float) $rule->itbis_retention_rate,
-                'isr_retention_rate' => (float) $rule->isr_retention_rate,
-            ];
-        }));
+        const retentionRules = @json($retentionRulesJs);
         const productCategoryMap = @json($productCategoryMap ?? []);
 
         function resolveRetentionRule(categoryId, supplierType) {
@@ -629,7 +639,7 @@
             let itbisWithheld = 0;
             let isrWithheld = 0;
 
-            $('tr[data-repeater-item]').each(function(){
+            $('[data-repeater-item]').each(function(){
                 const row = $(this);
                 const qty = parseFloat(row.find('.quantity').val()) || 0;
                 const price = parseFloat(row.find('.price').val()) || 0;
@@ -654,15 +664,24 @@
                 isrWithheld += (base * (isrRate / 100));
             });
 
-            const taxTotal = parseFloat(($('.totalTax').text() || "0").replace(/,/g, '')) || 0;
-            const grossWithTax = subtotal + taxTotal;
-            const finalPayable = grossWithTax - itbisWithheld - isrWithheld;
+            // Total de impuestos de líneas (ITBIS facturado) - por defecto usamos la suma de itemTaxPrice
+const taxTotal = itbisBilled;
 
-            $('.itbisBilled').text((itbisBilled || taxTotal).toFixed(2));
-            $('.itbisWithheld').text(itbisWithheld.toFixed(2));
-            $('.isrWithheld').text(isrWithheld.toFixed(2));
-            $('.totalAmount').text(grossWithTax.toFixed(2));
-            $('.finalPayable').text(finalPayable.toFixed(2));
+// Cargos adicionales (cuentas/otros cargos), si existen
+let accountTotal = 0;
+$('.accountAmount').each(function () {
+    const v = parseFloat($(this).val());
+    if (!isNaN(v)) accountTotal += v;
+});
+
+const grossWithTax = subtotal + taxTotal + accountTotal;
+const finalPayable = grossWithTax - itbisWithheld - isrWithheld;
+
+$('.itbisBilled').text(taxTotal.toFixed(2));
+$('.itbisWithheld').text(itbisWithheld.toFixed(2));
+$('.isrWithheld').text(isrWithheld.toFixed(2));
+$('.totalAmount').text(grossWithTax.toFixed(2));
+$('.finalPayable').text(finalPayable.toFixed(2));
 
             $('.itbisBilledInput').val(itbisBilled.toFixed(2));
             $('.itbisWithheldInput').val(itbisWithheld.toFixed(2));
@@ -671,7 +690,7 @@
         }
 
         // Auto-dispara el cálculo cuando cambian los campos relevantes
-        $(document).on('keyup change', '.quantity, .price, .discount, .accountAmount', function() {
+        $(document).on('keyup change', '.quantity, .price, .discount, .accountAmount, .item, .itemTaxPrice, .itemTaxRate, .itemCategoryId', function() {
             // if ($("input[name='has_retention']:checked").val()) {
                 recalcRetentionsAndFinal();
             // }
