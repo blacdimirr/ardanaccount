@@ -407,7 +407,7 @@
                                 </tr>
                                 <tr>
                                     <td>{{ __('Paid') }}:</td>
-                                    <td>{{ Utility::priceFormat($settings, $bill->getTotal() - $bill->getDue() - $bill->billTotalDebitNote()) }}
+                                    <td>{{ Utility::priceFormat($settings, $bill->getPaymentsTotal()) }}
                                     </td>
                                 </tr>
                                 <tr>
