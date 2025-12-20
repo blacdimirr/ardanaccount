@@ -318,7 +318,7 @@
                                                             <span class="badge fix_badges bg-success p-2 px-3">{{ __(\App\Models\Status::getNameById($bill->status)) }}</span>
                                                         @endif
                                                     </td>
-                                                    <td> {{\Auth::user()->priceFormat($bill->getTotal()-$bill->getDue())}}</td>
+                                                    <td> {{\Auth::user()->priceFormat($bill->getPaymentsTotal())}}</td>
                                                     <td> {{\Auth::user()->priceFormat($bill->getDue())}}</td>
                                                     <td>{{!empty($bill->lastPayments)?\Auth::user()->dateFormat($bill->lastPayments->date):''}}</td>
                                                     <td> {{\Auth::user()->priceFormat($bill->getTotal())}}</td>

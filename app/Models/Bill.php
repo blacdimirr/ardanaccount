@@ -134,12 +134,20 @@ class Bill extends Model
 
     public function getDue()
     {
-        $due = 0;
-        foreach ($this->payments as $payment) {
-            $due += $payment->amount;
-        }
+        $paymentsTotal = $this->getPaymentsTotal();
+        $withheldTotal = $this->getWithheldTotal();
 
-        return ($this->getTotal() - $due) - ($this->billTotalDebitNote());
+        return (($this->getTotal() - $withheldTotal) - $paymentsTotal) - ($this->billTotalDebitNote());
+    }
+
+    public function getWithheldTotal()
+    {
+        return ($this->itbis_withheld_total ?? 0) + ($this->isr_withheld_total ?? 0);
+    }
+
+    public function getPaymentsTotal()
+    {
+        return $this->payments->sum('amount');
     }
 
     public function category()
