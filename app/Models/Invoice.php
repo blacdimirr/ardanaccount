@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\NcfSeries;
+use App\Models\NcfType;
 
 class Invoice extends Model
 {
@@ -12,10 +14,23 @@ class Invoice extends Model
         'issue_date',
         'due_date',
         'ref_number',
+        'ncf_type_id',
+        'ncf_series_id',
+        'ncf_number',
         'status',
         'category_id',
         'created_by',
     ];
+
+    public function ncfType()
+    {
+        return $this->belongsTo(NcfType::class, 'ncf_type_id');
+    }
+
+    public function ncfSeries()
+    {
+        return $this->belongsTo(NcfSeries::class, 'ncf_series_id');
+    }
 
     public function tax()
     {
