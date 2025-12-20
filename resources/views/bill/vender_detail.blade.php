@@ -1,5 +1,5 @@
 @if(!empty($vender))
-    <div class="row">
+    <div class="row" data-supplier-type="{{ $vender['supplier_type'] }}">
         <div class="col-md-5">
             <h6>{{__('Bill to')}}</h6>
             <div class="bill-to">

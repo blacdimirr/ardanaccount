@@ -88,11 +88,16 @@
                 success: function(data) {
                     if (data != '') {
                         $('#vender_detail').html(data);
+                        const supplierTypeFromVendor = $('#vender_detail').find('[data-supplier-type]').data('supplier-type');
+                        if (supplierTypeFromVendor) {
+                            $("input[name='supplier_type']").val(supplierTypeFromVendor).trigger('change');
+                        }
                     } else {
                         $('#vender-box').removeClass('d-none');
                         $('#vender-box').addClass('d-block');
                         $('#vender_detail').removeClass('d-block');
                         $('#vender_detail').addClass('d-none');
+                        $("input[name='supplier_type']").val('').trigger('change');
                     }
                 },
             });
@@ -747,7 +752,7 @@
                         <div class="col-md-6">
                             <div class="form-group" id="vender-box">
                                 {{ Form::label('vender_id', __('Vendor'), ['class' => 'form-label']) }}<x-required></x-required>
-                                {{ Form::select('vender_id', $venders, $vendorId, ['class' => 'form-control select2', 'id' => 'vender', 'data-url' => route('bill.vender'), 'required' => 'required']) }}
+                                {{ Form::select('vender_id', $venders, old('vender_id', $vendorId), ['class' => 'form-control select2', 'id' => 'vender', 'data-url' => route('bill.vender'), 'required' => 'required']) }}
                                 <div class="text-xs mt-1">
                                     {{ __('Create vendor here.') }} <a
                                         href="{{ route('vender.index') }}"><b>{{ __('Create vendor') }}</b></a>
@@ -757,9 +762,9 @@
                             </div>
                             <div class="form-group">
                                 {{ Form::label('supplier_type', __('Supplier / service type (retention)'), ['class' => 'form-label']) }}
-                                {{ Form::text('supplier_type', null, ['class' => 'form-control', 'list' => 'supplier-types-list', 'placeholder' => __('Ej. Profesional independiente, bienes gravados, etc.')]) }}
+                                {{ Form::text('supplier_type', old('supplier_type', $defaultSupplierType ?? null), ['class' => 'form-control', 'list' => 'supplier-types-list', 'placeholder' => __('Ej. Profesional independiente, bienes gravados, etc.')]) }}
                                 <datalist id="supplier-types-list">
-                                    @foreach($availableSupplierTypes as $type)
+                                    @foreach($supplierTypes ?? [] as $type)
                                         <option value="{{ $type }}"></option>
                                     @endforeach
                                 </datalist>

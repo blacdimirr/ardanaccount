@@ -34,6 +34,7 @@ use App\Models\Status;
 use App\Models\TransactionLines;
 use App\Models\RetentionRule;
 use App\Models\RetentionCertificate;
+use App\Models\SupplierType;
 use App\Services\RetentionCalculator;
 use Exception;
 use Carbon\Carbon;
@@ -41,6 +42,7 @@ use CoinGate\Exception\Api\BadRequest;
 use NumberToWords\NumberToWords;
 use App\Exceptions\NcfException;
 use App\Services\NcfAssignmentService;
+use Illuminate\Support\Collection;
 
 class BillController extends Controller
 {
@@ -89,6 +91,12 @@ class BillController extends Controller
     {
 
         if (\Auth::user()->can('create bill')) {
+            $selectedVendor = null;
+            if (!empty($vendorId)) {
+                $selectedVendor = Vender::where('id', $vendorId)
+                    ->where('created_by', \Auth::user()->creatorId())
+                    ->first();
+            }
             $customFields = CustomField::where('created_by', '=', \Auth::user()->creatorId())->where('module', '=', 'bill')->get();
             $category     = ProductServiceCategory::where('created_by', \Auth::user()->creatorId())->where('type', 'expense')->orderBy('name', 'asc')->get()->pluck('name', 'id');
             $category->prepend('Select Category', '');
@@ -132,23 +140,11 @@ class BillController extends Controller
                 return [$series->id => $label . ' (' . $range . ')'];
             });
             $ncfSeries->prepend(__('Select NCF Series'), '');
-            $retentionRules = RetentionRule::where(function ($query) {
-                $query->where('created_by', \Auth::user()->creatorId())
-                    ->orWhere('created_by', 0);
-            })->get();
-            $availableSupplierTypes = $retentionRules
-                ->whereNotNull('supplier_type')
-                ->pluck('supplier_type')
-                ->merge(
-                    Vender::whereNotNull('supplier_type')
-                        ->where('supplier_type', '!=', '')
-                        ->where('created_by', \Auth::user()->creatorId())
-                        ->pluck('supplier_type')
-                )
-                ->unique()
-                ->values();
+            $retentionRules = $this->getRetentionRules();
+            $supplierTypes = $this->getSupplierTypes($retentionRules);
+            $defaultSupplierType = $selectedVendor?->supplier_type;
 
-            return view('bill.create', compact('venders', 'bill_number', 'product_services', 'category', 'customFields', 'vendorId', 'chartAccounts', 'subAccounts', 'ncfTypes', 'ncfSeries', 'retentionRules', 'availableSupplierTypes', 'productCategoryMap'));
+            return view('bill.create', compact('venders', 'bill_number', 'product_services', 'category', 'customFields', 'vendorId', 'chartAccounts', 'subAccounts', 'ncfTypes', 'ncfSeries', 'retentionRules', 'supplierTypes', 'productCategoryMap', 'defaultSupplierType'));
         } else {
             return response()->json(['error' => __('Permission denied.')], 401);
         }
@@ -187,11 +183,12 @@ class BillController extends Controller
                 return redirect()->back()->with('error', $messages->first());
             }
             $products = $request->items;
-            $retentionRules = RetentionRule::where(function ($query) {
-                $query->where('created_by', \Auth::user()->creatorId())
-                    ->orWhere('created_by', 0);
-            })->get();
-            $vendor = Vender::find($request->vender_id);
+            $retentionRules = $this->getRetentionRules();
+            $vendor = Vender::where('id', $request->vender_id)
+                ->where('created_by', \Auth::user()->creatorId())
+                ->first();
+            $supplierTypeValue = $this->resolveSupplierType($request->supplier_type, $vendor?->supplier_type);
+            $this->persistSupplierType($supplierTypeValue);
             $retentionCalculator = app(RetentionCalculator::class);
 
             $ncfData = null;
@@ -209,7 +206,7 @@ class BillController extends Controller
 
             $retentionTotals = $retentionCalculator->calculateForBill(
                 $products,
-                $request->supplier_type ?: ($vendor?->supplier_type ?? null),
+                $supplierTypeValue,
                 $retentionRules
             );
 
@@ -225,7 +222,7 @@ class BillController extends Controller
             $bill->ncf_type_id    = $ncfData['type_id'] ?? $request->ncf_type_id;
             $bill->ncf_series_id  = $ncfData['series_id'] ?? $request->ncf_series_id;
             $bill->ncf_number     = $ncfData['number'] ?? $request->ncf_number;
-            $bill->supplier_type  = $request->supplier_type ?: ($vendor?->supplier_type ?? null);
+            $bill->supplier_type  = $supplierTypeValue;
             $bill->itbis_billed_total = $retentionTotals['itbis_billed_total'];
             $bill->itbis_withheld_total = $retentionTotals['itbis_withheld_total'];
             $bill->isr_withheld_total = $retentionTotals['isr_withheld_total'];
@@ -532,23 +529,10 @@ class BillController extends Controller
                 return [$series->id => $label . ' (' . $range . ')'];
             });
             $ncfSeries->prepend(__('Select NCF Series'), '');
-            $retentionRules = RetentionRule::where(function ($query) {
-                $query->where('created_by', \Auth::user()->creatorId())
-                    ->orWhere('created_by', 0);
-            })->get();
-            $availableSupplierTypes = $retentionRules
-                ->whereNotNull('supplier_type')
-                ->pluck('supplier_type')
-                ->merge(
-                    Vender::whereNotNull('supplier_type')
-                        ->where('supplier_type', '!=', '')
-                        ->where('created_by', \Auth::user()->creatorId())
-                        ->pluck('supplier_type')
-                )
-                ->unique()
-                ->values();
+            $retentionRules = $this->getRetentionRules();
+            $supplierTypes = $this->getSupplierTypes($retentionRules);
 
-            return view('bill.edit', compact('venders', 'product_services', 'bill', 'bill_number', 'category', 'customFields', 'chartAccounts', 'items', 'subAccounts', 'estatus','has_retention', 'ncfTypes', 'ncfSeries', 'retentionRules', 'availableSupplierTypes', 'productCategoryMap'));
+            return view('bill.edit', compact('venders', 'product_services', 'bill', 'bill_number', 'category', 'customFields', 'chartAccounts', 'items', 'subAccounts', 'estatus','has_retention', 'ncfTypes', 'ncfSeries', 'retentionRules', 'supplierTypes', 'productCategoryMap'));
         } else {
             return response()->json(['error' => __('Permission denied.')], 401);
         }
@@ -597,11 +581,12 @@ class BillController extends Controller
         }        
 
         $products = $request->items;
-        $retentionRules = RetentionRule::where(function ($query) {
-            $query->where('created_by', \Auth::user()->creatorId())
-                ->orWhere('created_by', 0);
-        })->get();
-        $vendor = Vender::find($request->vender_id);
+        $retentionRules = $this->getRetentionRules();
+        $vendor = Vender::where('id', $request->vender_id)
+            ->where('created_by', \Auth::user()->creatorId())
+            ->first();
+        $supplierTypeValue = $this->resolveSupplierType($request->supplier_type, $vendor?->supplier_type);
+        $this->persistSupplierType($supplierTypeValue);
         $retentionCalculator = app(RetentionCalculator::class);
 
         $ncfData = null;
@@ -619,7 +604,7 @@ class BillController extends Controller
 
         $retentionTotals = $retentionCalculator->calculateForBill(
             $products,
-            $request->supplier_type ?: ($vendor?->supplier_type ?? null),
+            $supplierTypeValue,
             $retentionRules
         );
 
@@ -632,7 +617,7 @@ class BillController extends Controller
         $bill->ncf_type_id   = $ncfData['type_id'] ?? $request->ncf_type_id;
         $bill->ncf_series_id = $ncfData['series_id'] ?? $request->ncf_series_id;
         $bill->ncf_number    = $ncfData['number'] ?? $request->ncf_number;
-        $bill->supplier_type = $request->supplier_type ?: ($vendor?->supplier_type ?? null);
+        $bill->supplier_type = $supplierTypeValue;
         $bill->itbis_billed_total = $retentionTotals['itbis_billed_total'];
         $bill->itbis_withheld_total = $retentionTotals['itbis_withheld_total'];
         $bill->isr_withheld_total = $retentionTotals['isr_withheld_total'];
@@ -1319,7 +1304,9 @@ class BillController extends Controller
 
     public function vender(Request $request)
     {
-        $vender = Vender::where('id', '=', $request->id)->first();
+        $vender = Vender::where('id', '=', $request->id)
+            ->where('created_by', \Auth::user()->creatorId())
+            ->first();
 
         return view('bill.vender_detail', compact('vender'));
     }
@@ -1896,5 +1883,64 @@ class BillController extends Controller
         $data = Excel::download(new BillExport(), $name . '.xlsx');
 
         return $data;
+    }
+
+    protected function getRetentionRules(): Collection
+    {
+        return RetentionRule::where(function ($query) {
+            $query->where('created_by', \Auth::user()->creatorId())
+                ->orWhere('created_by', 0);
+        })->get();
+    }
+
+    protected function getSupplierTypes(Collection $retentionRules): Collection
+    {
+        $userId = \Auth::user()->creatorId();
+
+        $supplierTypeNames = SupplierType::forUser($userId)->pluck('name');
+        $vendorSupplierTypes = Vender::where('created_by', $userId)
+            ->whereNotNull('supplier_type')
+            ->where('supplier_type', '!=', '')
+            ->pluck('supplier_type');
+
+        $ruleSupplierTypes = $retentionRules
+            ->whereNotNull('supplier_type')
+            ->pluck('supplier_type');
+
+        return $supplierTypeNames
+            ->merge($vendorSupplierTypes)
+            ->merge($ruleSupplierTypes)
+            ->map(function ($type) {
+                return is_string($type) ? trim($type) : $type;
+            })
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+    }
+
+    protected function resolveSupplierType(?string $inputSupplierType, ?string $vendorSupplierType): ?string
+    {
+        $resolved = $inputSupplierType ?: $vendorSupplierType;
+
+        if ($resolved === null) {
+            return null;
+        }
+
+        $resolved = trim($resolved);
+
+        return $resolved === '' ? null : $resolved;
+    }
+
+    protected function persistSupplierType(?string $supplierType): void
+    {
+        if (empty($supplierType)) {
+            return;
+        }
+
+        SupplierType::firstOrCreate(
+            ['name' => $supplierType],
+            ['created_by' => \Auth::user()->creatorId()]
+        );
     }
 }
