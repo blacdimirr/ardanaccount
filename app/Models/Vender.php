@@ -249,7 +249,7 @@ class Vender extends Authenticatable
 
         $paid         = 0;
         foreach ($vendorPaid as $invoice) {
-            $paid += ($invoice->getTotal() - $invoice->getDue());
+            $paid += $invoice->getPaymentsTotal();
         }
 
         return $paid;
