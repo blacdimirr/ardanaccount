@@ -24,8 +24,12 @@ class RetentionCalculator
             $taxAmount = (float)($item['itemTaxPrice'] ?? 0);
             $categoryId = $item['category_id'] ?? null;
 
-            if (!$categoryId && isset($item['item'])) {
-                $categoryId = ProductService::where('id', $item['item'])->value('category_id');
+            if (!$categoryId) {
+                $productId = $item['items'] ?? $item['item'] ?? null;
+
+                if ($productId) {
+                    $categoryId = ProductService::where('id', $productId)->value('category_id');
+                }
             }
 
             $base = max(0, ($quantity * $price) - $discount);
