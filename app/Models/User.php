@@ -562,7 +562,7 @@ class User extends Authenticatable
         $billDue     = 0;
         foreach ($bills as $bill) {
             $billTotal += $bill->getTotal();
-            $billPaid  += ($bill->getTotal() - $bill->getDue());
+            $billPaid  += $bill->getPaymentsTotal();
             $billDue   += $bill->getDue();
         }
 
@@ -583,7 +583,7 @@ class User extends Authenticatable
         $billDue     = 0;
         foreach ($bills as $bill) {
             $billTotal += $bill->getTotal();
-            $billPaid  += ($bill->getTotal() - $bill->getDue());
+            $billPaid  += $bill->getPaymentsTotal();
             $billDue   += $bill->getDue();
         }
 

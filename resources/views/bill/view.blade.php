@@ -567,7 +567,7 @@ $('.cp_link_document_auth_approved').on('click', function() {
                                             <tr>
                                                 <td colspan="8"></td>
                                                 <td class="text-end"><b>{{__('Paid')}}</b></td>
-                                                <td class="text-end">{{\Auth::user()->priceFormat(($bill->getTotal()-$bill->getDue())-($bill->billTotalDebitNote()))}}</td>
+                                                <td class="text-end">{{\Auth::user()->priceFormat($bill->getPaymentsTotal())}}</td>
                                             </tr>
                                             <tr>
                                                 <td colspan="8"></td>
