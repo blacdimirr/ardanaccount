@@ -619,16 +619,9 @@
             ->all();
     @endphp
 
-    <script>
-        const retentionRules = @json(($retentionRules ?? collect())->map(function($rule){
-            return [
-                'supplier_type' => $rule->supplier_type,
-                'service_category_id' => $rule->service_category_id,
-                'itbis_retention_rate' => (float) $rule->itbis_retention_rate,
-                'isr_retention_rate' => (float) $rule->isr_retention_rate,
-            ];
-        }));
-        const productCategoryMap = @json($productCategoryMap ?? []);
+<script>
+    const retentionRules = @json($retentionRulesJs);
+    const productCategoryMap = @json($productCategoryMap ?? []);
 
         function resolveRetentionRule(categoryId, supplierType) {
             const matches = retentionRules.filter(function(rule){
