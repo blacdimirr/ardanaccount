@@ -468,6 +468,27 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ Form::label('ncf_type_id', __('NCF Type'), ['class' => 'form-label']) }}
+                                        {{ Form::select('ncf_type_id', $ncfTypes, null, ['class' => 'form-control select']) }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ Form::label('ncf_series_id', __('NCF Series / Range'), ['class' => 'form-label']) }}
+                                        {{ Form::select('ncf_series_id', $ncfSeries, null, ['class' => 'form-control select']) }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ Form::label('ncf_number', __('NCF Number'), ['class' => 'form-label']) }}
+                                        <div class="form-icon-user">
+                                            <span><i class="ti ti-ticket"></i></span>
+                                            {{ Form::text('ncf_number', null, ['class' => 'form-control', 'placeholder' => __('Enter NCF Number')]) }}
+                                        </div>
+                                    </div>
+                                </div>
 
                                 @if(!$customFields->isEmpty())
                                     <div class="col-md-6">

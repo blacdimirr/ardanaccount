@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\NcfSeries;
+use App\Models\NcfType;
 
 class Bill extends Model
 {
@@ -16,7 +18,24 @@ class Bill extends Model
         'order_number',
         'category_id',
         'created_by',
+        'ncf_type_id',
+        'ncf_series_id',
+        'ncf_number',
+        'supplier_type',
+        'itbis_billed_total',
+        'itbis_withheld_total',
+        'isr_withheld_total',
     ];
+
+    public function ncfType()
+    {
+        return $this->belongsTo(NcfType::class, 'ncf_type_id');
+    }
+
+    public function ncfSeries()
+    {
+        return $this->belongsTo(NcfSeries::class, 'ncf_series_id');
+    }
 
     public function vender()
     {

@@ -452,6 +452,32 @@
                                 </div>
                             </div>
                         </div>
+                        @if ($invoice->ncf_type_id || $invoice->ncf_number || $invoice->ncf_series_id)
+                            <div class="row mt-2">
+                                <div class="col text-end">
+                                    <div class="d-flex align-items-center justify-content-end flex-wrap gap-3">
+                                        <div>
+                                            <small>
+                                                <strong>{{ __('NCF Type') }} :</strong><br>
+                                                {{ optional($invoice->ncfType)->code ?? __('Not provided') }}
+                                            </small>
+                                        </div>
+                                        <div>
+                                            <small>
+                                                <strong>{{ __('NCF Series') }} :</strong><br>
+                                                {{ optional($invoice->ncfSeries)->series ?? __('Not provided') }}
+                                            </small>
+                                        </div>
+                                        <div>
+                                            <small>
+                                                <strong>{{ __('NCF Number') }} :</strong><br>
+                                                {{ $invoice->ncf_number ?? __('Not provided') }}
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
                         <div class="row">
                             @if (!empty($customer->billing_name))
                                 <div class="col">
