@@ -7,6 +7,9 @@
     <li class="breadcrumb-item"><a href="{{ route('bill.index') }}">{{ __('Bill') }}</a></li>
 @endsection
 @push('script-page')
+        <!-- jQuery base primero -->
+    <script src="{{ asset('js/jquery.min.js') }}"></script>
+
     <script src="{{ asset('js/jquery-ui.min.js') }}"></script>
     <script src="{{ asset('js/jquery.repeater.min.js') }}"></script>
     <script src="{{ asset('js/jquery-searchbox.js') }}"></script>
@@ -602,6 +605,20 @@
         }
     </script>
 
+    @php
+        $retentionRulesJs = ($retentionRules ?? collect())
+            ->map(function ($rule) {
+                return [
+                    'supplier_type' => $rule->supplier_type,
+                    'service_category_id' => $rule->service_category_id,
+                    'itbis_retention_rate' => (float) $rule->itbis_retention_rate,
+                    'isr_retention_rate' => (float) $rule->isr_retention_rate,
+                ];
+            })
+            ->values()
+            ->all();
+    @endphp
+
     <script>
         const retentionRules = @json(($retentionRules ?? collect())->map(function($rule){
             return [
@@ -676,7 +693,7 @@
         }
 
         // Auto-dispara el cálculo cuando cambian los campos relevantes
-        $(document).on('keyup change', '.quantity, .price, .discount, .accountAmount', function() {
+        $(document).on('keyup change', '.quantity, .price, .discount, .accountAmount, .item, .itemTaxPrice, .itemTaxRate, .itemCategoryId', function() {
             // if ($("input[name='has_retention']:checked").val()) {
                 recalcRetentionsAndFinal();
             // }

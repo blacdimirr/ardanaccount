@@ -294,7 +294,7 @@
                                             <tr>
                                                 <td colspan="6"></td>
                                                 <td class="text-end"><b>{{__('Paid')}}</b></td>
-                                                <td class="text-end">{{utility::priceFormat($company_setting,($bill->getTotal()-$bill->getDue())-($bill->billTotalDebitNote()))}}</td>
+                                                <td class="text-end">{{utility::priceFormat($company_setting,$bill->getPaymentsTotal())}}</td>
                                             </tr>
                                             <tr>
                                                 <td colspan="6"></td>

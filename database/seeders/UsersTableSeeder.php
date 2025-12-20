@@ -1174,7 +1174,7 @@ class UsersTableSeeder extends Seeder
 
 
         // customer
-        $customerRole       = Role::create(
+        $customerRole       = Role::firstOrCreate(
             [
                 'name' => 'customer',
                 'created_by' => 0,
@@ -1199,7 +1199,8 @@ class UsersTableSeeder extends Seeder
         $customerRole->givePermissionTo($customerPermission);
 
         // vender
-        $venderRole       = Role::create(
+        $venderRole       = Role::firstOrCreate(
+
             [
                 'name' => 'vender',
                 'created_by' => 0,
@@ -1217,7 +1218,7 @@ class UsersTableSeeder extends Seeder
         $venderRole->givePermissionTo($venderPermission);
 
         // company
-        $companyRole        = Role::create(
+        $companyRole        = Role::updateOrCreate(
             [
                 'name' => 'company',
                 'created_by' => 0,
@@ -1414,7 +1415,7 @@ class UsersTableSeeder extends Seeder
         $company->assignRole($companyRole);
 
         // accountant
-        $accountantRole = Role::create(
+        $accountantRole = Role::updateOrCreate(
             [
                 'name' => 'accountant',
                 'created_by' => $company->id,
@@ -1604,6 +1605,12 @@ class UsersTableSeeder extends Seeder
 
         ];
 
-        DB::table('settings')->insert($data);
+        foreach ($data as $item) {
+    DB::table('settings')->updateOrInsert(
+        ['name' => $item['name'], 'created_by' => $item['created_by']], // columnas únicas
+        ['value' => $item['value'], 'updated_at' => now()]              // campos a actualizar
+    );
+}
+
     }
 }
