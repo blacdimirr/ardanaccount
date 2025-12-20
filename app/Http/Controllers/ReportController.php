@@ -2369,14 +2369,15 @@ class ReportController extends Controller
 
             $totalBill      = 0;
             $totalDueBill   = 0;
+            $totalPaidBill  = 0;
             $billTotalArray = [];
             foreach ($bills as $bill) {
                 $totalBill    += $bill->getTotal();
                 $totalDueBill += $bill->getDue();
+                $totalPaidBill += $bill->getPaymentsTotal();
 
                 $billTotalArray[$bill->month][] = $bill->getTotal();
             }
-            $totalPaidBill = $totalBill - $totalDueBill;
 
             for ($i = 1; $i <= 12; $i++) {
                 $billTotal[] = array_key_exists($i, $billTotalArray) ? array_sum($billTotalArray[$i]) : 0;
