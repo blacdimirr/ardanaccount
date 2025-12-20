@@ -136,7 +136,17 @@ class BillController extends Controller
                 $query->where('created_by', \Auth::user()->creatorId())
                     ->orWhere('created_by', 0);
             })->get();
-            $availableSupplierTypes = $retentionRules->whereNotNull('supplier_type')->pluck('supplier_type')->unique()->values();
+            $availableSupplierTypes = $retentionRules
+                ->whereNotNull('supplier_type')
+                ->pluck('supplier_type')
+                ->merge(
+                    Vender::whereNotNull('supplier_type')
+                        ->where('supplier_type', '!=', '')
+                        ->where('created_by', \Auth::user()->creatorId())
+                        ->pluck('supplier_type')
+                )
+                ->unique()
+                ->values();
 
             return view('bill.create', compact('venders', 'bill_number', 'product_services', 'category', 'customFields', 'vendorId', 'chartAccounts', 'subAccounts', 'ncfTypes', 'ncfSeries', 'retentionRules', 'availableSupplierTypes', 'productCategoryMap'));
         } else {
@@ -526,7 +536,17 @@ class BillController extends Controller
                 $query->where('created_by', \Auth::user()->creatorId())
                     ->orWhere('created_by', 0);
             })->get();
-            $availableSupplierTypes = $retentionRules->whereNotNull('supplier_type')->pluck('supplier_type')->unique()->values();
+            $availableSupplierTypes = $retentionRules
+                ->whereNotNull('supplier_type')
+                ->pluck('supplier_type')
+                ->merge(
+                    Vender::whereNotNull('supplier_type')
+                        ->where('supplier_type', '!=', '')
+                        ->where('created_by', \Auth::user()->creatorId())
+                        ->pluck('supplier_type')
+                )
+                ->unique()
+                ->values();
 
             return view('bill.edit', compact('venders', 'product_services', 'bill', 'bill_number', 'category', 'customFields', 'chartAccounts', 'items', 'subAccounts', 'estatus','has_retention', 'ncfTypes', 'ncfSeries', 'retentionRules', 'availableSupplierTypes', 'productCategoryMap'));
         } else {

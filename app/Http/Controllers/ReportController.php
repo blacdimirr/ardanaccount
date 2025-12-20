@@ -25,6 +25,8 @@ use App\Exports\BalanceSheetExport;
 use App\Exports\ProductStockExport;
 use App\Exports\ProfitLossExport;
 use App\Exports\TrialBalancExport;
+use App\Exports\Dgii606Export;
+use App\Services\Dgii606Service;
 use App\Models\ChartOfAccountParent;
 use App\Models\Status;
 use App\Models\TransactionLines;
@@ -3562,5 +3564,44 @@ class ReportController extends Controller
         $data = Excel::download(new ProductStockExport(), $name . '.xlsx');
 
         return $data;
+    }
+
+    public function dgii606(Request $request, Dgii606Service $service)
+    {
+        if (!\Auth::user()->can('manage bill')) {
+            return redirect()->back()->with('error', __('Permission Denied.'));
+        }
+
+        $selectedYear = (int) ($request->get('year', date('Y')));
+        $selectedMonth = (int) ($request->get('month', date('m')));
+        $years = [];
+        for ($year = date('Y') - 5; $year <= date('Y') + 1; $year++) {
+            $years[$year] = $year;
+        }
+        $months = [
+            1 => __('January'),
+            2 => __('February'),
+            3 => __('March'),
+            4 => __('April'),
+            5 => __('May'),
+            6 => __('June'),
+            7 => __('July'),
+            8 => __('August'),
+            9 => __('September'),
+            10 => __('October'),
+            11 => __('November'),
+            12 => __('December'),
+        ];
+
+        if ($request->get('action') === 'download') {
+            $fileName = sprintf('DGII_606_%04d_%02d.xlsx', $selectedYear, $selectedMonth);
+
+            return Excel::download(
+                new Dgii606Export($selectedYear, $selectedMonth, \Auth::user()->creatorId(), $service),
+                $fileName
+            );
+        }
+
+        return view('report.dgii606', compact('selectedMonth', 'selectedYear', 'months', 'years'));
     }
 }

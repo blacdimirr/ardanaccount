@@ -591,6 +591,13 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                                 href="{{ route('report.bill.summary') }}">{{ __('Bill Summary') }}</a>
                         </li>
                         @endcan
+                        @can('manage bill')
+                        <li
+                            class="dash-item {{ Request::route()->getName() == 'report.dgii606' ? ' active' : '' }}">
+                            <a class="dash-link"
+                                href="{{ route('report.dgii606') }}">{{ __('DGII 606 (Compras)') }}</a>
+                        </li>
+                        @endcan
                         @can('stock report')
                         <li
                             class="dash-item {{ Request::route()->getName() == 'report.product.stock.report' ? ' active' : '' }}">
