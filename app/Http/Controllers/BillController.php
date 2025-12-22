@@ -209,7 +209,16 @@ class BillController extends Controller
                 $supplierTypeValue,
                 $retentionRules
             );
-
+            // Si el frontend envió los totales, úsalo (fallback seguro)
+            if ($request->filled('itbis_billed_total')) {
+                $retentionTotals['itbis_billed_total'] = (float) $request->itbis_billed_total;
+            }
+            if ($request->filled('itbis_withheld_total')) {
+                $retentionTotals['itbis_withheld_total'] = (float) $request->itbis_withheld_total;
+            }
+            if ($request->filled('isr_withheld_total')) {
+                $retentionTotals['isr_withheld_total'] = (float) $request->isr_withheld_total;
+            }
             $bill            = new Bill();
             $bill->bill_id   = $this->billNumber();
             $bill->vender_id = $request->vender_id;
@@ -279,7 +288,7 @@ class BillController extends Controller
                     if ($itemCategory && !empty($itemCategory->chart_account_id)) {
                         $ba                    = new \App\Models\BillAccount();
                         $ba->chart_account_id  = $itemCategory->chart_account_id;
-						$ba->price             = $itemCategory->amount;
+                        $ba->price             = $itemCategory->amount;
                         // $ba->price             = $lineTotal; // monto de la línea (base - desc + impuesto)
                         $ba->description       = $billProduct->description
                             ?: ('Línea de factura - ProdID: ' . $billProduct->product_id);
@@ -323,7 +332,7 @@ class BillController extends Controller
                 $billAccount                    = new BillAccount();
                 $billAccount->chart_account_id  = $chart_account['id'];
                 $billAccount->price             = $products[$i]['amount'];
-				// $billAccount->price             = $total_amount;
+                // $billAccount->price             = $total_amount;
                 $billAccount->description       = $request->description;
                 $billAccount->type              = 'Bill Category';
                 $billAccount->ref_id            = $bill->id;
@@ -717,9 +726,9 @@ class BillController extends Controller
             // (NO movimientos contables en EDIT)
 
             if (!empty($row['chart_account_id'])) {
-				$ba_delete                    = new \App\Models\BillAccount;
+                $ba_delete                    = new \App\Models\BillAccount;
                 $ba_delete->where('ref_id', $bill->id)->delete();
-				
+                
                 $ba2                    = new \App\Models\BillAccount();
                 $ba2->chart_account_id  = $row['chart_account_id'];
                 // Si te pasan un "amount" manual, úsalo; si no, usa el lineTotal
@@ -1893,31 +1902,41 @@ class BillController extends Controller
         })->get();
     }
 
-    protected function getSupplierTypes(Collection $retentionRules): Collection
-    {
-        $userId = \Auth::user()->creatorId();
+    
 
-        $supplierTypeNames = SupplierType::forUser($userId)->pluck('name');
-        $vendorSupplierTypes = Vender::where('created_by', $userId)
-            ->whereNotNull('supplier_type')
-            ->where('supplier_type', '!=', '')
-            ->pluck('supplier_type');
+        /**
+         * Normaliza el tipo de suplidor para eliminar duplicados por espacios, NBSP y mayúsculas/minúsculas.
+         */
+        protected function normalizeSupplierType($value): ?string
+        {
+            if ($value === null) {
+                return null;
+            }
+    
+            $s = (string) $value;
+    
+            // Remueve espacios no separables (NBSP) y normaliza espacios múltiples.
+            $s = str_replace("\xC2\xA0", ' ', $s);
+            $s = preg_replace('/\s+/u', ' ', $s);
+    
+            $s = trim($s);
+    
+            return $s === '' ? null : $s;
+        }
 
-        $ruleSupplierTypes = $retentionRules
-            ->whereNotNull('supplier_type')
-            ->pluck('supplier_type');
+protected function getSupplierTypes(): \Illuminate\Support\Collection
+{
+    $userId = \Auth::user()->creatorId();
 
-        return $supplierTypeNames
-            ->merge($vendorSupplierTypes)
-            ->merge($ruleSupplierTypes)
-            ->map(function ($type) {
-                return is_string($type) ? trim($type) : $type;
-            })
-            ->filter()
-            ->unique()
-            ->sort()
-            ->values();
-    }
+    return SupplierType::forUser($userId)
+        ->pluck('name')                                   // solo columna name
+        ->map(fn ($type) => $this->normalizeSupplierType($type)) // normaliza
+        ->filter(fn ($type) => !empty($type))             // elimina null/vacíos
+        ->unique(fn ($type) => mb_strtolower($type, 'UTF-8')) // quita duplicados
+        ->sortBy(fn ($type) => mb_strtolower($type, 'UTF-8')) // ordena
+        ->values();                                       // reindexa
+}
+
 
     protected function resolveSupplierType(?string $inputSupplierType, ?string $vendorSupplierType): ?string
     {
@@ -1932,15 +1951,23 @@ class BillController extends Controller
         return $resolved === '' ? null : $resolved;
     }
 
-    protected function persistSupplierType(?string $supplierType): void
-    {
-        if (empty($supplierType)) {
-            return;
-        }
+protected function persistSupplierType(?string $supplierType): void
+{
+    $supplierType = $this->normalizeSupplierType($supplierType);
 
-        SupplierType::firstOrCreate(
-            ['name' => $supplierType],
-            ['created_by' => \Auth::user()->creatorId()]
-        );
+    if (empty($supplierType)) {
+        return;
     }
+
+    SupplierType::firstOrCreate(
+        [
+            'name' => $supplierType,
+            'created_by' => \Auth::user()->creatorId(),
+        ],
+        [
+            'name' => $supplierType,
+            'created_by' => \Auth::user()->creatorId(),
+        ]
+    );
+}
 }

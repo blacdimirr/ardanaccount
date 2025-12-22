@@ -33,7 +33,7 @@
                         });
                     }
                     JsSearchBox();
-                    select2();
+                    // disabled select2 init: using native selects
                 },
                 hide: function(deleteElement) {
                     if (confirm('Are you sure you want to delete this element?')) {
@@ -110,6 +110,14 @@
             if (typeof value != 'undefined' && value.length != 0) {
                 value = JSON.parse(value);
                 $repeater.setList(value);
+
+                // EDIT: al cargar items existentes, recalcular impuestos/retenciones por fila
+                setTimeout(function () {
+                    if (typeof initExistingBillRows === 'function') {
+                        initExistingBillRows();
+                    }
+                }, 150);
+
                 for (var i = 0; i < value.length; i++) {
                     var tr = $('#sortable-table .id[value="' + value[i].id + '"]').parent();
                     tr.find('.item').val(value[i].product_id);
@@ -138,12 +146,12 @@
                         $('#vender_detail').html(data);
                         const supplierTypeFromVendor = $('#vender_detail').find('[data-supplier-type]').data('supplier-type');
                         if (supplierTypeFromVendor) {
-                            $("input[name='supplier_type']").val(supplierTypeFromVendor).trigger('change');
+                            $('#supplier_type').val(supplierTypeFromVendor).trigger('change');
                         }
                     } else {
                         $('#vender-box').removeClass('d-none').addClass('d-block');
                         $('#vender_detail').removeClass('d-block').addClass('d-none');
-                        $("input[name='supplier_type']").val('').trigger('change');
+                        $('#supplier_type').val('').trigger('change');
                     }
                 },
             });
@@ -159,6 +167,14 @@
         });
 
         var bill_id = '{{ $bill->id }}';
+
+        // Llamada inicial al cargar la vista Edit
+        setTimeout(function(){
+            if (typeof initExistingBillRows === 'function') {
+                initExistingBillRows();
+            }
+        }, 250);
+
 
         function changeItem(element) {
             var iteams_id = element.val();
@@ -176,7 +192,7 @@
                 },
                 cache: false,
                 success: function(data) {
-                    var item = JSON.parse(data);
+                    var item = (typeof data === 'string') ? JSON.parse(data) : data;
 
                     $.ajax({
                         url: '{{ route('bill.items') }}',
@@ -190,7 +206,7 @@
                         },
                         cache: false,
                         success: function(data) {
-                            var billItems = JSON.parse(data);
+                            var billItems = (typeof data === 'string') ? JSON.parse(data) : data;
 
                             console.log(45, billItems);
                             console.log(46, bill_id, iteams_id);
@@ -325,6 +341,33 @@
                 },
             });
         }
+
+        // EDIT: inicializa filas existentes (carga impuestos/tasas y recalcula totales)
+        function initExistingBillRows() {
+            $("[data-repeater-item]").each(function () {
+                const $container = $(this);
+                const $itemSelect = $container.find('.item');
+                const productId = ($itemSelect.val() ?? '').toString().trim();
+
+                if (productId !== '') {
+                    // Fuerza cargar impuestos/tasas desde backend y recalcular
+                    changeItem($itemSelect);
+                } else {
+                    // Asegura campos en cero si no hay producto seleccionado
+                    $container.find('.itemTaxRate').val('0');
+                    $container.find('.itemTaxPrice').val('0');
+                    $container.find('.itemCategoryId').val('');
+                }
+            });
+
+            // Recalcula totales globales al final
+            setTimeout(function () {
+                if (typeof recalcRetentionsAndFinal === 'function') {
+                    recalcRetentionsAndFinal();
+                }
+            }, 120);
+        }
+
 
         $(document).on('keyup change', '.quantity', function() {
             var el = $(this).parent().parent().parent().parent();
@@ -568,100 +611,157 @@
     </script>
 
     <!-- NUEVO: cálculo de retenciones y pago final -->
+    @php
+        $retentionRulesJs = ($retentionRules ?? collect())
+            ->map(function ($rule) {
+                return [
+                    'supplier_type' => (string) $rule->supplier_type,
+                    'service_category_id' => (string) $rule->service_category_id,
+                    'itbis_retention_rate' => (float) $rule->itbis_retention_rate,
+                    'isr_retention_rate' => (float) $rule->isr_retention_rate,
+                ];
+            })
+            ->values()
+            ->all();
+    @endphp
     <script>
-        const retentionRules = @json(($retentionRules ?? collect())->map(function($rule){
-            return [
-                'supplier_type' => $rule->supplier_type,
-                'service_category_id' => $rule->service_category_id,
-                'itbis_retention_rate' => (float) $rule->itbis_retention_rate,
-                'isr_retention_rate' => (float) $rule->isr_retention_rate,
-            ];
-        }));
-        const productCategoryMap = @json($productCategoryMap ?? []);
+        // Exponer a nivel global para evitar issues de scope/orden de carga
+        window.retentionRules = @json($retentionRulesJs ?? []);
+        window.productCategoryMap = @json($productCategoryMap ?? (object)[]);
+    </script>
 
-        function resolveRetentionRule(categoryId, supplierType) {
-            const matches = retentionRules.filter(function(rule){
-                const categoryMatches = rule.service_category_id === null || rule.service_category_id === '' || String(rule.service_category_id) === String(categoryId ?? '');
-                const supplierMatches = rule.supplier_type === null || rule.supplier_type === '' || rule.supplier_type === supplierType;
+    <script>
+        function _toPercent(raw) {
+            let r = parseFloat(String(raw ?? '').replace(',', '.')) || 0;
+            // Si viene 0.30 => 30%
+            if (r > 0 && r <= 1) r = r * 100;
+            return r;
+        }
+
+        function _safeStr(v) {
+            return (v ?? '').toString().trim();
+        }
+
+        function resolveRetentionRule(categoryId, supplierTypeId) {
+            const rules = window.retentionRules || [];
+            const cat = categoryId !== null && categoryId !== undefined && String(categoryId).trim() !== '' ? String(categoryId).trim() : null;
+            const sup = supplierTypeId !== null && supplierTypeId !== undefined && String(supplierTypeId).trim() !== '' ? String(supplierTypeId).trim() : null;
+
+            const matches = rules.filter(function (rule) {
+                const ruleCatRaw = _safeStr(rule.service_category_id);
+                const ruleSupRaw = _safeStr(rule.supplier_type);
+
+                // Wildcards: null/''/'0' => aplica a todos
+                const ruleCat = (ruleCatRaw === '' || ruleCatRaw === '0') ? null : ruleCatRaw;
+                const ruleSup = (ruleSupRaw === '' || ruleSupRaw === '0') ? null : ruleSupRaw;
+
+                const categoryMatches = (ruleCat === null) || (cat !== null && ruleCat === cat);
+                const supplierMatches = (ruleSup === null) || (sup !== null && ruleSup === sup);
+
                 return categoryMatches && supplierMatches;
-            }).sort(function(a,b){
-                const aScore = (a.service_category_id ? 2 : 0) + (a.supplier_type ? 1 : 0);
-                const bScore = (b.service_category_id ? 2 : 0) + (b.supplier_type ? 1 : 0);
+            }).sort(function (a, b) {
+                const aCat = _safeStr(a.service_category_id);
+                const bCat = _safeStr(b.service_category_id);
+                const aSup = _safeStr(a.supplier_type);
+                const bSup = _safeStr(b.supplier_type);
+
+                const aScore = ((aCat !== '' && aCat !== '0') ? 2 : 0) + ((aSup !== '' && aSup !== '0') ? 1 : 0);
+                const bScore = ((bCat !== '' && bCat !== '0') ? 2 : 0) + ((bSup !== '' && bSup !== '0') ? 1 : 0);
                 return bScore - aScore;
             });
 
-            return matches.length > 0 ? matches[0] : null;
+            return matches.length ? matches[0] : null;
         }
 
         function recalcRetentionsAndFinal() {
-            const supplierType = ($("input[name='supplier_type']").val() || '').trim() || null;
+            const hasRetention = $("input[name='has_retention']").is(':checked');
+
+            const supplierTypeId = _safeStr($('#supplier_type').val()) || null;
+
             let subtotal = 0;
             let itbisBilled = 0;
             let itbisWithheld = 0;
             let isrWithheld = 0;
 
-            $('tr[data-repeater-item]').each(function(){
+            $('[data-repeater-item]').each(function () {
                 const row = $(this);
+
                 const qty = parseFloat(row.find('.quantity').val()) || 0;
                 const price = parseFloat(row.find('.price').val()) || 0;
                 const discount = parseFloat(row.find('.discount').val()) || 0;
+
                 const base = Math.max(0, (qty * price) - discount);
-                const taxAmount = parseFloat(row.find('.itemTaxPrice').val()) || 0;
-                let categoryId = row.find('.itemCategoryId').val() || row.find('.item option:selected').data('category-id') || null;
+                subtotal += base;
+
+                const taxRate = parseFloat(row.find('.itemTaxRate').val()) || 0;
+                let taxAmount = parseFloat(row.find('.itemTaxPrice').val());
+                if (!isFinite(taxAmount) || taxAmount === 0) {
+                    taxAmount = base * (taxRate / 100);
+                }
+                itbisBilled += taxAmount;
+
+                if (!hasRetention) return;
+
+                // category_id viene en hidden dentro del repeater
+                let categoryId = _safeStr(row.find('.itemCategoryId').val()) || null;
+
+                // fallback con map
                 if (!categoryId) {
-                    const productId = row.find('.item').val();
-                    if (productCategoryMap && productCategoryMap[productId]) {
-                        categoryId = productCategoryMap[productId];
-                        row.find('.itemCategoryId').val(categoryId);
+                    const itemId = _safeStr(row.find('.item').val());
+                    if (itemId && window.productCategoryMap && window.productCategoryMap[itemId] != null) {
+                        categoryId = String(window.productCategoryMap[itemId]).trim();
                     }
                 }
-                const rule = resolveRetentionRule(categoryId, supplierType);
-                const itbisRate = rule ? parseFloat(rule.itbis_retention_rate || 0) : 0;
-                const isrRate = rule ? parseFloat(rule.isr_retention_rate || 0) : 0;
 
-                subtotal += base;
-                itbisBilled += taxAmount;
-                itbisWithheld += (taxAmount * (itbisRate / 100));
-                isrWithheld += (base * (isrRate / 100));
+                const rule = resolveRetentionRule(categoryId, supplierTypeId);
+                if (!rule) return;
+
+                const itbisRate = _toPercent(rule.itbis_retention_rate);
+                const isrRate = _toPercent(rule.isr_retention_rate);
+
+                if (itbisRate > 0) itbisWithheld += (taxAmount * itbisRate / 100);
+                if (isrRate > 0) isrWithheld += (base * isrRate / 100);
             });
 
-            const taxTotal = parseFloat(($('.totalTax').text() || "0").replace(/,/g, '')) || 0;
-            const grossWithTax = subtotal + taxTotal;
+            // cuentas (si aplica)
+            let accountTotal = 0;
+            $('.accountAmount').each(function () {
+                accountTotal += (parseFloat($(this).val()) || 0);
+            });
+
+            const grossWithTax = subtotal + itbisBilled + accountTotal;
             const finalPayable = grossWithTax - itbisWithheld - isrWithheld;
 
-            $('.itbisBilled').text((itbisBilled || taxTotal).toFixed(2));
+            // UI labels (si existen en el template)
+            $('.itbisBilled').text(itbisBilled.toFixed(2));
             $('.itbisWithheld').text(itbisWithheld.toFixed(2));
             $('.isrWithheld').text(isrWithheld.toFixed(2));
             $('.totalAmount').text(grossWithTax.toFixed(2));
             $('.finalPayable').text(finalPayable.toFixed(2));
 
+            // Hidden inputs para persistencia
             $('.itbisBilledInput').val(itbisBilled.toFixed(2));
             $('.itbisWithheldInput').val(itbisWithheld.toFixed(2));
             $('.isrWithheldInput').val(isrWithheld.toFixed(2));
             $('.finalPayableInput').val(finalPayable.toFixed(2));
         }
 
-        // Listeners globales por si algo externo cambia
-        $(document).on('keyup change', '.quantity, .price, .discount, .accountAmount, .item', function() {
-            setTimeout(recalcRetentionsAndFinal, 50);
+        // Events
+        $(document).on('input change', '.quantity, .price, .discount, .itemTax, .item, .accountAmount', function () {
+            setTimeout(recalcRetentionsAndFinal, 120);
+        });
+        $(document).on('change', '#supplier_type', function () {
+            setTimeout(recalcRetentionsAndFinal, 120);
+        });
+        $(document).on('change', "input[name='has_retention']", function () {
+            setTimeout(recalcRetentionsAndFinal, 120);
+        });
+        $(document).on('click', '[data-repeater-create], [data-repeater-delete]', function () {
+            setTimeout(recalcRetentionsAndFinal, 180);
         });
 
-        $(document).on('keyup change', "input[name='supplier_type']", function () {
-            recalcRetentionsAndFinal();
-        });
-
-        $("input[name='has_retention']").on('change', function() {
-            recalcRetentionsAndFinal();
-        });
-
-        // Cálculo inicial
-        $(function() {
-            recalcRetentionsAndFinal();
-        });
-
-        $(document).ready(function(){
-            $('.quantity').trigger('change');
-            $('.accountAmount').trigger('change');
+        $(function () {
+            setTimeout(recalcRetentionsAndFinal, 220);
         });
     </script>
 
@@ -686,7 +786,7 @@
                         <div class="col-md-6">
                             <div class="form-group" id="vender-box">
                                 {{ Form::label('vender_id', __('Vendor'), ['class' => 'form-label']) }}<x-required></x-required>
-                                {{ Form::select('vender_id', $venders, old('vender_id', $bill->vender_id), ['class' => 'form-control select2', 'id' => 'vender', 'data-url' => route('bill.vender'), 'required' => 'required']) }}
+                                {{ Form::select('vender_id', $venders, old('vender_id', $bill->vender_id), ['class' => 'form-control', 'id' => 'vender', 'data-url' => route('bill.vender'), 'required' => 'required']) }}
                                 <div class="text-xs mt-1">
                                     {{ __('Create vendor here.') }} <a
                                         href="{{ route('vender.index') }}"><b>{{ __('Create vendor') }}</b></a>
@@ -696,12 +796,9 @@
                             </div>
                             <div class="form-group">
                                 {{ Form::label('supplier_type', __('Supplier / service type (retention)'), ['class' => 'form-label']) }}
-                                {{ Form::text('supplier_type', old('supplier_type', $bill->supplier_type), ['class' => 'form-control', 'list' => 'supplier-types-list', 'placeholder' => __('Ej. Profesional independiente, bienes gravados, etc.')]) }}
-                                <datalist id="supplier-types-list">
-                                    @foreach($supplierTypes ?? [] as $type)
-                                        <option value="{{ $type }}"></option>
-                                    @endforeach
-                                </datalist>
+                                {{ Form::select('supplier_type', $supplierTypes ?? [], old('supplier_type', $bill->supplier_type ?? null), ['id' => 'supplier_type', 'class' => 'form-control', 'placeholder' => __('Seleccione un tipo')]) }}
+                                <small class="text-muted">{{ __('Defina el tipo de suplidor/servicio para aplicar reglas de retención.') }}</small>
+                            </div>
                                 <small class="text-muted">{{ __('Define el tipo para aplicar las reglas de ITBIS/ISR retenido.') }}</small>
                             </div>
                         </div>
@@ -836,7 +933,7 @@
                                     {{ Form::hidden('account_id', null, ['class' => 'form-control account_id']) }}
                                     <td width="25%">
                                         <div class="form-group flex-nowrap">
-                                            {{ Form::select('items', $product_services, null, ['class' => 'form-control select2 item', 'data-url' => route('bill.product')]) }}
+                                           {{ Form::select('item', $product_services, null, ['class' => 'form-control item', 'data-url' => route('bill.product'), 'required' => true]) }}
                                         </div>
                                     </td>
                                     <td>
@@ -888,7 +985,7 @@
                                 <tr>
                                     <td>
                                         <div class="form-group ">
-                                            <select name="chart_account_id" class="form-control select2">
+                                            <select name="chart_account_id" class="form-control">
                                                 @foreach ($chartAccounts as $key => $chartAccount)
                                                     <option value="{{ $key }}" class="subAccount">
                                                         {{ $chartAccount }}</option>
@@ -926,7 +1023,7 @@
                                     <td width="25%" class="form-group pt-0 flex-nowrap">
                                         <div class="form-group">
                                             {{ Form::label('category_id', __('Category'), ['class' => 'form-label']) }}<x-required></x-required>
-                                            {{ Form::select('category_id', $category, $bill->category_id, ['class' => 'form-control select2', 'required' => 'required']) }}
+                                            {{ Form::select('category_id', $category, $bill->category_id, ['class' => 'form-control', 'required' => 'required']) }}
                                         </div>
                                     </td>
                                 </tr>

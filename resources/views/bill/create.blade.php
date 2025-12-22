@@ -7,6 +7,7 @@
     <li class="breadcrumb-item"><a href="{{ route('bill.index') }}">{{ __('Bill') }}</a></li>
 @endsection
 @push('script-page')
+
         <!-- jQuery base primero -->
     <script src="{{ asset('js/jquery.min.js') }}"></script>
 
@@ -39,7 +40,7 @@
                     JsSearchBox();
 
                     // $('.select2').select2();
-                    select2();
+                  //  select2();
                 },
                 hide: function(deleteElement) {
                     if (confirm('Are you sure you want to delete this element?')) {
@@ -88,16 +89,11 @@
                 success: function(data) {
                     if (data != '') {
                         $('#vender_detail').html(data);
-                        const supplierTypeFromVendor = $('#vender_detail').find('[data-supplier-type]').data('supplier-type');
-                        if (supplierTypeFromVendor) {
-                            $("input[name='supplier_type']").val(supplierTypeFromVendor).trigger('change');
-                        }
                     } else {
                         $('#vender-box').removeClass('d-none');
                         $('#vender-box').addClass('d-block');
                         $('#vender_detail').removeClass('d-block');
                         $('#vender_detail').addClass('d-none');
-                        $("input[name='supplier_type']").val('').trigger('change');
                     }
                 },
             });
@@ -605,6 +601,7 @@
         }
     </script>
 
+
     @php
         $retentionRulesJs = ($retentionRules ?? collect())
             ->map(function ($rule) {
@@ -619,61 +616,160 @@
             ->all();
     @endphp
 
-<script>
-    const retentionRules = @json($retentionRulesJs);
-    const productCategoryMap = @json($productCategoryMap ?? []);
+    <script>
+        // Make sure these are available globally (other scripts may call recalc before DOM ready)
+        window.retentionRules = @json($retentionRulesJs ?? []);
+        window.productCategoryMap = @json($productCategoryMap ?? (object)[]);
+    </script>
+
+    <script>
+        function _norm(v) {
+            return (v ?? '').toString().trim().toLowerCase();
+        }
+
+        // Accept rates as 30 or 0.30 (both mean 30%)
+        function toPercent(raw) {
+            let r = parseFloat(String(raw ?? '').replace(',', '.')) || 0;
+            if (r > 0 && r <= 1) r = r * 100;
+            return r;
+        }
 
         function resolveRetentionRule(categoryId, supplierType) {
-            const matches = retentionRules.filter(function(rule){
-                const categoryMatches = rule.service_category_id === null || rule.service_category_id === '' || String(rule.service_category_id) === String(categoryId ?? '');
-                const supplierMatches = rule.supplier_type === null || rule.supplier_type === '' || rule.supplier_type === supplierType;
-                return categoryMatches && supplierMatches;
-            }).sort(function(a,b){
-                const aScore = (a.service_category_id ? 2 : 0) + (a.supplier_type ? 1 : 0);
-                const bScore = (b.service_category_id ? 2 : 0) + (b.supplier_type ? 1 : 0);
-                return bScore - aScore;
-            });
+            const retentionRules = window.retentionRules || [];
 
-            return matches.length > 0 ? matches[0] : null;
+            // Normalize inputs
+            const catRaw = (categoryId === undefined || categoryId === null) ? '' : String(categoryId).trim();
+            const cat = catRaw === '' ? null : catRaw;
+            const sup = _norm(supplierType);
+            const supProvided = sup !== '';
+
+            const isWildcardCategory = (v) => {
+                if (v === undefined || v === null) return true;
+                const s = String(v).trim();
+                if (s === '') return true;
+                const n = Number(s);
+                return Number.isFinite(n) && n === 0; // 0 = all categories
+            };
+
+            const isWildcardSupplier = (v) => {
+                if (v === undefined || v === null) return true;
+                const s = _norm(v);
+                return s === '' || s === '*' || s === 'all' || s === 'todos' || s === 'todas';
+            };
+
+            const matches = retentionRules
+                .filter(function (rule) {
+                    const ruleCat = rule.service_category_id;
+                    const ruleSup = rule.supplier_type;
+
+                    const categoryMatches =
+                        isWildcardCategory(ruleCat) ||
+                        (cat !== null && Number(ruleCat) === Number(cat));
+
+                    // If user didn't provide supplier type, don't block on supplier-specific rules,
+                    // but we'll prefer wildcard-supplier rules in sorting.
+                    const supplierMatches =
+                        !supProvided ||
+                        isWildcardSupplier(ruleSup) ||
+                        (_norm(ruleSup) === sup);
+
+                    return categoryMatches && supplierMatches;
+                })
+                .sort(function (a, b) {
+                    // Prefer more specific category always
+                    const aCatSpec = isWildcardCategory(a.service_category_id) ? 0 : 1;
+                    const bCatSpec = isWildcardCategory(b.service_category_id) ? 0 : 1;
+
+                    // Supplier specificity: if user provided supplier type, prefer specific supplier;
+                    // if not provided, prefer wildcard supplier.
+                    const aSupWild = isWildcardSupplier(a.supplier_type) ? 1 : 0;
+                    const bSupWild = isWildcardSupplier(b.supplier_type) ? 1 : 0;
+
+                    const aSupSpec = 1 - aSupWild; // 1 if specific supplier, 0 if wildcard
+                    const bSupSpec = 1 - bSupWild;
+
+                    const aScore = (aCatSpec * 10) + (supProvided ? aSupSpec : aSupWild);
+                    const bScore = (bCatSpec * 10) + (supProvided ? bSupSpec : bSupWild);
+
+                    return bScore - aScore;
+                });
+
+            return matches.length ? matches[0] : null;
         }
 
         function recalcRetentionsAndFinal() {
-            const supplierType = ($("input[name='supplier_type']").val() || '').trim() || null;
+            const hasRetention = $("input[name='has_retention']").is(':checked');
+
+            // Supplier type can come from Select2/Choices
+            let supplierType = $('#supplier_type').val() ?? '';
+            if (Array.isArray(supplierType)) supplierType = supplierType[0];
+            supplierType = (supplierType || '').toString().trim() || null;
+
+            const retentionRules = window.retentionRules || [];
+
+            if (hasRetention && retentionRules.length === 0 && !window.__retentionRulesWarned) {
+                console.warn('[Retention] has_retention está activo, pero window.retentionRules está vacío. Verifica que existan reglas en BD y que el controlador las envíe a la vista.');
+                window.__retentionRulesWarned = true;
+            }
+            if (hasRetention && (!supplierType || supplierType === '') && !window.__supplierTypeWarned) {
+                console.warn('[Retention] has_retention está activo, pero supplier_type está vacío. Se aplicarán reglas generales (sin supplier_type) si existen.');
+                window.__supplierTypeWarned = true;
+            }
+
+            
+
             let subtotal = 0;
             let itbisBilled = 0;
             let itbisWithheld = 0;
             let isrWithheld = 0;
 
-            $('tr[data-repeater-item]').each(function(){
+            $('[data-repeater-item]').each(function () {
                 const row = $(this);
                 const qty = parseFloat(row.find('.quantity').val()) || 0;
                 const price = parseFloat(row.find('.price').val()) || 0;
                 const discount = parseFloat(row.find('.discount').val()) || 0;
+
                 const base = Math.max(0, (qty * price) - discount);
-                const taxAmount = parseFloat(row.find('.itemTaxPrice').val()) || 0;
+                subtotal += base;
+
+                // Tax amount: prefer hidden .itemTaxPrice, fallback to base * rate
+                const taxRate = parseFloat(row.find('.itemTaxRate').val()) || 0;
+                let taxAmount = parseFloat(row.find('.itemTaxPrice').val());
+                if (!isFinite(taxAmount) || taxAmount === 0) {
+                    taxAmount = base * (taxRate / 100);
+                }
+                itbisBilled += taxAmount;
+
+                if (!hasRetention) return;
+
+                // Resolve category id
                 let categoryId = row.find('.itemCategoryId').val() || row.find('.item option:selected').data('category-id') || null;
                 if (!categoryId) {
-                    const productId = row.find('.item').val();
-                    if (productCategoryMap && productCategoryMap[productId]) {
-                        categoryId = productCategoryMap[productId];
-                        row.find('.itemCategoryId').val(categoryId);
+                    const itemId = row.find('.item').val();
+                    if (itemId && productCategoryMap[itemId] !== undefined && productCategoryMap[itemId] !== null) {
+                        categoryId = productCategoryMap[itemId];
                     }
                 }
-                const rule = resolveRetentionRule(categoryId, supplierType);
-                const itbisRate = rule ? parseFloat(rule.itbis_retention_rate || 0) : 0;
-                const isrRate = rule ? parseFloat(rule.isr_retention_rate || 0) : 0;
 
-                subtotal += base;
-                itbisBilled += taxAmount;
-                itbisWithheld += (taxAmount * (itbisRate / 100));
-                isrWithheld += (base * (isrRate / 100));
+                const rule = resolveRetentionRule(categoryId, supplierType);
+                if (!rule) return;
+
+                const itbisRate = toPercent(rule.itbis_retention_rate);
+                const isrRate = toPercent(rule.isr_retention_rate);
+
+                if (itbisRate > 0) itbisWithheld += (taxAmount * itbisRate / 100);
+                if (isrRate > 0) isrWithheld += (base * isrRate / 100);
             });
 
-            const taxTotal = parseFloat(($('.totalTax').text() || "0").replace(/,/g, '')) || 0;
-            const grossWithTax = subtotal + taxTotal;
+            let accountTotal = 0;
+            $('.accountAmount').each(function () {
+                accountTotal += (parseFloat($(this).val()) || 0);
+            });
+
+            const grossWithTax = subtotal + itbisBilled + accountTotal;
             const finalPayable = grossWithTax - itbisWithheld - isrWithheld;
 
-            $('.itbisBilled').text((itbisBilled || taxTotal).toFixed(2));
+            $('.itbisBilled').text(itbisBilled.toFixed(2));
             $('.itbisWithheld').text(itbisWithheld.toFixed(2));
             $('.isrWithheld').text(isrWithheld.toFixed(2));
             $('.totalAmount').text(grossWithTax.toFixed(2));
@@ -685,52 +781,34 @@
             $('.finalPayableInput').val(finalPayable.toFixed(2));
         }
 
-        // Auto-dispara el cálculo cuando cambian los campos relevantes
-        $(document).on('keyup change', '.quantity, .price, .discount, .accountAmount, .item, .itemTaxPrice, .itemTaxRate, .itemCategoryId', function() {
-            // if ($("input[name='has_retention']:checked").val()) {
-                recalcRetentionsAndFinal();
-            // }
+        // Bind recalculation triggers
+        $(document).on('input change', '.quantity, .price, .discount, .itemTax, .item, .accountAmount', function () {
+            setTimeout(recalcRetentionsAndFinal, 120);
+        });
+        $(document).on('change', '#supplier_type', function () {
+            setTimeout(recalcRetentionsAndFinal, 120);
+        });
+        $(document).on('change', "input[name='has_retention']", function () {
+            setTimeout(recalcRetentionsAndFinal, 120);
+        });
+        $(document).on('click', '[data-repeater-create], [data-repeater-delete]', function () {
+            setTimeout(recalcRetentionsAndFinal, 180);
         });
 
-        $(document).on('keyup change', "input[name='supplier_type']", function () {
-            recalcRetentionsAndFinal();
-        });
+        $(function () {
+            // init supplier type as input-select (select2 tags)
+            try {
+                if ($.fn.select2) {
+                    $('#supplier_type').select2({
+                        tags: true,
+                        width: '100%',
+                        placeholder: "{{ __('Seleccione o escriba un tipo...') }}",
+                        allowClear: true
+                    });
+                }
+            } catch (e) {}
 
-        $("input[name='has_retention']").on('change', function() {
-            if ($("input[name='has_retention']:checked").val()) {
-                recalcRetentionsAndFinal();
-            } else {
-                $('.retentionNet').text('0.00');
-            }
-        });
-
-        // Cuando se cambia el item (producto/servicio)
-        $(document).on('change', '.item', function() {
-            // Da un pequeño margen a que tu AJAX pueble impuestos/precio y luego recalcula
-            // if ($("input[name='has_retention']:checked").val()) {
-                setTimeout(recalcRetentionsAndFinal, 50);
-            // }
-        });
-
-        // Después de añadir una fila del repeater
-        $(document).on('click', '[data-repeater-create]', function() {
-            // if ($("input[name='has_retention']:checked").val()) {
-                setTimeout(recalcRetentionsAndFinal, 100);
-            // }
-        });
-
-        // Después de eliminar una fila del repeater
-        $(document).on('click', '[data-repeater-delete]', function() {
-            // if ($("input[name='has_retention']:checked").val()) {
-                setTimeout(recalcRetentionsAndFinal, 100);
-            // }
-        });
-
-        // En el load inicial
-        $(function() {
-            // if ($("input[name='has_retention']:checked").val()) {
-                recalcRetentionsAndFinal();
-            // }
+            setTimeout(recalcRetentionsAndFinal, 200);
         });
     </script>
 @endpush
@@ -738,6 +816,9 @@
     <div class="row">
         {{ Form::open(['url' => 'bill', 'class' => 'w-100 needs-validation', 'novalidate']) }}
         <div class="col-12">
+            <input type="hidden" name="itbis_billed_total" class="itbisBilledInput" value="0">
+        <input type="hidden" name="itbis_withheld_total" class="itbisWithheldInput" value="0">
+        <input type="hidden" name="isr_withheld_total" class="isrWithheldInput" value="0">
             <input type="hidden" name="_token" id="token" value="{{ csrf_token() }}">
             <div class="card">
                 <div class="card-body">
@@ -745,7 +826,7 @@
                         <div class="col-md-6">
                             <div class="form-group" id="vender-box">
                                 {{ Form::label('vender_id', __('Vendor'), ['class' => 'form-label']) }}<x-required></x-required>
-                                {{ Form::select('vender_id', $venders, old('vender_id', $vendorId), ['class' => 'form-control select2', 'id' => 'vender', 'data-url' => route('bill.vender'), 'required' => 'required']) }}
+                                {{ Form::select('vender_id', $venders, $vendorId, ['class' => 'form-control select2', 'id' => 'vender', 'data-url' => route('bill.vender'), 'required' => 'required']) }}
                                 <div class="text-xs mt-1">
                                     {{ __('Create vendor here.') }} <a
                                         href="{{ route('vender.index') }}"><b>{{ __('Create vendor') }}</b></a>
@@ -755,13 +836,25 @@
                             </div>
                             <div class="form-group">
                                 {{ Form::label('supplier_type', __('Supplier / service type (retention)'), ['class' => 'form-label']) }}
-                                {{ Form::text('supplier_type', old('supplier_type', $defaultSupplierType ?? null), ['class' => 'form-control', 'list' => 'supplier-types-list', 'placeholder' => __('Ej. Profesional independiente, bienes gravados, etc.')]) }}
-                                <datalist id="supplier-types-list">
-                                    @foreach($supplierTypes ?? [] as $type)
-                                        <option value="{{ $type }}"></option>
-                                    @endforeach
-                                </datalist>
-                                <small class="text-muted">{{ __('Define el tipo para aplicar las reglas de ITBIS/ISR retenido.') }}</small>
+                                @php
+    // $supplierTypes viene del controller como una lista (Collection) de nombres únicos
+    $supplierTypeOptions = collect($supplierTypes ?? [])
+        ->filter()
+        ->mapWithKeys(fn($t) => [$t => $t]) // key=value
+        ->toArray();
+@endphp
+                                
+                                <div class="form-group">
+    {{ Form::label('supplier_type', __('Tipo de suplidor')) }}
+    {{ Form::select('supplier_type', $supplierTypes ?? [], old('supplier_type', $bill->supplier_type ?? null), [
+        'id' => 'supplier_type',
+        'class' => 'form-control', // ✅ HTML estándar
+        'placeholder' => __('Seleccione un tipo'),
+    ]) }}
+</div>
+
+
+<small class="text-muted">{{ __('Define el tipo para aplicar las reglas de ITBIS/ISR retenido.') }}</small>
                             </div>
                         </div>
                         <div class="col-md-6">
