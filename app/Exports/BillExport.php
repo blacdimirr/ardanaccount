@@ -48,6 +48,10 @@ class BillExport implements FromCollection, WithHeadings
             $data[$k]["vender_id"]          = $venders;
             $data[$k]["category_id"]   = $category;
             $data[$k]["status"]          = $status;
+            $data[$k]["itbis_billed_total"] = $Bill->itbis_billed_total ?? 0;
+            $data[$k]["itbis_withheld_total"] = $Bill->itbis_withheld_total ?? 0;
+            $data[$k]["isr_withheld_total"] = $Bill->isr_withheld_total ?? 0;
+            $data[$k]["net_payable"] = $Bill->getNetPayable();
         }
 
         return $data;
@@ -64,6 +68,10 @@ class BillExport implements FromCollection, WithHeadings
             "status",
             "Send Date",
             "category Name",
+            "ITBIS Billed",
+            "ITBIS Withheld",
+            "ISR Withheld",
+            "Net Payable",
 
         ];
     }
