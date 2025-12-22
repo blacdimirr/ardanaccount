@@ -402,6 +402,22 @@
                                     </td>
                                 </tr>
                                 <tr>
+                                    <td>{{ __('ITBIS facturado') }}:</td>
+                                    <td>{{ Utility::priceFormat($settings, $bill->itbis_billed_total ?? 0) }}</td>
+                                </tr>
+                                <tr>
+                                    <td>{{ __('ITBIS retenido') }}:</td>
+                                    <td>{{ Utility::priceFormat($settings, $bill->itbis_withheld_total ?? 0) }}</td>
+                                </tr>
+                                <tr>
+                                    <td>{{ __('ISR retenido') }}:</td>
+                                    <td>{{ Utility::priceFormat($settings, $bill->isr_withheld_total ?? 0) }}</td>
+                                </tr>
+                                <tr>
+                                    <td>{{ __('Total a pagar (neto)') }}:</td>
+                                    <td>{{ Utility::priceFormat($settings, $bill->getNetPayable()) }}</td>
+                                </tr>
+                                <tr>
                                     <td>{{ __('Paid') }}:</td>
                                     <td>{{ Utility::priceFormat($settings, $bill->getPaymentsTotal()) }}
                                     </td>

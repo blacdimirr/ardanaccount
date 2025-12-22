@@ -655,6 +655,13 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                                 href="{{ route('custom-field.index') }}">{{ __('Custom Field') }}</a>
                         </li>
                         @endcan
+                        @can('config_retenciones_manage')
+                        <li
+                            class="dash-item {{ Request::is('retention-rules*') ? 'active' : '' }}">
+                            <a class="dash-link"
+                                href="{{ route('retention-rules.index') }}">{{ __('Retenciones fiscales') }}</a>
+                        </li>
+                        @endcan
                         @can('manage constant contract type')
                         <li
                             class="dash-item {{ Request::route()->getName() == 'contractType.index' ? 'active' : '' }}">

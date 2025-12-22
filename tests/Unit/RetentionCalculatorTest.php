@@ -35,6 +35,7 @@ class RetentionCalculatorTest extends TestCase
             $table->unsignedBigInteger('service_category_id')->nullable();
             $table->decimal('itbis_retention_rate', 5, 2)->default(0);
             $table->decimal('isr_retention_rate', 5, 2)->default(0);
+            $table->boolean('active')->default(true);
             $table->integer('created_by')->default(0);
             $table->timestamps();
         });
@@ -102,5 +103,64 @@ class RetentionCalculatorTest extends TestCase
         $this->assertEquals(9.00, $result['itbis_billed_total']);
         $this->assertEquals(0.90, $result['itbis_withheld_total']);
         $this->assertEquals(1.00, $result['isr_withheld_total']);
+    }
+
+    public function test_it_ignores_inactive_rules(): void
+    {
+        $category = ProductServiceCategory::create(['name' => 'Servicios']);
+        $product = ProductService::create(['category_id' => $category->id, 'purchase_price' => 100]);
+
+        RetentionRule::create([
+            'supplier_type' => 'profesional',
+            'service_category_id' => $category->id,
+            'itbis_retention_rate' => 100,
+            'isr_retention_rate' => 100,
+            'active' => false,
+        ]);
+
+        $calculator = app(RetentionCalculator::class);
+        $result = $calculator->calculateForBill([
+            [
+                'item' => $product->id,
+                'quantity' => 1,
+                'price' => 100,
+                'discount' => 0,
+                'itemTaxPrice' => 18,
+            ],
+        ], 'profesional', RetentionRule::all());
+
+        $this->assertEquals(18.00, $result['itbis_billed_total']);
+        $this->assertEquals(0.00, $result['itbis_withheld_total']);
+        $this->assertEquals(0.00, $result['isr_withheld_total']);
+    }
+
+    public function test_it_returns_line_breakdown(): void
+    {
+        $category = ProductServiceCategory::create(['name' => 'Servicios profesionales']);
+        $product = ProductService::create(['category_id' => $category->id, 'purchase_price' => 150]);
+
+        $rule = RetentionRule::create([
+            'supplier_type' => 'empresa',
+            'service_category_id' => $category->id,
+            'itbis_retention_rate' => 30,
+            'isr_retention_rate' => 2,
+        ]);
+
+        $calculator = app(RetentionCalculator::class);
+        $result = $calculator->calculateDetailedForBill([
+            [
+                'item' => $product->id,
+                'quantity' => 1,
+                'price' => 150,
+                'discount' => 0,
+                'itemTaxPrice' => 27,
+            ],
+        ], 'empresa', RetentionRule::all());
+
+        $this->assertEquals(27.00, $result['totals']['itbis_billed_total']);
+        $this->assertEquals(8.10, $result['totals']['itbis_withheld_total']);
+        $this->assertEquals(3.00, $result['totals']['isr_withheld_total']);
+        $this->assertEquals($rule->id, $result['lines'][0]['rule_id']);
+        $this->assertEquals(3.00, $result['lines'][0]['isr_withheld']);
     }
 }

@@ -11,6 +11,7 @@ use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\VenderController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\RetainerController;
+use App\Http\Controllers\RetentionRuleController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\CreditNoteController;
 use App\Http\Controllers\BillController;
@@ -627,6 +628,7 @@ Route::post('product-category/getaccount', [ProductServiceCategoryController::cl
 Route::resource('taxes', TaxController::class)->middleware(['auth', 'XSS', 'revalidate']);
 
 Route::resource('product-unit', ProductServiceUnitController::class)->middleware(['auth', 'XSS', 'revalidate']);
+Route::resource('retention-rules', RetentionRuleController::class)->middleware(['auth', 'XSS', 'revalidate']);
 
 Route::get('invoice/pdf/{id}', [InvoiceController::class, 'invoice'])->name('invoice.pdf')->middleware(['XSS', 'revalidate']);
 
@@ -761,6 +763,7 @@ Route::group(
 
         Route::post('bill/{id}/sendEmailAuth', [BillController::class, 'sendEmailAuth'])->name('bill.sendEmailAuth');
         Route::post('bill/{id}/sendEmailAuthAproved', [BillController::class, 'sendEmailAuthAproved'])->name('bill.sendEmailAuthAproved');
+        Route::get('bill/{id}/retentions', [BillController::class, 'retentions'])->name('bill.retentions');
 
 
         Route::get('bill/{id}/payment', [BillController::class, 'payment'])->name('bill.payment');
