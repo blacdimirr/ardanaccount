@@ -81,6 +81,13 @@ class RetentionCalculator
             return $rule->active ?? true;
         });
 
+        if (is_numeric($supplierType)) {
+            $matched = $activeRules->firstWhere('id', (int) $supplierType);
+            if ($matched) {
+                return $matched;
+            }
+        }
+
         $candidates = $activeRules->filter(function (RetentionRule $rule) use ($supplierType, $categoryId) {
             $categoryMatches = $rule->service_category_id === null || (string)$rule->service_category_id === (string)$categoryId;
             $supplierMatches = $rule->supplier_type === null || $rule->supplier_type === $supplierType;

@@ -832,14 +832,8 @@
                             <div id="vender_detail" class="d-none">
                             </div>
                             <div class="form-group">
-                                @php
-                                    $supplierTypeOptions = collect($supplierTypes ?? [])
-                                        ->filter()
-                                        ->mapWithKeys(fn($t) => [$t => $t])
-                                        ->toArray();
-                                @endphp
                                 {{ Form::label('supplier_type', __('Tipo de suplidor / servicio (retención)'), ['class' => 'form-label']) }}
-                                {{ Form::select('supplier_type', $supplierTypeOptions, old('supplier_type', $defaultSupplierType ?? null), [
+                                {{ Form::select('supplier_type', $retentionRuleOptions ?? [], old('supplier_type', $defaultRetentionRuleId ?? null), [
                                     'id' => 'supplier_type',
                                     'class' => 'form-control',
                                     'placeholder' => __('Seleccione un tipo'),

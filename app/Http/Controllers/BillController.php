@@ -142,10 +142,10 @@ class BillController extends Controller
             });
             $ncfSeries->prepend(__('Select NCF Series'), '');
             $retentionRules = $this->getRetentionRules();
-            $defaultSupplierType = $selectedVendor?->supplier_type;
-            $supplierTypes = $this->getSupplierTypes($defaultSupplierType);
+            $retentionRuleOptions = $this->buildRetentionRuleOptions($retentionRules);
+            $defaultRetentionRuleId = $this->guessRetentionRuleId($retentionRules, $selectedVendor?->supplier_type);
 
-            return view('bill.create', compact('venders', 'bill_number', 'product_services', 'category', 'customFields', 'vendorId', 'chartAccounts', 'subAccounts', 'ncfTypes', 'ncfSeries', 'retentionRules', 'supplierTypes', 'productCategoryMap', 'defaultSupplierType'));
+            return view('bill.create', compact('venders', 'bill_number', 'product_services', 'category', 'customFields', 'vendorId', 'chartAccounts', 'subAccounts', 'ncfTypes', 'ncfSeries', 'retentionRules', 'retentionRuleOptions', 'productCategoryMap', 'defaultRetentionRuleId'));
         } else {
             return response()->json(['error' => __('Permission denied.')], 401);
         }
@@ -193,7 +193,9 @@ class BillController extends Controller
             $vendor = Vender::where('id', $request->vender_id)
                 ->where('created_by', \Auth::user()->creatorId())
                 ->first();
-            $supplierTypeValue = $this->resolveSupplierType($request->supplier_type, $vendor?->supplier_type);
+            $selectedRuleId = $request->filled('supplier_type') ? (int) $request->supplier_type : null;
+            $selectedRule = $retentionRules->firstWhere('id', $selectedRuleId);
+            $supplierTypeValue = $selectedRule?->supplier_type ?? $this->resolveSupplierType(null, $vendor?->supplier_type);
             $this->persistSupplierType($supplierTypeValue);
             $retentionCalculator = app(RetentionCalculator::class);
 
@@ -212,7 +214,7 @@ class BillController extends Controller
 
             $retentionDetails = $retentionCalculator->calculateDetailedForBill(
                 $products,
-                $supplierTypeValue,
+                $selectedRuleId ?? $supplierTypeValue,
                 $retentionRules
             );
             $applyRetention = (bool) $request->get('has_retention', false);
@@ -621,7 +623,9 @@ class BillController extends Controller
         $vendor = Vender::where('id', $request->vender_id)
             ->where('created_by', \Auth::user()->creatorId())
             ->first();
-        $supplierTypeValue = $this->resolveSupplierType($request->supplier_type, $vendor?->supplier_type);
+        $selectedRuleId = $request->filled('supplier_type') ? (int) $request->supplier_type : null;
+        $selectedRule = $retentionRules->firstWhere('id', $selectedRuleId);
+        $supplierTypeValue = $selectedRule?->supplier_type ?? $this->resolveSupplierType(null, $vendor?->supplier_type);
         $this->persistSupplierType($supplierTypeValue);
         $retentionCalculator = app(RetentionCalculator::class);
 
@@ -640,7 +644,7 @@ class BillController extends Controller
 
         $retentionDetails = $retentionCalculator->calculateDetailedForBill(
             $products,
-            $supplierTypeValue,
+            $selectedRuleId ?? $supplierTypeValue,
             $retentionRules
         );
         $applyRetention = (bool) $request->get('has_retention', false);
@@ -1972,48 +1976,49 @@ class BillController extends Controller
         })->active()->get();
     }
 
-    
-
-        /**
-         * Normaliza el tipo de suplidor para eliminar duplicados por espacios, NBSP y mayúsculas/minúsculas.
-         */
-        protected function normalizeSupplierType($value): ?string
-        {
-            if ($value === null) {
-                return null;
-            }
-    
-            $s = (string) $value;
-    
-            // Remueve espacios no separables (NBSP) y normaliza espacios múltiples.
-            $s = str_replace("\xC2\xA0", ' ', $s);
-            $s = preg_replace('/\s+/u', ' ', $s);
-    
-            $s = trim($s);
-    
-            return $s === '' ? null : $s;
-        }
-
-    protected function getSupplierTypes(?string $preferred = null): \Illuminate\Support\Collection
+    protected function buildRetentionRuleOptions(Collection $rules): Collection
     {
-        $userId = \Auth::user()->creatorId();
-
-        $fromTable = SupplierType::forUser($userId)->pluck('name');
-        $fromVendors = Vender::where('created_by', $userId)->pluck('supplier_type');
-        $fromRules = RetentionRule::where(function ($query) use ($userId) {
-            $query->where('created_by', $userId)->orWhere('created_by', 0);
-        })->pluck('supplier_type');
-
-        $all = collect([$fromTable, $fromVendors, $fromRules, $preferred])->flatten();
-
-        return $all
-            ->map(fn ($type) => $this->normalizeSupplierType($type))
-            ->filter(fn ($type) => !empty($type))
-            ->unique(fn ($type) => mb_strtolower($type, 'UTF-8'))
-            ->sortBy(fn ($type) => mb_strtolower($type, 'UTF-8'))
-            ->values();
+        return $rules->mapWithKeys(function (RetentionRule $rule) {
+            $label = $rule->supplier_type ?: __('General');
+            if ($rule->serviceCategory?->name) {
+                $label .= ' - ' . $rule->serviceCategory->name;
+            }
+            return [$rule->id => $label];
+        });
     }
 
+    protected function guessRetentionRuleId(Collection $rules, ?string $supplierType): ?int
+    {
+        if (empty($supplierType)) {
+            return null;
+        }
+
+        $normalized = $this->normalizeSupplierType($supplierType);
+
+        return $rules->firstWhere(function (RetentionRule $rule) use ($normalized) {
+            return $this->normalizeSupplierType($rule->supplier_type) === $normalized;
+        })?->id;
+    }
+
+    /**
+     * Normaliza el tipo de suplidor para eliminar duplicados por espacios, NBSP y mayúsculas/minúsculas.
+     */
+    protected function normalizeSupplierType($value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $s = (string) $value;
+
+        // Remueve espacios no separables (NBSP) y normaliza espacios múltiples.
+        $s = str_replace("\xC2\xA0", ' ', $s);
+        $s = preg_replace('/\s+/u', ' ', $s);
+
+        $s = trim($s);
+
+        return $s === '' ? null : $s;
+    }
 
     protected function resolveSupplierType(?string $inputSupplierType, ?string $vendorSupplierType): ?string
     {
@@ -2028,23 +2033,23 @@ class BillController extends Controller
         return $resolved === '' ? null : $resolved;
     }
 
-protected function persistSupplierType(?string $supplierType): void
-{
-    $supplierType = $this->normalizeSupplierType($supplierType);
+    protected function persistSupplierType(?string $supplierType): void
+    {
+        $supplierType = $this->normalizeSupplierType($supplierType);
 
-    if (empty($supplierType)) {
-        return;
+        if (empty($supplierType)) {
+            return;
+        }
+
+        SupplierType::firstOrCreate(
+            [
+                'name' => $supplierType,
+                'created_by' => \Auth::user()->creatorId(),
+            ],
+            [
+                'name' => $supplierType,
+                'created_by' => \Auth::user()->creatorId(),
+            ]
+        );
     }
-
-    SupplierType::firstOrCreate(
-        [
-            'name' => $supplierType,
-            'created_by' => \Auth::user()->creatorId(),
-        ],
-        [
-            'name' => $supplierType,
-            'created_by' => \Auth::user()->creatorId(),
-        ]
-    );
-}
 }
