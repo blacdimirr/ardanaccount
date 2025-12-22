@@ -25,6 +25,7 @@ class Bill extends Model
         'itbis_billed_total',
         'itbis_withheld_total',
         'isr_withheld_total',
+        'government_withheld_total',
     ];
 
     public function ncfType()
@@ -140,9 +141,27 @@ class Bill extends Model
         return (($this->getTotal() - $withheldTotal) - $paymentsTotal) - ($this->billTotalDebitNote());
     }
 
+    public function getNetPayable(): float
+    {
+        return $this->getTotal() - $this->getWithheldTotal();
+    }
+
     public function getWithheldTotal()
     {
-        return ($this->itbis_withheld_total ?? 0) + ($this->isr_withheld_total ?? 0);
+        return ($this->itbis_withheld_total ?? 0)
+            + ($this->isr_withheld_total ?? 0)
+            + ($this->government_withheld_total ?? 0);
+    }
+
+    public function getRetentionBreakdown(): array
+    {
+        return [
+            'itbis_billed_total' => (float) ($this->itbis_billed_total ?? 0),
+            'itbis_withheld_total' => (float) ($this->itbis_withheld_total ?? 0),
+            'isr_withheld_total' => (float) ($this->isr_withheld_total ?? 0),
+            'government_withheld_total' => (float) ($this->government_withheld_total ?? 0),
+            'net_payable' => $this->getNetPayable(),
+        ];
     }
 
     public function getPaymentsTotal()

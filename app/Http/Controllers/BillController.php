@@ -36,6 +36,7 @@ use App\Models\RetentionRule;
 use App\Models\RetentionCertificate;
 use App\Models\SupplierType;
 use App\Services\RetentionCalculator;
+use App\Services\RetentionReportService;
 use Exception;
 use Carbon\Carbon;
 use CoinGate\Exception\Api\BadRequest;
@@ -141,10 +142,10 @@ class BillController extends Controller
             });
             $ncfSeries->prepend(__('Select NCF Series'), '');
             $retentionRules = $this->getRetentionRules();
-            $supplierTypes = $this->getSupplierTypes($retentionRules);
-            $defaultSupplierType = $selectedVendor?->supplier_type;
+            $retentionRuleOptions = $this->buildRetentionRuleOptions($retentionRules);
+            $defaultRetentionRuleId = $this->guessRetentionRuleId($retentionRules, $selectedVendor?->supplier_type);
 
-            return view('bill.create', compact('venders', 'bill_number', 'product_services', 'category', 'customFields', 'vendorId', 'chartAccounts', 'subAccounts', 'ncfTypes', 'ncfSeries', 'retentionRules', 'supplierTypes', 'productCategoryMap', 'defaultSupplierType'));
+            return view('bill.create', compact('venders', 'bill_number', 'product_services', 'category', 'customFields', 'vendorId', 'chartAccounts', 'subAccounts', 'ncfTypes', 'ncfSeries', 'retentionRules', 'retentionRuleOptions', 'productCategoryMap', 'defaultRetentionRuleId'));
         } else {
             return response()->json(['error' => __('Permission denied.')], 401);
         }
@@ -182,12 +183,19 @@ class BillController extends Controller
 
                 return redirect()->back()->with('error', $messages->first());
             }
-            $products = $request->items;
+            $products = collect($request->items)->map(function ($row) {
+                if (isset($row['items']) && !isset($row['item'])) {
+                    $row['item'] = $row['items'];
+                }
+                return $row;
+            })->values()->all();
             $retentionRules = $this->getRetentionRules();
             $vendor = Vender::where('id', $request->vender_id)
                 ->where('created_by', \Auth::user()->creatorId())
                 ->first();
-            $supplierTypeValue = $this->resolveSupplierType($request->supplier_type, $vendor?->supplier_type);
+            $selectedRuleId = $request->filled('supplier_type') ? (int) $request->supplier_type : null;
+            $selectedRule = $retentionRules->firstWhere('id', $selectedRuleId);
+            $supplierTypeValue = $selectedRule?->supplier_type ?? $this->resolveSupplierType(null, $vendor?->supplier_type);
             $this->persistSupplierType($supplierTypeValue);
             $retentionCalculator = app(RetentionCalculator::class);
 
@@ -204,11 +212,24 @@ class BillController extends Controller
                 }
             }
 
-            $retentionTotals = $retentionCalculator->calculateForBill(
+            $retentionDetails = $retentionCalculator->calculateDetailedForBill(
                 $products,
-                $supplierTypeValue,
+                $selectedRuleId ?? $supplierTypeValue,
                 $retentionRules
             );
+            $applyRetention = (bool) $request->get('has_retention', false);
+            if (!$applyRetention) {
+                $retentionDetails['totals']['itbis_withheld_total'] = 0;
+                $retentionDetails['totals']['isr_withheld_total'] = 0;
+                $retentionDetails['totals']['government_withheld_total'] = 0;
+                foreach ($retentionDetails['lines'] as &$lineRetention) {
+                    $lineRetention['itbis_withheld'] = 0;
+                    $lineRetention['isr_withheld'] = 0;
+                    $lineRetention['government_withheld'] = 0;
+                }
+                unset($lineRetention);
+            }
+            $retentionTotals = $retentionDetails['totals'];
             // Si el frontend envió los totales, úsalo (fallback seguro)
             if ($request->filled('itbis_billed_total')) {
                 $retentionTotals['itbis_billed_total'] = (float) $request->itbis_billed_total;
@@ -218,6 +239,9 @@ class BillController extends Controller
             }
             if ($request->filled('isr_withheld_total')) {
                 $retentionTotals['isr_withheld_total'] = (float) $request->isr_withheld_total;
+            }
+            if ($request->filled('government_withheld_total')) {
+                $retentionTotals['government_withheld_total'] = (float) $request->government_withheld_total;
             }
             $bill            = new Bill();
             $bill->bill_id   = $this->billNumber();
@@ -235,6 +259,7 @@ class BillController extends Controller
             $bill->itbis_billed_total = $retentionTotals['itbis_billed_total'];
             $bill->itbis_withheld_total = $retentionTotals['itbis_withheld_total'];
             $bill->isr_withheld_total = $retentionTotals['isr_withheld_total'];
+            $bill->government_withheld_total = $retentionTotals['government_withheld_total'];
             $bill->discount_apply = isset($request->discount_apply) ? 1 : 0;
             $bill->created_by     = \Auth::user()->creatorId();
             $bill->save();
@@ -262,13 +287,19 @@ class BillController extends Controller
                 $billProduct->price       = $products[$i]['price'];
                 $billProduct->description = $products[$i]['description'] ?? null;
                 $billProduct->category_id = $itemCategoryId ?? null;
+                $lineRetention = $retentionDetails['lines'][$i] ?? null;
+                $billProduct->itbis_amount = $lineRetention['itbis_billed'] ?? ($products[$i]['itemTaxPrice'] ?? 0);
+                $billProduct->itbis_withheld_amount = $lineRetention['itbis_withheld'] ?? 0;
+                $billProduct->isr_withheld_amount = $lineRetention['isr_withheld'] ?? 0;
+                $billProduct->government_withheld_amount = $lineRetention['government_withheld'] ?? 0;
+                $billProduct->retention_rule_id = $lineRetention['rule_id'] ?? null;
                 $billProduct->save();
 
                 // >>> Cálculo del total de la línea
                 $qty         = (float) $billProduct->quantity;
                 $price       = (float) $billProduct->price;
                 $discount    = (float) ($billProduct->discount ?? 0);
-                $taxAmount   = (float) ($products[$i]['itemTaxPrice'] ?? 0); // ya viene calculado
+                $taxAmount   = (float) ($billProduct->itbis_amount ?? ($products[$i]['itemTaxPrice'] ?? 0)); // ya viene calculado
                 $lineBase    = max(0, ($qty * $price) - $discount);
                 $lineTotal   = $lineBase + $taxAmount;
 
@@ -539,7 +570,7 @@ class BillController extends Controller
             });
             $ncfSeries->prepend(__('Select NCF Series'), '');
             $retentionRules = $this->getRetentionRules();
-            $supplierTypes = $this->getSupplierTypes($retentionRules);
+            $supplierTypes = $this->getSupplierTypes($bill->supplier_type);
 
             return view('bill.edit', compact('venders', 'product_services', 'bill', 'bill_number', 'category', 'customFields', 'chartAccounts', 'items', 'subAccounts', 'estatus','has_retention', 'ncfTypes', 'ncfSeries', 'retentionRules', 'supplierTypes', 'productCategoryMap'));
         } else {
@@ -589,12 +620,19 @@ class BillController extends Controller
             // return redirect()->route('bill.index')->with('error', $validator->getMessageBag()->first());
         }        
 
-        $products = $request->items;
+        $products = collect($request->items)->map(function ($row) {
+            if (isset($row['items']) && !isset($row['item'])) {
+                $row['item'] = $row['items'];
+            }
+            return $row;
+        })->values()->all();
         $retentionRules = $this->getRetentionRules();
         $vendor = Vender::where('id', $request->vender_id)
             ->where('created_by', \Auth::user()->creatorId())
             ->first();
-        $supplierTypeValue = $this->resolveSupplierType($request->supplier_type, $vendor?->supplier_type);
+        $selectedRuleId = $request->filled('supplier_type') ? (int) $request->supplier_type : null;
+        $selectedRule = $retentionRules->firstWhere('id', $selectedRuleId);
+        $supplierTypeValue = $selectedRule?->supplier_type ?? $this->resolveSupplierType(null, $vendor?->supplier_type);
         $this->persistSupplierType($supplierTypeValue);
         $retentionCalculator = app(RetentionCalculator::class);
 
@@ -611,11 +649,36 @@ class BillController extends Controller
             }
         }
 
-        $retentionTotals = $retentionCalculator->calculateForBill(
+        $retentionDetails = $retentionCalculator->calculateDetailedForBill(
             $products,
-            $supplierTypeValue,
+            $selectedRuleId ?? $supplierTypeValue,
             $retentionRules
         );
+        $applyRetention = (bool) $request->get('has_retention', false);
+        if (!$applyRetention) {
+            $retentionDetails['totals']['itbis_withheld_total'] = 0;
+            $retentionDetails['totals']['isr_withheld_total'] = 0;
+            $retentionDetails['totals']['government_withheld_total'] = 0;
+            foreach ($retentionDetails['lines'] as &$lineRetention) {
+                $lineRetention['itbis_withheld'] = 0;
+                $lineRetention['isr_withheld'] = 0;
+                $lineRetention['government_withheld'] = 0;
+            }
+            unset($lineRetention);
+        }
+        $retentionTotals = $retentionDetails['totals'];
+        if ($request->filled('itbis_billed_total')) {
+            $retentionTotals['itbis_billed_total'] = (float) $request->itbis_billed_total;
+        }
+        if ($request->filled('itbis_withheld_total')) {
+            $retentionTotals['itbis_withheld_total'] = (float) $request->itbis_withheld_total;
+        }
+        if ($request->filled('isr_withheld_total')) {
+            $retentionTotals['isr_withheld_total'] = (float) $request->isr_withheld_total;
+        }
+        if ($request->filled('government_withheld_total')) {
+            $retentionTotals['government_withheld_total'] = (float) $request->government_withheld_total;
+        }
 
         // 1) Actualiza solo datos "cabezales" (NO status)
         $bill->vender_id    = $request->vender_id;
@@ -630,6 +693,7 @@ class BillController extends Controller
         $bill->itbis_billed_total = $retentionTotals['itbis_billed_total'];
         $bill->itbis_withheld_total = $retentionTotals['itbis_withheld_total'];
         $bill->isr_withheld_total = $retentionTotals['isr_withheld_total'];
+        $bill->government_withheld_total = $retentionTotals['government_withheld_total'];
         $bill->status    = $request->estatus_id; // ← INTENCIONALMENTE NO SE TOCA
         $bill->save();
         $this->syncRetentionCertificate($bill);
@@ -639,13 +703,18 @@ class BillController extends Controller
             CustomField::saveData($bill, $request->customField);
         }
 
-        $products = $request->items;
         $inventoryChanged = false;     // si hay cambios reales (no solo categoría)
         $onlyCategoryChanges = true;   // asumimos que solo cambian categorías hasta probar lo contrario
 
-        foreach ($products as $row) {
+        foreach ($products as $index => $row) {
             $lineId = isset($row['id']) ? (int)$row['id'] : 0;
             $existing = $lineId > 0 ? BillProduct::find($lineId) : null;
+            $lineRetention = $retentionDetails['lines'][$index] ?? null;
+            $itbisAmount = $lineRetention['itbis_billed'] ?? ($row['itemTaxPrice'] ?? 0);
+            $itbisWithheld = $lineRetention['itbis_withheld'] ?? 0;
+            $isrWithheld = $lineRetention['isr_withheld'] ?? 0;
+            $governmentWithheld = $lineRetention['government_withheld'] ?? 0;
+            $retentionRuleId = $lineRetention['rule_id'] ?? null;
             
             // Valores nuevos propuestos
             $newProductId = isset($row['items']) ? (int)$row['items'] : ($existing?->product_id);
@@ -667,6 +736,11 @@ class BillController extends Controller
                 $bp->price          = $newPrice;
                 $bp->description    = $newDesc;
                 $bp->category_id    = $newCatId ?? null;
+                $bp->itbis_amount = $itbisAmount;
+                $bp->itbis_withheld_amount = $itbisWithheld;
+                $bp->isr_withheld_amount = $isrWithheld;
+                $bp->government_withheld_amount = $governmentWithheld;
+                $bp->retention_rule_id = $retentionRuleId;
                 $bp->save();
 
                 // Ajuste inventario
@@ -694,6 +768,11 @@ class BillController extends Controller
                 // → No muevas inventario ni contabilidad: solo actualiza la categoría (y descripción si vino)
                 $existing->category_id = $newCatId ?? null;
                 $existing->description = $newDesc;
+                $existing->itbis_amount = $itbisAmount;
+                $existing->itbis_withheld_amount = $itbisWithheld;
+                $existing->isr_withheld_amount = $isrWithheld;
+                $existing->government_withheld_amount = $governmentWithheld;
+                $existing->retention_rule_id = $retentionRuleId;
                 $existing->save();
                 // Mantén flags: solo-categoría
                 continue;
@@ -715,6 +794,11 @@ class BillController extends Controller
             $existing->price       = $newPrice;
             $existing->description = $newDesc;
             $existing->category_id = $newCatId ?? null;
+            $existing->itbis_amount = $itbisAmount;
+            $existing->itbis_withheld_amount = $itbisWithheld;
+            $existing->isr_withheld_amount = $isrWithheld;
+            $existing->government_withheld_amount = $governmentWithheld;
+            $existing->retention_rule_id = $retentionRuleId;
             $existing->save();
 
             // Aplicar inventario nuevo
@@ -854,7 +938,9 @@ class BillController extends Controller
 
     protected function syncRetentionCertificate(Bill $bill): void
     {
-        $totalRetained = ($bill->itbis_withheld_total ?? 0) + ($bill->isr_withheld_total ?? 0);
+        $totalRetained = ($bill->itbis_withheld_total ?? 0)
+            + ($bill->isr_withheld_total ?? 0)
+            + ($bill->government_withheld_total ?? 0);
 
         if ($totalRetained <= 0) {
             RetentionCertificate::where('bill_id', $bill->id)->delete();
@@ -897,7 +983,7 @@ class BillController extends Controller
             $bill->url  = route('bill.pdf', Crypt::encrypt($bill->id));
 
             // Ajusta saldo del proveedor
-            Utility::updateUserBalance('vendor', $bill->vender_id, $bill->getTotal(), 'debit');
+            Utility::updateUserBalance('vendor', $bill->vender_id, $bill->getNetPayable(), 'debit');
 
             // Evita duplicados si reenvías
             TransactionLines::where('reference_id', $bill->id)
@@ -1894,49 +1980,68 @@ class BillController extends Controller
         return $data;
     }
 
+    public function retentions($billId, RetentionReportService $reportService)
+    {
+        if (!\Auth::user()->can('show bill')) {
+            return response()->json(['error' => __('Permission denied.')], 401);
+        }
+
+        $bill = Bill::where('id', $billId)->where('created_by', \Auth::user()->creatorId())->firstOrFail();
+
+        return response()->json($reportService->summarizeBill($bill));
+    }
+
     protected function getRetentionRules(): Collection
     {
         return RetentionRule::where(function ($query) {
             $query->where('created_by', \Auth::user()->creatorId())
                 ->orWhere('created_by', 0);
-        })->get();
+        })->active()->get();
     }
 
-    
-
-        /**
-         * Normaliza el tipo de suplidor para eliminar duplicados por espacios, NBSP y mayúsculas/minúsculas.
-         */
-        protected function normalizeSupplierType($value): ?string
-        {
-            if ($value === null) {
-                return null;
+    protected function buildRetentionRuleOptions(Collection $rules): Collection
+    {
+        return $rules->mapWithKeys(function (RetentionRule $rule) {
+            $label = $rule->supplier_type ?: __('General');
+            if ($rule->serviceCategory?->name) {
+                $label .= ' - ' . $rule->serviceCategory->name;
             }
-    
-            $s = (string) $value;
-    
-            // Remueve espacios no separables (NBSP) y normaliza espacios múltiples.
-            $s = str_replace("\xC2\xA0", ' ', $s);
-            $s = preg_replace('/\s+/u', ' ', $s);
-    
-            $s = trim($s);
-    
-            return $s === '' ? null : $s;
+            return [$rule->id => $label];
+        });
+    }
+
+    protected function guessRetentionRuleId(Collection $rules, ?string $supplierType): ?int
+    {
+        if (empty($supplierType)) {
+            return null;
         }
 
-protected function getSupplierTypes(): \Illuminate\Support\Collection
-{
-    $userId = \Auth::user()->creatorId();
+        $normalized = $this->normalizeSupplierType($supplierType);
 
-    return SupplierType::forUser($userId)
-        ->pluck('name')                                   // solo columna name
-        ->map(fn ($type) => $this->normalizeSupplierType($type)) // normaliza
-        ->filter(fn ($type) => !empty($type))             // elimina null/vacíos
-        ->unique(fn ($type) => mb_strtolower($type, 'UTF-8')) // quita duplicados
-        ->sortBy(fn ($type) => mb_strtolower($type, 'UTF-8')) // ordena
-        ->values();                                       // reindexa
-}
+        return $rules->firstWhere(function (RetentionRule $rule) use ($normalized) {
+            return $this->normalizeSupplierType($rule->supplier_type) === $normalized;
+        })?->id;
+    }
 
+    /**
+     * Normaliza el tipo de suplidor para eliminar duplicados por espacios, NBSP y mayúsculas/minúsculas.
+     */
+    protected function normalizeSupplierType($value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $s = (string) $value;
+
+        // Remueve espacios no separables (NBSP) y normaliza espacios múltiples.
+        $s = str_replace("\xC2\xA0", ' ', $s);
+        $s = preg_replace('/\s+/u', ' ', $s);
+
+        $s = trim($s);
+
+        return $s === '' ? null : $s;
+    }
 
     protected function resolveSupplierType(?string $inputSupplierType, ?string $vendorSupplierType): ?string
     {
@@ -1951,23 +2056,23 @@ protected function getSupplierTypes(): \Illuminate\Support\Collection
         return $resolved === '' ? null : $resolved;
     }
 
-protected function persistSupplierType(?string $supplierType): void
-{
-    $supplierType = $this->normalizeSupplierType($supplierType);
+    protected function persistSupplierType(?string $supplierType): void
+    {
+        $supplierType = $this->normalizeSupplierType($supplierType);
 
-    if (empty($supplierType)) {
-        return;
+        if (empty($supplierType)) {
+            return;
+        }
+
+        SupplierType::firstOrCreate(
+            [
+                'name' => $supplierType,
+                'created_by' => \Auth::user()->creatorId(),
+            ],
+            [
+                'name' => $supplierType,
+                'created_by' => \Auth::user()->creatorId(),
+            ]
+        );
     }
-
-    SupplierType::firstOrCreate(
-        [
-            'name' => $supplierType,
-            'created_by' => \Auth::user()->creatorId(),
-        ],
-        [
-            'name' => $supplierType,
-            'created_by' => \Auth::user()->creatorId(),
-        ]
-    );
-}
 }

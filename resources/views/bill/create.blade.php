@@ -610,6 +610,7 @@
                     'service_category_id' => $rule->service_category_id,
                     'itbis_retention_rate' => (float) $rule->itbis_retention_rate,
                     'isr_retention_rate' => (float) $rule->isr_retention_rate,
+                    'government_retention_rate' => (float) $rule->government_retention_rate,
                 ];
             })
             ->values()
@@ -722,6 +723,7 @@
             let itbisBilled = 0;
             let itbisWithheld = 0;
             let isrWithheld = 0;
+            let governmentWithheld = 0;
 
             $('[data-repeater-item]').each(function () {
                 const row = $(this);
@@ -756,9 +758,11 @@
 
                 const itbisRate = toPercent(rule.itbis_retention_rate);
                 const isrRate = toPercent(rule.isr_retention_rate);
+                const governmentRate = toPercent(rule.government_retention_rate);
 
                 if (itbisRate > 0) itbisWithheld += (taxAmount * itbisRate / 100);
                 if (isrRate > 0) isrWithheld += (base * isrRate / 100);
+                if (governmentRate > 0) governmentWithheld += (base * governmentRate / 100);
             });
 
             let accountTotal = 0;
@@ -767,17 +771,19 @@
             });
 
             const grossWithTax = subtotal + itbisBilled + accountTotal;
-            const finalPayable = grossWithTax - itbisWithheld - isrWithheld;
+            const finalPayable = grossWithTax - itbisWithheld - isrWithheld - governmentWithheld;
 
             $('.itbisBilled').text(itbisBilled.toFixed(2));
             $('.itbisWithheld').text(itbisWithheld.toFixed(2));
             $('.isrWithheld').text(isrWithheld.toFixed(2));
+            $('.governmentWithheld').text(governmentWithheld.toFixed(2));
             $('.totalAmount').text(grossWithTax.toFixed(2));
             $('.finalPayable').text(finalPayable.toFixed(2));
 
             $('.itbisBilledInput').val(itbisBilled.toFixed(2));
             $('.itbisWithheldInput').val(itbisWithheld.toFixed(2));
             $('.isrWithheldInput').val(isrWithheld.toFixed(2));
+            $('.governmentWithheldInput').val(governmentWithheld.toFixed(2));
             $('.finalPayableInput').val(finalPayable.toFixed(2));
         }
 
@@ -816,9 +822,6 @@
     <div class="row">
         {{ Form::open(['url' => 'bill', 'class' => 'w-100 needs-validation', 'novalidate']) }}
         <div class="col-12">
-            <input type="hidden" name="itbis_billed_total" class="itbisBilledInput" value="0">
-        <input type="hidden" name="itbis_withheld_total" class="itbisWithheldInput" value="0">
-        <input type="hidden" name="isr_withheld_total" class="isrWithheldInput" value="0">
             <input type="hidden" name="_token" id="token" value="{{ csrf_token() }}">
             <div class="card">
                 <div class="card-body">
@@ -835,26 +838,13 @@
                             <div id="vender_detail" class="d-none">
                             </div>
                             <div class="form-group">
-                                {{ Form::label('supplier_type', __('Supplier / service type (retention)'), ['class' => 'form-label']) }}
-                                @php
-    // $supplierTypes viene del controller como una lista (Collection) de nombres únicos
-    $supplierTypeOptions = collect($supplierTypes ?? [])
-        ->filter()
-        ->mapWithKeys(fn($t) => [$t => $t]) // key=value
-        ->toArray();
-@endphp
-                                
-                                <div class="form-group">
-    {{ Form::label('supplier_type', __('Tipo de suplidor')) }}
-    {{ Form::select('supplier_type', $supplierTypes ?? [], old('supplier_type', $bill->supplier_type ?? null), [
-        'id' => 'supplier_type',
-        'class' => 'form-control', // ✅ HTML estándar
-        'placeholder' => __('Seleccione un tipo'),
-    ]) }}
-</div>
-
-
-<small class="text-muted">{{ __('Define el tipo para aplicar las reglas de ITBIS/ISR retenido.') }}</small>
+                                {{ Form::label('supplier_type', __('Tipo de suplidor / servicio (retención)'), ['class' => 'form-label']) }}
+                                {{ Form::select('supplier_type', $retentionRuleOptions ?? [], old('supplier_type', $defaultRetentionRuleId ?? null), [
+                                    'id' => 'supplier_type',
+                                    'class' => 'form-control',
+                                    'placeholder' => __('Seleccione un tipo'),
+                                ]) }}
+                                <small class="text-muted">{{ __('Define el tipo para aplicar las reglas de ITBIS/ISR retenido.') }}</small>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -1140,6 +1130,18 @@
                                     <td class="text-end isrWithheld">0.00</td>
                                     <td></td>
                                 </tr>
+                                <tr>
+                                    <td>&nbsp;</td>
+                                    <td>&nbsp;</td>
+                                    <td>&nbsp;</td>
+                                    <td></td>
+                                    <td class="text-danger">
+                                        <strong>{{ __('Retención gubernamental') }}
+                                            ({{ \Auth::user()->currencySymbol() }})</strong>
+                                    </td>
+                                    <td class="text-end governmentWithheld">0.00</td>
+                                    <td></td>
+                                </tr>
 
                                 <!-- Total con impuestos (para referencia) -->
                                 <tr>
@@ -1176,6 +1178,8 @@
                                         <input type="hidden" name="itbis_withheld_total" class="itbisWithheldInput"
                                             value="0">
                                         <input type="hidden" name="isr_withheld_total" class="isrWithheldInput"
+                                            value="0">
+                                        <input type="hidden" name="government_withheld_total" class="governmentWithheldInput"
                                             value="0">
                                         <input type="hidden" name="pago_final_proveedor" class="finalPayableInput"
                                             value="0">
