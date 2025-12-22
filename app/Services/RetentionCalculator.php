@@ -23,6 +23,7 @@ class RetentionCalculator
         $itbisBilled = 0;
         $itbisWithheld = 0;
         $isrWithheld = 0;
+        $governmentWithheld = 0;
         $lines = [];
 
         foreach ($items as $index => $item) {
@@ -32,6 +33,7 @@ class RetentionCalculator
             $itbisBilled += $line['itbis_billed'];
             $itbisWithheld += $line['itbis_withheld'];
             $isrWithheld += $line['isr_withheld'];
+            $governmentWithheld += $line['government_withheld'];
         }
 
         return [
@@ -39,6 +41,7 @@ class RetentionCalculator
                 'itbis_billed_total' => round($itbisBilled, 2),
                 'itbis_withheld_total' => round($itbisWithheld, 2),
                 'isr_withheld_total' => round($isrWithheld, 2),
+                'government_withheld_total' => round($governmentWithheld, 2),
             ],
             'lines' => $lines,
         ];
@@ -65,12 +68,14 @@ class RetentionCalculator
 
         $itbisWithheld = round($taxAmount * ($rule?->itbis_retention_rate ?? 0) / 100, 2);
         $isrWithheld = round($base * ($rule?->isr_retention_rate ?? 0) / 100, 2);
+        $governmentWithheld = round($base * ($rule?->government_retention_rate ?? 0) / 100, 2);
 
         return [
             'base' => $base,
             'itbis_billed' => round($taxAmount, 2),
             'itbis_withheld' => $itbisWithheld,
             'isr_withheld' => $isrWithheld,
+            'government_withheld' => $governmentWithheld,
             'rule_id' => $rule?->id,
         ];
     }

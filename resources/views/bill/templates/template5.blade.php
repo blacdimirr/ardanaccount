@@ -400,6 +400,10 @@
                                     <td>{{ Utility::priceFormat($settings, $bill->isr_withheld_total ?? 0) }}</td>
                                 </tr>
                                 <tr style="border-bottom:1px solid {{ $color }};">
+                                    <td>{{ __('Retención gubernamental') }}:</td>
+                                    <td>{{ Utility::priceFormat($settings, $bill->government_withheld_total ?? 0) }}</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid {{ $color }};">
                                     <td>{{ __('Total a pagar (neto)') }}:</td>
                                     <td>{{ Utility::priceFormat($settings, $bill->getNetPayable()) }}</td>
                                 </tr>

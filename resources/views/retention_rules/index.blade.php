@@ -30,6 +30,7 @@
                                     <th>{{ __('Servicio / categoría') }}</th>
                                     <th>{{ __('% ITBIS retenido') }}</th>
                                     <th>{{ __('% ISR retenido') }}</th>
+                                    <th>{{ __('% Retención gubernamental') }}</th>
                                     <th>{{ __('Estado') }}</th>
                                     <th>{{ __('Actualizado') }}</th>
                                     <th class="text-end">{{ __('Acciones') }}</th>
@@ -42,6 +43,7 @@
                                         <td>{{ $rule->serviceCategory->name ?? __('Todas') }}</td>
                                         <td>{{ number_format($rule->itbis_retention_rate, 2) }}%</td>
                                         <td>{{ number_format($rule->isr_retention_rate, 2) }}%</td>
+                                        <td>{{ number_format($rule->government_retention_rate, 2) }}%</td>
                                         <td>
                                             @if($rule->active)
                                                 <span class="badge bg-success">{{ __('Activa') }}</span>
@@ -67,7 +69,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="text-center text-muted">{{ __('Aún no hay reglas de retención configuradas.') }}</td>
+                                        <td colspan="8" class="text-center text-muted">{{ __('Aún no hay reglas de retención configuradas.') }}</td>
                                     </tr>
                                 @endforelse
                             </tbody>

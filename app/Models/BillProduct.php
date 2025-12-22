@@ -19,6 +19,7 @@ class BillProduct extends Model
         'itbis_amount',
         'itbis_withheld_amount',
         'isr_withheld_amount',
+        'government_withheld_amount',
         'retention_rule_id',
     ];
 
@@ -31,6 +32,7 @@ class BillProduct extends Model
         'itbis_amount' => 'float',
         'itbis_withheld_amount' => 'float',
         'isr_withheld_amount' => 'float',
+        'government_withheld_amount' => 'float',
     ];
 
     public function bill()

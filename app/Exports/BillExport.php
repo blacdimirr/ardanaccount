@@ -51,6 +51,7 @@ class BillExport implements FromCollection, WithHeadings
             $data[$k]["itbis_billed_total"] = $Bill->itbis_billed_total ?? 0;
             $data[$k]["itbis_withheld_total"] = $Bill->itbis_withheld_total ?? 0;
             $data[$k]["isr_withheld_total"] = $Bill->isr_withheld_total ?? 0;
+            $data[$k]["government_withheld_total"] = $Bill->government_withheld_total ?? 0;
             $data[$k]["net_payable"] = $Bill->getNetPayable();
         }
 
@@ -71,6 +72,7 @@ class BillExport implements FromCollection, WithHeadings
             "ITBIS Billed",
             "ITBIS Withheld",
             "ISR Withheld",
+            "Government Withheld",
             "Net Payable",
 
         ];

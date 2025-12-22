@@ -21,6 +21,7 @@ class RetentionReportService
                 'itbis_billed' => (float) ($item->itbis_amount ?? 0),
                 'itbis_withheld' => (float) ($item->itbis_withheld_amount ?? 0),
                 'isr_withheld' => (float) ($item->isr_withheld_amount ?? 0),
+                'government_withheld' => (float) ($item->government_withheld_amount ?? 0),
                 'retention_rule_id' => $item->retention_rule_id,
             ];
         })->values();
@@ -34,6 +35,7 @@ class RetentionReportService
                 'itbis_billed_total' => (float) ($bill->itbis_billed_total ?? 0),
                 'itbis_withheld_total' => (float) ($bill->itbis_withheld_total ?? 0),
                 'isr_withheld_total' => (float) ($bill->isr_withheld_total ?? 0),
+                'government_withheld_total' => (float) ($bill->government_withheld_total ?? 0),
                 'net_payable' => $bill->getNetPayable(),
             ],
             'lines' => $lines,

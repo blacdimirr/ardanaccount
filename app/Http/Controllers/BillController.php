@@ -221,9 +221,11 @@ class BillController extends Controller
             if (!$applyRetention) {
                 $retentionDetails['totals']['itbis_withheld_total'] = 0;
                 $retentionDetails['totals']['isr_withheld_total'] = 0;
+                $retentionDetails['totals']['government_withheld_total'] = 0;
                 foreach ($retentionDetails['lines'] as &$lineRetention) {
                     $lineRetention['itbis_withheld'] = 0;
                     $lineRetention['isr_withheld'] = 0;
+                    $lineRetention['government_withheld'] = 0;
                 }
                 unset($lineRetention);
             }
@@ -237,6 +239,9 @@ class BillController extends Controller
             }
             if ($request->filled('isr_withheld_total')) {
                 $retentionTotals['isr_withheld_total'] = (float) $request->isr_withheld_total;
+            }
+            if ($request->filled('government_withheld_total')) {
+                $retentionTotals['government_withheld_total'] = (float) $request->government_withheld_total;
             }
             $bill            = new Bill();
             $bill->bill_id   = $this->billNumber();
@@ -254,6 +259,7 @@ class BillController extends Controller
             $bill->itbis_billed_total = $retentionTotals['itbis_billed_total'];
             $bill->itbis_withheld_total = $retentionTotals['itbis_withheld_total'];
             $bill->isr_withheld_total = $retentionTotals['isr_withheld_total'];
+            $bill->government_withheld_total = $retentionTotals['government_withheld_total'];
             $bill->discount_apply = isset($request->discount_apply) ? 1 : 0;
             $bill->created_by     = \Auth::user()->creatorId();
             $bill->save();
@@ -285,6 +291,7 @@ class BillController extends Controller
                 $billProduct->itbis_amount = $lineRetention['itbis_billed'] ?? ($products[$i]['itemTaxPrice'] ?? 0);
                 $billProduct->itbis_withheld_amount = $lineRetention['itbis_withheld'] ?? 0;
                 $billProduct->isr_withheld_amount = $lineRetention['isr_withheld'] ?? 0;
+                $billProduct->government_withheld_amount = $lineRetention['government_withheld'] ?? 0;
                 $billProduct->retention_rule_id = $lineRetention['rule_id'] ?? null;
                 $billProduct->save();
 
@@ -651,9 +658,11 @@ class BillController extends Controller
         if (!$applyRetention) {
             $retentionDetails['totals']['itbis_withheld_total'] = 0;
             $retentionDetails['totals']['isr_withheld_total'] = 0;
+            $retentionDetails['totals']['government_withheld_total'] = 0;
             foreach ($retentionDetails['lines'] as &$lineRetention) {
                 $lineRetention['itbis_withheld'] = 0;
                 $lineRetention['isr_withheld'] = 0;
+                $lineRetention['government_withheld'] = 0;
             }
             unset($lineRetention);
         }
@@ -666,6 +675,9 @@ class BillController extends Controller
         }
         if ($request->filled('isr_withheld_total')) {
             $retentionTotals['isr_withheld_total'] = (float) $request->isr_withheld_total;
+        }
+        if ($request->filled('government_withheld_total')) {
+            $retentionTotals['government_withheld_total'] = (float) $request->government_withheld_total;
         }
 
         // 1) Actualiza solo datos "cabezales" (NO status)
@@ -681,6 +693,7 @@ class BillController extends Controller
         $bill->itbis_billed_total = $retentionTotals['itbis_billed_total'];
         $bill->itbis_withheld_total = $retentionTotals['itbis_withheld_total'];
         $bill->isr_withheld_total = $retentionTotals['isr_withheld_total'];
+        $bill->government_withheld_total = $retentionTotals['government_withheld_total'];
         $bill->status    = $request->estatus_id; // ← INTENCIONALMENTE NO SE TOCA
         $bill->save();
         $this->syncRetentionCertificate($bill);
@@ -700,6 +713,7 @@ class BillController extends Controller
             $itbisAmount = $lineRetention['itbis_billed'] ?? ($row['itemTaxPrice'] ?? 0);
             $itbisWithheld = $lineRetention['itbis_withheld'] ?? 0;
             $isrWithheld = $lineRetention['isr_withheld'] ?? 0;
+            $governmentWithheld = $lineRetention['government_withheld'] ?? 0;
             $retentionRuleId = $lineRetention['rule_id'] ?? null;
             
             // Valores nuevos propuestos
@@ -725,6 +739,7 @@ class BillController extends Controller
                 $bp->itbis_amount = $itbisAmount;
                 $bp->itbis_withheld_amount = $itbisWithheld;
                 $bp->isr_withheld_amount = $isrWithheld;
+                $bp->government_withheld_amount = $governmentWithheld;
                 $bp->retention_rule_id = $retentionRuleId;
                 $bp->save();
 
@@ -756,6 +771,7 @@ class BillController extends Controller
                 $existing->itbis_amount = $itbisAmount;
                 $existing->itbis_withheld_amount = $itbisWithheld;
                 $existing->isr_withheld_amount = $isrWithheld;
+                $existing->government_withheld_amount = $governmentWithheld;
                 $existing->retention_rule_id = $retentionRuleId;
                 $existing->save();
                 // Mantén flags: solo-categoría
@@ -778,6 +794,11 @@ class BillController extends Controller
             $existing->price       = $newPrice;
             $existing->description = $newDesc;
             $existing->category_id = $newCatId ?? null;
+            $existing->itbis_amount = $itbisAmount;
+            $existing->itbis_withheld_amount = $itbisWithheld;
+            $existing->isr_withheld_amount = $isrWithheld;
+            $existing->government_withheld_amount = $governmentWithheld;
+            $existing->retention_rule_id = $retentionRuleId;
             $existing->save();
 
             // Aplicar inventario nuevo
@@ -917,7 +938,9 @@ class BillController extends Controller
 
     protected function syncRetentionCertificate(Bill $bill): void
     {
-        $totalRetained = ($bill->itbis_withheld_total ?? 0) + ($bill->isr_withheld_total ?? 0);
+        $totalRetained = ($bill->itbis_withheld_total ?? 0)
+            + ($bill->isr_withheld_total ?? 0)
+            + ($bill->government_withheld_total ?? 0);
 
         if ($totalRetained <= 0) {
             RetentionCertificate::where('bill_id', $bill->id)->delete();

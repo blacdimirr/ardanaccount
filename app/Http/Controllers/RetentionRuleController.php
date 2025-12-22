@@ -109,6 +109,7 @@ class RetentionRuleController extends Controller
             'service_category_id' => 'nullable|integer|exists:product_service_categories,id',
             'itbis_retention_rate' => 'required|numeric|min:0|max:100',
             'isr_retention_rate' => 'required|numeric|min:0|max:100',
+            'government_retention_rate' => 'required|numeric|min:0|max:100',
             'active' => 'sometimes|boolean',
         ]);
     }
