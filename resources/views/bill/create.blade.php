@@ -816,6 +816,7 @@
     <div class="row">
         {{ Form::open(['url' => 'bill', 'class' => 'w-100 needs-validation', 'novalidate']) }}
         <div class="col-12">
+            <input type="hidden" name="_token" id="token" value="{{ csrf_token() }}">
             <div class="card">
                 <div class="card-body">
                     <div class="row">
