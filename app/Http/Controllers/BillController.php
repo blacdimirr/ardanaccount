@@ -142,8 +142,8 @@ class BillController extends Controller
             });
             $ncfSeries->prepend(__('Select NCF Series'), '');
             $retentionRules = $this->getRetentionRules();
-            $supplierTypes = $this->getSupplierTypes($retentionRules);
             $defaultSupplierType = $selectedVendor?->supplier_type;
+            $supplierTypes = $this->getSupplierTypes($defaultSupplierType);
 
             return view('bill.create', compact('venders', 'bill_number', 'product_services', 'category', 'customFields', 'vendorId', 'chartAccounts', 'subAccounts', 'ncfTypes', 'ncfSeries', 'retentionRules', 'supplierTypes', 'productCategoryMap', 'defaultSupplierType'));
         } else {
@@ -561,7 +561,7 @@ class BillController extends Controller
             });
             $ncfSeries->prepend(__('Select NCF Series'), '');
             $retentionRules = $this->getRetentionRules();
-            $supplierTypes = $this->getSupplierTypes($retentionRules);
+            $supplierTypes = $this->getSupplierTypes($bill->supplier_type);
 
             return view('bill.edit', compact('venders', 'product_services', 'bill', 'bill_number', 'category', 'customFields', 'chartAccounts', 'items', 'subAccounts', 'estatus','has_retention', 'ncfTypes', 'ncfSeries', 'retentionRules', 'supplierTypes', 'productCategoryMap'));
         } else {
@@ -1994,18 +1994,25 @@ class BillController extends Controller
             return $s === '' ? null : $s;
         }
 
-protected function getSupplierTypes(): \Illuminate\Support\Collection
-{
-    $userId = \Auth::user()->creatorId();
+    protected function getSupplierTypes(?string $preferred = null): \Illuminate\Support\Collection
+    {
+        $userId = \Auth::user()->creatorId();
 
-    return SupplierType::forUser($userId)
-        ->pluck('name')                                   // solo columna name
-        ->map(fn ($type) => $this->normalizeSupplierType($type)) // normaliza
-        ->filter(fn ($type) => !empty($type))             // elimina null/vacíos
-        ->unique(fn ($type) => mb_strtolower($type, 'UTF-8')) // quita duplicados
-        ->sortBy(fn ($type) => mb_strtolower($type, 'UTF-8')) // ordena
-        ->values();                                       // reindexa
-}
+        $fromTable = SupplierType::forUser($userId)->pluck('name');
+        $fromVendors = Vender::where('created_by', $userId)->pluck('supplier_type');
+        $fromRules = RetentionRule::where(function ($query) use ($userId) {
+            $query->where('created_by', $userId)->orWhere('created_by', 0);
+        })->pluck('supplier_type');
+
+        $all = collect([$fromTable, $fromVendors, $fromRules, $preferred])->flatten();
+
+        return $all
+            ->map(fn ($type) => $this->normalizeSupplierType($type))
+            ->filter(fn ($type) => !empty($type))
+            ->unique(fn ($type) => mb_strtolower($type, 'UTF-8'))
+            ->sortBy(fn ($type) => mb_strtolower($type, 'UTF-8'))
+            ->values();
+    }
 
 
     protected function resolveSupplierType(?string $inputSupplierType, ?string $vendorSupplierType): ?string
