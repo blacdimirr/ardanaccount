@@ -1165,6 +1165,12 @@ class UsersTableSeeder extends Seeder
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
             ],
+            [
+                'name' => 'config_retenciones_manage',
+                'guard_name' => 'web',
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ],
 
 
 
@@ -1394,6 +1400,7 @@ class UsersTableSeeder extends Seeder
             'create constant contract type',
             'edit constant contract type',
             'delete constant contract type',
+            'config_retenciones_manage',
 
 
 
@@ -1558,6 +1565,7 @@ class UsersTableSeeder extends Seeder
             'create constant contract type',
             'edit constant contract type',
             'delete constant contract type',
+            'config_retenciones_manage',
 
         ];
 

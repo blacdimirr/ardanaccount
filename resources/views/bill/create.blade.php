@@ -816,10 +816,6 @@
     <div class="row">
         {{ Form::open(['url' => 'bill', 'class' => 'w-100 needs-validation', 'novalidate']) }}
         <div class="col-12">
-            <input type="hidden" name="itbis_billed_total" class="itbisBilledInput" value="0">
-        <input type="hidden" name="itbis_withheld_total" class="itbisWithheldInput" value="0">
-        <input type="hidden" name="isr_withheld_total" class="isrWithheldInput" value="0">
-            <input type="hidden" name="_token" id="token" value="{{ csrf_token() }}">
             <div class="card">
                 <div class="card-body">
                     <div class="row">
@@ -835,26 +831,19 @@
                             <div id="vender_detail" class="d-none">
                             </div>
                             <div class="form-group">
-                                {{ Form::label('supplier_type', __('Supplier / service type (retention)'), ['class' => 'form-label']) }}
                                 @php
-    // $supplierTypes viene del controller como una lista (Collection) de nombres únicos
-    $supplierTypeOptions = collect($supplierTypes ?? [])
-        ->filter()
-        ->mapWithKeys(fn($t) => [$t => $t]) // key=value
-        ->toArray();
-@endphp
-                                
-                                <div class="form-group">
-    {{ Form::label('supplier_type', __('Tipo de suplidor')) }}
-    {{ Form::select('supplier_type', $supplierTypes ?? [], old('supplier_type', $bill->supplier_type ?? null), [
-        'id' => 'supplier_type',
-        'class' => 'form-control', // ✅ HTML estándar
-        'placeholder' => __('Seleccione un tipo'),
-    ]) }}
-</div>
-
-
-<small class="text-muted">{{ __('Define el tipo para aplicar las reglas de ITBIS/ISR retenido.') }}</small>
+                                    $supplierTypeOptions = collect($supplierTypes ?? [])
+                                        ->filter()
+                                        ->mapWithKeys(fn($t) => [$t => $t])
+                                        ->toArray();
+                                @endphp
+                                {{ Form::label('supplier_type', __('Tipo de suplidor / servicio (retención)'), ['class' => 'form-label']) }}
+                                {{ Form::select('supplier_type', $supplierTypeOptions, old('supplier_type', $defaultSupplierType ?? null), [
+                                    'id' => 'supplier_type',
+                                    'class' => 'form-control',
+                                    'placeholder' => __('Seleccione un tipo'),
+                                ]) }}
+                                <small class="text-muted">{{ __('Define el tipo para aplicar las reglas de ITBIS/ISR retenido.') }}</small>
                             </div>
                         </div>
                         <div class="col-md-6">

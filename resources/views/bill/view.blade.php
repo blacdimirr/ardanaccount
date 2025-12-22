@@ -562,7 +562,7 @@ $('.cp_link_document_auth_approved').on('click', function() {
                                             <tr>
                                                 <td colspan="8"></td>
                                                 <td class="blue-text text-end"><b>{{ __('Pago final al proveedor') }}</b></td>
-                                                <td class="blue-text text-end">{{ \Auth::user()->priceFormat($bill->getTotal() - (($bill->itbis_withheld_total ?? 0) + ($bill->isr_withheld_total ?? 0))) }}</td>
+                                                <td class="blue-text text-end">{{ \Auth::user()->priceFormat($bill->getNetPayable()) }}</td>
                                             </tr>
                                             <tr>
                                                 <td colspan="8"></td>

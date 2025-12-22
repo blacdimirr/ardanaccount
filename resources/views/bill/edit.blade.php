@@ -779,7 +779,6 @@
     <div class="row">
         {{ Form::model($bill, ['route' => ['bill.update', $bill->id], 'method' => 'PUT', 'class' => 'w-100 needs-validation', 'novalidate']) }}
         <div class="col-12">
-            <input type="hidden" name="_token" id="token" value="{{ csrf_token() }}">
             <div class="card">
                 <div class="card-body">
                     <div class="row">
@@ -795,11 +794,15 @@
                             <div id="vender_detail" class="d-none">
                             </div>
                             <div class="form-group">
-                                {{ Form::label('supplier_type', __('Supplier / service type (retention)'), ['class' => 'form-label']) }}
-                                {{ Form::select('supplier_type', $supplierTypes ?? [], old('supplier_type', $bill->supplier_type ?? null), ['id' => 'supplier_type', 'class' => 'form-control', 'placeholder' => __('Seleccione un tipo')]) }}
+                                @php
+                                    $supplierTypeOptions = collect($supplierTypes ?? [])
+                                        ->filter()
+                                        ->mapWithKeys(fn($t) => [$t => $t])
+                                        ->toArray();
+                                @endphp
+                                {{ Form::label('supplier_type', __('Tipo de suplidor / servicio (retención)'), ['class' => 'form-label']) }}
+                                {{ Form::select('supplier_type', $supplierTypeOptions, old('supplier_type', $bill->supplier_type ?? null), ['id' => 'supplier_type', 'class' => 'form-control', 'placeholder' => __('Seleccione un tipo')]) }}
                                 <small class="text-muted">{{ __('Defina el tipo de suplidor/servicio para aplicar reglas de retención.') }}</small>
-                            </div>
-                                <small class="text-muted">{{ __('Define el tipo para aplicar las reglas de ITBIS/ISR retenido.') }}</small>
                             </div>
                         </div>
                         <div class="col-md-6">

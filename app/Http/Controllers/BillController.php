@@ -36,6 +36,7 @@ use App\Models\RetentionRule;
 use App\Models\RetentionCertificate;
 use App\Models\SupplierType;
 use App\Services\RetentionCalculator;
+use App\Services\RetentionReportService;
 use Exception;
 use Carbon\Carbon;
 use CoinGate\Exception\Api\BadRequest;
@@ -182,7 +183,12 @@ class BillController extends Controller
 
                 return redirect()->back()->with('error', $messages->first());
             }
-            $products = $request->items;
+            $products = collect($request->items)->map(function ($row) {
+                if (isset($row['items']) && !isset($row['item'])) {
+                    $row['item'] = $row['items'];
+                }
+                return $row;
+            })->values()->all();
             $retentionRules = $this->getRetentionRules();
             $vendor = Vender::where('id', $request->vender_id)
                 ->where('created_by', \Auth::user()->creatorId())
@@ -204,11 +210,22 @@ class BillController extends Controller
                 }
             }
 
-            $retentionTotals = $retentionCalculator->calculateForBill(
+            $retentionDetails = $retentionCalculator->calculateDetailedForBill(
                 $products,
                 $supplierTypeValue,
                 $retentionRules
             );
+            $applyRetention = (bool) $request->get('has_retention', false);
+            if (!$applyRetention) {
+                $retentionDetails['totals']['itbis_withheld_total'] = 0;
+                $retentionDetails['totals']['isr_withheld_total'] = 0;
+                foreach ($retentionDetails['lines'] as &$lineRetention) {
+                    $lineRetention['itbis_withheld'] = 0;
+                    $lineRetention['isr_withheld'] = 0;
+                }
+                unset($lineRetention);
+            }
+            $retentionTotals = $retentionDetails['totals'];
             // Si el frontend envió los totales, úsalo (fallback seguro)
             if ($request->filled('itbis_billed_total')) {
                 $retentionTotals['itbis_billed_total'] = (float) $request->itbis_billed_total;
@@ -262,13 +279,18 @@ class BillController extends Controller
                 $billProduct->price       = $products[$i]['price'];
                 $billProduct->description = $products[$i]['description'] ?? null;
                 $billProduct->category_id = $itemCategoryId ?? null;
+                $lineRetention = $retentionDetails['lines'][$i] ?? null;
+                $billProduct->itbis_amount = $lineRetention['itbis_billed'] ?? ($products[$i]['itemTaxPrice'] ?? 0);
+                $billProduct->itbis_withheld_amount = $lineRetention['itbis_withheld'] ?? 0;
+                $billProduct->isr_withheld_amount = $lineRetention['isr_withheld'] ?? 0;
+                $billProduct->retention_rule_id = $lineRetention['rule_id'] ?? null;
                 $billProduct->save();
 
                 // >>> Cálculo del total de la línea
                 $qty         = (float) $billProduct->quantity;
                 $price       = (float) $billProduct->price;
                 $discount    = (float) ($billProduct->discount ?? 0);
-                $taxAmount   = (float) ($products[$i]['itemTaxPrice'] ?? 0); // ya viene calculado
+                $taxAmount   = (float) ($billProduct->itbis_amount ?? ($products[$i]['itemTaxPrice'] ?? 0)); // ya viene calculado
                 $lineBase    = max(0, ($qty * $price) - $discount);
                 $lineTotal   = $lineBase + $taxAmount;
 
@@ -589,7 +611,12 @@ class BillController extends Controller
             // return redirect()->route('bill.index')->with('error', $validator->getMessageBag()->first());
         }        
 
-        $products = $request->items;
+        $products = collect($request->items)->map(function ($row) {
+            if (isset($row['items']) && !isset($row['item'])) {
+                $row['item'] = $row['items'];
+            }
+            return $row;
+        })->values()->all();
         $retentionRules = $this->getRetentionRules();
         $vendor = Vender::where('id', $request->vender_id)
             ->where('created_by', \Auth::user()->creatorId())
@@ -611,11 +638,31 @@ class BillController extends Controller
             }
         }
 
-        $retentionTotals = $retentionCalculator->calculateForBill(
+        $retentionDetails = $retentionCalculator->calculateDetailedForBill(
             $products,
             $supplierTypeValue,
             $retentionRules
         );
+        $applyRetention = (bool) $request->get('has_retention', false);
+        if (!$applyRetention) {
+            $retentionDetails['totals']['itbis_withheld_total'] = 0;
+            $retentionDetails['totals']['isr_withheld_total'] = 0;
+            foreach ($retentionDetails['lines'] as &$lineRetention) {
+                $lineRetention['itbis_withheld'] = 0;
+                $lineRetention['isr_withheld'] = 0;
+            }
+            unset($lineRetention);
+        }
+        $retentionTotals = $retentionDetails['totals'];
+        if ($request->filled('itbis_billed_total')) {
+            $retentionTotals['itbis_billed_total'] = (float) $request->itbis_billed_total;
+        }
+        if ($request->filled('itbis_withheld_total')) {
+            $retentionTotals['itbis_withheld_total'] = (float) $request->itbis_withheld_total;
+        }
+        if ($request->filled('isr_withheld_total')) {
+            $retentionTotals['isr_withheld_total'] = (float) $request->isr_withheld_total;
+        }
 
         // 1) Actualiza solo datos "cabezales" (NO status)
         $bill->vender_id    = $request->vender_id;
@@ -639,13 +686,17 @@ class BillController extends Controller
             CustomField::saveData($bill, $request->customField);
         }
 
-        $products = $request->items;
         $inventoryChanged = false;     // si hay cambios reales (no solo categoría)
         $onlyCategoryChanges = true;   // asumimos que solo cambian categorías hasta probar lo contrario
 
-        foreach ($products as $row) {
+        foreach ($products as $index => $row) {
             $lineId = isset($row['id']) ? (int)$row['id'] : 0;
             $existing = $lineId > 0 ? BillProduct::find($lineId) : null;
+            $lineRetention = $retentionDetails['lines'][$index] ?? null;
+            $itbisAmount = $lineRetention['itbis_billed'] ?? ($row['itemTaxPrice'] ?? 0);
+            $itbisWithheld = $lineRetention['itbis_withheld'] ?? 0;
+            $isrWithheld = $lineRetention['isr_withheld'] ?? 0;
+            $retentionRuleId = $lineRetention['rule_id'] ?? null;
             
             // Valores nuevos propuestos
             $newProductId = isset($row['items']) ? (int)$row['items'] : ($existing?->product_id);
@@ -667,6 +718,10 @@ class BillController extends Controller
                 $bp->price          = $newPrice;
                 $bp->description    = $newDesc;
                 $bp->category_id    = $newCatId ?? null;
+                $bp->itbis_amount = $itbisAmount;
+                $bp->itbis_withheld_amount = $itbisWithheld;
+                $bp->isr_withheld_amount = $isrWithheld;
+                $bp->retention_rule_id = $retentionRuleId;
                 $bp->save();
 
                 // Ajuste inventario
@@ -694,6 +749,10 @@ class BillController extends Controller
                 // → No muevas inventario ni contabilidad: solo actualiza la categoría (y descripción si vino)
                 $existing->category_id = $newCatId ?? null;
                 $existing->description = $newDesc;
+                $existing->itbis_amount = $itbisAmount;
+                $existing->itbis_withheld_amount = $itbisWithheld;
+                $existing->isr_withheld_amount = $isrWithheld;
+                $existing->retention_rule_id = $retentionRuleId;
                 $existing->save();
                 // Mantén flags: solo-categoría
                 continue;
@@ -897,7 +956,7 @@ class BillController extends Controller
             $bill->url  = route('bill.pdf', Crypt::encrypt($bill->id));
 
             // Ajusta saldo del proveedor
-            Utility::updateUserBalance('vendor', $bill->vender_id, $bill->getTotal(), 'debit');
+            Utility::updateUserBalance('vendor', $bill->vender_id, $bill->getNetPayable(), 'debit');
 
             // Evita duplicados si reenvías
             TransactionLines::where('reference_id', $bill->id)
@@ -1894,12 +1953,23 @@ class BillController extends Controller
         return $data;
     }
 
+    public function retentions($billId, RetentionReportService $reportService)
+    {
+        if (!\Auth::user()->can('show bill')) {
+            return response()->json(['error' => __('Permission denied.')], 401);
+        }
+
+        $bill = Bill::where('id', $billId)->where('created_by', \Auth::user()->creatorId())->firstOrFail();
+
+        return response()->json($reportService->summarizeBill($bill));
+    }
+
     protected function getRetentionRules(): Collection
     {
         return RetentionRule::where(function ($query) {
             $query->where('created_by', \Auth::user()->creatorId())
                 ->orWhere('created_by', 0);
-        })->get();
+        })->active()->get();
     }
 
     
