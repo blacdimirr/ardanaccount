@@ -212,7 +212,7 @@ class BillController extends Controller
                 }
             }
 
-            $retentionDetails = $retentionCalculator->calculateDetailedForBill(
+            $retentionDetails = $this->calculateRetentionsForBill(
                 $products,
                 $selectedRuleId ?? $supplierTypeValue,
                 $retentionRules
@@ -230,19 +230,6 @@ class BillController extends Controller
                 unset($lineRetention);
             }
             $retentionTotals = $retentionDetails['totals'];
-            // Si el frontend envió los totales, úsalo (fallback seguro)
-            if ($request->filled('itbis_billed_total')) {
-                $retentionTotals['itbis_billed_total'] = (float) $request->itbis_billed_total;
-            }
-            if ($request->filled('itbis_withheld_total')) {
-                $retentionTotals['itbis_withheld_total'] = (float) $request->itbis_withheld_total;
-            }
-            if ($request->filled('isr_withheld_total')) {
-                $retentionTotals['isr_withheld_total'] = (float) $request->isr_withheld_total;
-            }
-            if ($request->filled('government_withheld_total')) {
-                $retentionTotals['government_withheld_total'] = (float) $request->government_withheld_total;
-            }
             $bill            = new Bill();
             $bill->bill_id   = $this->billNumber();
             $bill->vender_id = $request->vender_id;
@@ -649,7 +636,7 @@ class BillController extends Controller
             }
         }
 
-        $retentionDetails = $retentionCalculator->calculateDetailedForBill(
+        $retentionDetails = $this->calculateRetentionsForBill(
             $products,
             $selectedRuleId ?? $supplierTypeValue,
             $retentionRules
@@ -667,18 +654,6 @@ class BillController extends Controller
             unset($lineRetention);
         }
         $retentionTotals = $retentionDetails['totals'];
-        if ($request->filled('itbis_billed_total')) {
-            $retentionTotals['itbis_billed_total'] = (float) $request->itbis_billed_total;
-        }
-        if ($request->filled('itbis_withheld_total')) {
-            $retentionTotals['itbis_withheld_total'] = (float) $request->itbis_withheld_total;
-        }
-        if ($request->filled('isr_withheld_total')) {
-            $retentionTotals['isr_withheld_total'] = (float) $request->isr_withheld_total;
-        }
-        if ($request->filled('government_withheld_total')) {
-            $retentionTotals['government_withheld_total'] = (float) $request->government_withheld_total;
-        }
 
         // 1) Actualiza solo datos "cabezales" (NO status)
         $bill->vender_id    = $request->vender_id;
@@ -1989,6 +1964,18 @@ class BillController extends Controller
         $bill = Bill::where('id', $billId)->where('created_by', \Auth::user()->creatorId())->firstOrFail();
 
         return response()->json($reportService->summarizeBill($bill));
+    }
+
+    protected function calculateRetentionsForBill(array $products, $supplierTypeOrRuleId, Collection $retentionRules): array
+    {
+        $retentionCalculator = app(RetentionCalculator::class);
+        $details = $retentionCalculator->calculateDetailedForBill(
+            $products,
+            $supplierTypeOrRuleId,
+            $retentionRules
+        );
+
+        return $details;
     }
 
     protected function getRetentionRules(): Collection

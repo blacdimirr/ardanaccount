@@ -725,11 +725,6 @@
             let isrWithheld = 0;
             let governmentWithheld = 0;
 
-            // Para mostrar % aplicados (si hay múltiples reglas, mostramos 'varios')
-            const _itbisRates = new Set();
-            const _isrRates = new Set();
-            const _govRates = new Set();
-
             $('[data-repeater-item]').each(function () {
                 const row = $(this);
                 const qty = parseFloat(row.find('.quantity').val()) || 0;
@@ -765,10 +760,6 @@
                 const isrRate = toPercent(rule.isr_retention_rate);
                 const governmentRate = toPercent(rule.government_retention_rate);
 
-                if (itbisRate) _itbisRates.add(Number(itbisRate.toFixed(2)));
-                if (isrRate) _isrRates.add(Number(isrRate.toFixed(2)));
-                if (governmentRate) _govRates.add(Number(governmentRate.toFixed(2)));
-
                 if (itbisRate > 0) itbisWithheld += (taxAmount * itbisRate / 100);
                 if (isrRate > 0) isrWithheld += (base * isrRate / 100);
                 if (governmentRate > 0) governmentWithheld += (base * governmentRate / 100);
@@ -779,21 +770,8 @@
                 accountTotal += (parseFloat($(this).val()) || 0);
             });
 
-            const grossWithTax = subtotal + itbisBilled; // subtotal ya incluye cuentas/otros cargos (neto sin ITBIS)
+            const grossWithTax = subtotal + itbisBilled + accountTotal;
             const finalPayable = grossWithTax - itbisWithheld - isrWithheld - governmentWithheld;
-
-            
-            // Actualiza etiquetas de % (si existen en el template)
-            function _setRateLabel(setObj, $el) {
-                if (!$el || $el.length === 0) return;
-                const arr = Array.from(setObj.values());
-                if (arr.length === 0) { $el.text('0'); return; }
-                if (arr.length === 1) { $el.text(String(arr[0])); return; }
-                $el.text('varios');
-            }
-            _setRateLabel(_itbisRates, $('.itbisRetRateLabel'));
-            _setRateLabel(_isrRates, $('.isrRetRateLabel'));
-            _setRateLabel(_govRates, $('.govRetRateLabel'));
 
 $('.itbisBilled').text(itbisBilled.toFixed(2));
             $('.itbisWithheld').text(itbisWithheld.toFixed(2));
@@ -1158,7 +1136,7 @@ $('.itbisBilled').text(itbisBilled.toFixed(2));
                                     <td>&nbsp;</td>
                                     <td></td>
                                     <td class="text-danger">
-                                        <strong>{{ __('Retención (sobre neto)') }} <span class="text-muted">(<span class="govRetRateLabel">0</span>%)</span>
+                                        <strong>{{ __('Retención gubernamental') }}
                                             ({{ \Auth::user()->currencySymbol() }})</strong>
                                     </td>
                                     <td class="text-end governmentWithheld">0.00</td>
