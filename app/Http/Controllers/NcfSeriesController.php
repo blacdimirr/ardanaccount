@@ -70,7 +70,7 @@ class NcfSeriesController extends Controller
             return redirect()->back()->with('error', __('Permission denied.'));
         }
 
-        $validated = $this->validateSeries($request, $ncfSeries->id);
+        $validated = $this->validateSeries($request, $ncfSeries);
         $ncfSeries->update($validated);
 
         return redirect()->route('ncf-series.index')->with('success', __('Serie de NCF actualizada.'));
@@ -88,7 +88,7 @@ class NcfSeriesController extends Controller
         return redirect()->route('ncf-series.index')->with('success', __('Serie de NCF desactivada.'));
     }
 
-    protected function validateSeries(Request $request): array
+    protected function validateSeries(Request $request, ?NcfSeries $existingSeries = null): array
     {
         $validator = \Validator::make($request->all(), [
             'ncf_type_id' => 'required|exists:ncf_types,id',
