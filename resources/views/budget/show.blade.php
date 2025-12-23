@@ -137,7 +137,10 @@
                         <th>{{ __('Category') }}</th>
                         <th>{{ __('PIA') }}</th>
                         <th>{{ __('PIM') }}</th>
-                        <th>{{ __('Executed') }}</th>
+                        <th>{{ __('Committed') }}</th>
+                        <th>{{ __('Accrued') }}</th>
+                        <th>{{ __('Paid') }}</th>
+                        <th>{{ __('Available Balance') }}</th>
                         @if($canEditPim)
                             <th class="text-end" width="10%">{{ __('Action') }}</th>
                         @endif
@@ -146,7 +149,7 @@
                     <tbody>
                     @foreach($summarySections as $type => $section)
                         <tr>
-                            <th colspan="{{ $canEditPim ? 5 : 4 }}" class="text-dark light_blue">
+                            <th colspan="{{ $canEditPim ? 8 : 7 }}" class="text-dark light_blue">
                                 <span>{{ $section['label'] }}</span>
                             </th>
                         </tr>
@@ -154,7 +157,11 @@
                             @php
                                 $pia = data_get($piaTotals, $type.'.'.$productService->id, 0);
                                 $pim = data_get($pimTotals, $type.'.'.$productService->id, $pia);
-                                $executed = $section['executed'][$productService->id] ?? 0;
+                                $committed = data_get($committedTotals, $type.'.'.$productService->id, 0);
+                                $accrued = data_get($accruedTotals, $type.'.'.$productService->id, 0);
+                                $paid = data_get($paidTotals, $type.'.'.$productService->id, 0);
+                                $available = data_get($availableTotals, $type.'.'.$productService->id, 0);
+                                $executed = $accrued;
                                 $modalId = 'pimModal-'.$type.'-'.$productService->id;
 
                                 if($canEditPim){
@@ -172,7 +179,10 @@
                                 <td class="text-dark">{{ $productService->name }}</td>
                                 <td class="text-dark">{{ \Auth::user()->priceFormat($pia) }}</td>
                                 <td class="text-dark">{{ \Auth::user()->priceFormat($pim) }}</td>
-                                <td class="text-dark">{{ \Auth::user()->priceFormat($executed) }}</td>
+                                <td class="text-dark">{{ \Auth::user()->priceFormat($committed) }}</td>
+                                <td class="text-dark">{{ \Auth::user()->priceFormat($accrued) }}</td>
+                                <td class="text-dark">{{ \Auth::user()->priceFormat($paid) }}</td>
+                                <td class="text-dark">{{ \Auth::user()->priceFormat($available) }}</td>
                                 @if($canEditPim)
                                     <td class="text-end">
                                         <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#{{ $modalId }}">

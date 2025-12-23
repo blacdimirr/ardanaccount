@@ -14,6 +14,7 @@ use App\Exports\PaymentExport;
 use App\Models\BillAccount;
 use App\Models\TransactionLines;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Services\BudgetExecutionService;
 
 
 class PaymentController extends Controller
@@ -80,6 +81,7 @@ class PaymentController extends Controller
     public function store(Request $request)
     {
         if (\Auth::user()->can('create payment')) {
+            $creatorId = \Auth::user()->creatorId();
 
             $validator = \Validator::make(
                 $request->all(),
@@ -118,8 +120,12 @@ class PaymentController extends Controller
                     return redirect()->back()->with('error', __($path['msg']));
                 }
             }
-            $payment->created_by     = \Auth::user()->creatorId();
+            $payment->created_by     = $creatorId;
             $payment->save();
+
+            $budgetService = app(BudgetExecutionService::class);
+            $budget = $budgetService->findBudgetForDate($creatorId, $request->date);
+            $budgetService->applyPaymentDelta($budget, $budgetService->paymentImpact($payment));
 
             $accountId = BankAccount::find($payment->account_id);
             $data = [
@@ -231,6 +237,10 @@ class PaymentController extends Controller
     public function update(Request $request, Payment $payment)  
     {
         if (\Auth::user()->can('edit payment')) {
+            $creatorId = \Auth::user()->creatorId();
+            $budgetService = app(BudgetExecutionService::class);
+            $originalBudget = $budgetService->findBudgetForDate($creatorId, $payment->date);
+            $originalImpact = $budgetService->paymentImpact($payment);
 
             $validator = \Validator::make(
                 $request->all(),
@@ -289,6 +299,11 @@ class PaymentController extends Controller
 
             }
             $payment->save();
+            if (!empty($originalImpact)) {
+                $budgetService->applyPaymentDelta($originalBudget, array_map(function ($value) {
+                    return -$value;
+                }, $originalImpact));
+            }
 
             $accountId = BankAccount::find($payment->account_id);
             $data = [
@@ -308,6 +323,8 @@ class PaymentController extends Controller
             $payment->type       = 'Payment';
             $payment->account    = $request->account_id;
             Transaction::editTransaction($payment);
+            $newBudget = $budgetService->findBudgetForDate($creatorId, $payment->date);
+            $budgetService->applyPaymentDelta($newBudget, $budgetService->paymentImpact($payment));
 
             return redirect()->route('payment.index')->with('success', __('Payment successfully updated.') .((isset($result) && $result!=1) ? '<br> <span class="text-danger">' . $result . '</span>' : ''));
 
@@ -321,6 +338,12 @@ class PaymentController extends Controller
     {
         if (\Auth::user()->can('delete payment')) {
             if ($payment->created_by == \Auth::user()->creatorId()) {
+                $budgetService = app(BudgetExecutionService::class);
+                $budget = $budgetService->findBudgetForDate(\Auth::user()->creatorId(), $payment->date);
+                $budgetService->applyPaymentDelta($budget, array_map(function ($value) {
+                    return -$value;
+                }, $budgetService->paymentImpact($payment)));
+
                 $file_path = 'uploads/payment/' . $payment->add_receipt;
 
                 TransactionLines::where('reference_id', $payment->id)->where('reference', 'Payment')->delete();

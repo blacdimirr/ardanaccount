@@ -37,6 +37,7 @@ use App\Models\RetentionCertificate;
 use App\Models\SupplierType;
 use App\Services\RetentionCalculator;
 use App\Services\RetentionReportService;
+use App\Services\BudgetExecutionService;
 use Exception;
 use Carbon\Carbon;
 use CoinGate\Exception\Api\BadRequest;
@@ -231,6 +232,15 @@ class BillController extends Controller
                 $selectedRuleId ?? $supplierTypeValue,
                 $retentionRules
             );
+            $productCategoryMap = ProductService::whereIn('id', collect($products)->pluck('item'))->pluck('category_id', 'id')->toArray();
+            $budgetService = app(BudgetExecutionService::class);
+            $budget = $budgetService->findBudgetForDate(\Auth::user()->creatorId(), $request->bill_date);
+            $commitmentPreview = $budgetService->summarizeLinesForCommitment($products, $retentionDetails['lines'] ?? [], $productCategoryMap);
+            try {
+                $budgetService->ensureCommitmentAvailability($budget, $commitmentPreview);
+            } catch (\RuntimeException $exception) {
+                return redirect()->back()->withInput()->with('error', $exception->getMessage());
+            }
             $applyRetention = (bool) $request->get('has_retention', false);
             if (!$applyRetention) {
                 $retentionDetails['totals']['itbis_withheld_total'] = 0;
@@ -306,12 +316,13 @@ class BillController extends Controller
 
                 // >>> Determinar la categoría del ítem (prioriza la que viene en el request)
                 // si no viene, toma la del ProductService
+                if (!$itemCategoryId) {
+                    $itemCategoryId = $productCategoryMap[$billProduct->product_id] ?? null;
+                }
 
                 if (!$itemCategoryId) {
                     $ps = \App\Models\ProductService::select('id', 'category_id')->find($billProduct->product_id);
-                    if ($ps && $ps->category_id) {
-                        $itemCategoryId = $ps->category_id;
-                    }
+                    $itemCategoryId = $ps?->category_id;
                 }
 
                 // >>> Crear BillAccount por categoría del ítem
@@ -356,6 +367,8 @@ class BillController extends Controller
                 // Acumula total de la factura (usa siempre el total calculado de la línea)
                 $total_amount += $lineTotal;
             }
+
+            $budgetService->applyCommitment($budget, $commitmentPreview);
 
             if (!empty($request->chart_account_id)) {
 
@@ -616,6 +629,12 @@ class BillController extends Controller
         if ($bill->created_by != \Auth::user()->creatorId()) {
             return redirect()->back()->with('error', __('Permission denied.'));
         }
+        $budgetService = app(BudgetExecutionService::class);
+        $creatorId = \Auth::user()->creatorId();
+        $existingItems = $bill->items()->get();
+        $existingCategoryMap = ProductService::whereIn('id', $existingItems->pluck('product_id')->all())->pluck('category_id', 'id')->toArray();
+        $previousCommitments = $budgetService->summarizeExistingBillProducts($existingItems, $existingCategoryMap);
+        $originalBudget = $budgetService->findBudgetForDate($creatorId, $bill->bill_date);
 
         $validator = \Validator::make(
             $request->all(),
@@ -683,6 +702,19 @@ class BillController extends Controller
             $selectedRuleId ?? $supplierTypeValue,
             $retentionRules
         );
+        $requestCategoryMap = ProductService::whereIn('id', collect($products)->pluck('item'))->pluck('category_id', 'id')->toArray();
+        $productCategoryMap = $requestCategoryMap + $existingCategoryMap;
+        $newBudget = $budgetService->findBudgetForDate($creatorId, $request->bill_date);
+        $newCommitments = $budgetService->summarizeLinesForCommitment($products, $retentionDetails['lines'] ?? [], $productCategoryMap);
+        try {
+            if ($originalBudget && $newBudget && $originalBudget->id === $newBudget->id) {
+                $budgetService->ensureCommitmentAvailability($newBudget, $budgetService->delta($previousCommitments, $newCommitments));
+            } else {
+                $budgetService->ensureCommitmentAvailability($newBudget, $newCommitments);
+            }
+        } catch (\RuntimeException $exception) {
+            return redirect()->back()->withInput()->with('error', $exception->getMessage());
+        }
         $applyRetention = (bool) $request->get('has_retention', false);
         if (!$applyRetention) {
             $retentionDetails['totals']['itbis_withheld_total'] = 0;
@@ -740,7 +772,10 @@ class BillController extends Controller
             $newTax       = $row['tax'] ?? ($existing?->tax);
             $newDiscount  = isset($row['discount']) ? (float)$row['discount'] : ($existing?->discount ?? 0);
             $newDesc      = $row['description'] ?? ($existing?->description);
-            $newCatId     = $row['category_id'] ?? ($existing?->category_id);            
+            $newCatId     = $row['category_id'] ?? ($existing?->category_id);
+            if (!$newCatId && $newProductId && isset($productCategoryMap[$newProductId])) {
+                $newCatId = $productCategoryMap[$newProductId];
+            }
             
             if (is_null($existing)) {
                 // 2) Línea nueva → sí mueve inventario (comportamiento normal)
@@ -862,6 +897,16 @@ class BillController extends Controller
         //    (eliminar cualquier lógica previa relacionada)
         // TransactionLines::where(...)->delete(); // ← ya NO
         // (NO Utility::addTransactionLines)
+        if ($originalBudget && $newBudget && $originalBudget->id === $newBudget->id) {
+            $budgetService->applyCommitmentDelta($newBudget, $budgetService->delta($previousCommitments, $newCommitments));
+        } else {
+            if (!empty($previousCommitments)) {
+                $budgetService->applyCommitmentDelta($originalBudget, array_map(function ($value) {
+                    return -$value;
+                }, $previousCommitments));
+            }
+            $budgetService->applyCommitmentDelta($newBudget, $newCommitments);
+        }
 
         return redirect()->route('bill.index')->with('success', __('Bill successfully updated.'));
     }
@@ -872,6 +917,13 @@ class BillController extends Controller
     {
         if (\Auth::user()->can('delete bill')) {
             if ($bill->created_by == \Auth::user()->creatorId()) {
+                $budgetService = app(BudgetExecutionService::class);
+                $itemsForBudget = $bill->items()->get();
+                $categoryMap = ProductService::whereIn('id', $itemsForBudget->pluck('product_id')->all())->pluck('category_id', 'id')->toArray();
+                $budget = $budgetService->findBudgetForDate(\Auth::user()->creatorId(), $bill->bill_date);
+                $budgetService->applyCommitmentDelta($budget, array_map(function ($value) {
+                    return -$value;
+                }, $budgetService->summarizeExistingBillProducts($itemsForBudget, $categoryMap)));
                 $billpayments = $bill->payments;
 
                 foreach ($billpayments as $key => $value) {

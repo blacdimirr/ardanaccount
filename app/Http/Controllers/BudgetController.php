@@ -106,6 +106,10 @@ class BudgetController extends Controller
             $budget->expense_data = json_encode($request->expense);
             $budget->monto_pia    = $baseTotals;
             $budget->monto_pim    = $baseTotals;
+            $executionSkeleton    = $this->initializeExecutionTotals($baseTotals);
+            $budget->monto_comprometido = $executionSkeleton;
+            $budget->monto_devengado    = $executionSkeleton;
+            $budget->monto_pagado       = $executionSkeleton;
             $budget->created_by   = \Auth::user()->creatorId();
             $budget->save();
 
@@ -480,6 +484,11 @@ class BudgetController extends Controller
             }
 
             $pimTotals = $this->mergePimTotals($pimTotals, $piaTotals);
+            $executionSkeleton = $this->initializeExecutionTotals($pimTotals);
+            $committedTotals = $this->mergeExecutionTotals($budget->monto_comprometido, $executionSkeleton);
+            $accruedTotals = $this->mergeExecutionTotals($budget->monto_devengado, $executionSkeleton);
+            $paidTotals = $this->mergeExecutionTotals($budget->monto_pagado, $executionSkeleton);
+            $availableTotals = $this->calculateAvailableTotals($pimTotals, $committedTotals);
 
             $executedIncomeTotals = [];
             foreach ($incomeArr as $categoryId => $values) {
@@ -510,7 +519,11 @@ class BudgetController extends Controller
                     'pimTotals',
                     'executedIncomeTotals',
                     'executedExpenseTotals',
-                    'canEditPim'
+                    'canEditPim',
+                    'committedTotals',
+                    'accruedTotals',
+                    'paidTotals',
+                    'availableTotals'
                 ),
                 $data
             );
@@ -604,6 +617,7 @@ class BudgetController extends Controller
 
                 $baseTotals = $this->calculateBaseTotals($request->input('income', []), $request->input('expense', []));
                 $currentPim = $this->normalizeBaseTotals($budget->monto_pim, []);
+                $executionSkeleton = $this->initializeExecutionTotals($baseTotals);
 
                 $budget->name         = $request->name;
                 $budget->from         = $request->year;
@@ -612,6 +626,9 @@ class BudgetController extends Controller
                 $budget->expense_data = json_encode($request->expense);
                 $budget->monto_pia    = $baseTotals;
                 $budget->monto_pim    = $this->mergePimTotals($currentPim, $baseTotals);
+                $budget->monto_comprometido = $this->mergeExecutionTotals($budget->monto_comprometido, $executionSkeleton);
+                $budget->monto_devengado    = $this->mergeExecutionTotals($budget->monto_devengado, $executionSkeleton);
+                $budget->monto_pagado       = $this->mergeExecutionTotals($budget->monto_pagado, $executionSkeleton);
                 $budget->save();
 
                 return redirect()->route('budget.index')->with('success', __('Budget planner successfully updated.'));
@@ -851,5 +868,51 @@ class BudgetController extends Controller
         }
 
         return [];
+    }
+
+    protected function initializeExecutionTotals(array $baseTotals): array
+    {
+        $totals = ['income' => [], 'expense' => []];
+
+        foreach (['income', 'expense'] as $type) {
+            $categoryIds = array_keys($baseTotals[$type] ?? []);
+            $totals[$type] = array_fill_keys($categoryIds, 0);
+        }
+
+        return $totals;
+    }
+
+    protected function mergeExecutionTotals($current, array $skeleton): array
+    {
+        if (is_string($current)) {
+            $decoded = json_decode($current, true);
+            if (is_array($decoded)) {
+                $current = $decoded;
+            }
+        }
+
+        if (!is_array($current)) {
+            $current = [];
+        }
+
+        foreach (['income', 'expense'] as $type) {
+            $current[$type] = array_replace($skeleton[$type] ?? [], $current[$type] ?? []);
+        }
+
+        return $current;
+    }
+
+    protected function calculateAvailableTotals(array $pimTotals, array $committedTotals): array
+    {
+        $available = ['income' => [], 'expense' => []];
+
+        foreach ($pimTotals as $type => $categories) {
+            foreach ($categories as $categoryId => $pim) {
+                $committed = data_get($committedTotals, $type . '.' . $categoryId, 0);
+                $available[$type][$categoryId] = max(0, (float)$pim - (float)$committed);
+            }
+        }
+
+        return $available;
     }
 }

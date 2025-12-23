@@ -9,6 +9,7 @@ use Spatie\Permission\Models\Role;
 use App\Models\Bill;
 use App\Models\BillProduct;
 use App\Models\Vender;
+use App\Services\BudgetExecutionService;
 use Illuminate\Support\Facades\DB;
 
 class PurchaseOrderController extends Controller
@@ -74,8 +75,12 @@ class PurchaseOrderController extends Controller
 
         // Trae las líneas con su producto (necesitamos el SKU)
         $items = $bill->items()
-            ->with(['product:id,sku,name,description'])
+            ->with(['product:id,sku,name,description,category_id'])
             ->get();
+        $productCategoryMap = $items->pluck('product.category_id', 'product_id')->filter()->toArray();
+        $budgetService = app(BudgetExecutionService::class);
+        $budget = $budgetService->findBudgetForDate($bill->created_by, $bill->bill_date);
+        $devengadoDelta = [];
 
         // Filtra por SKU
         $linesToUpdate = $items->filter(function ($line) use ($data) {
@@ -91,7 +96,7 @@ class PurchaseOrderController extends Controller
 
         $updated = [];
 
-        DB::transaction(function () use ($linesToUpdate, $data, &$updated) {
+        DB::transaction(function () use ($linesToUpdate, $data, &$updated, $budgetService, $productCategoryMap, &$devengadoDelta) {
             foreach ($linesToUpdate as $line) {
                 // (opcional) Regla: no permitir más de lo ordenado
                 if ($data['received_quantity'] > (float)$line->quantity) {
@@ -101,9 +106,14 @@ class PurchaseOrderController extends Controller
                     ], 422));
                 }
 
+                $delta = $budgetService->calculateAccrualDelta($line, (float)$data['received_quantity'], $productCategoryMap);
                 // ✅ Actualiza la LÍNEA de compra, no el producto maestro
                 $line->received_quantity = (int)$data['received_quantity']; // o (float) si lo definiste decimal
                 $line->save();
+
+                foreach ($delta as $categoryId => $amount) {
+                    $devengadoDelta[$categoryId] = ($devengadoDelta[$categoryId] ?? 0) + $amount;
+                }
 
                 $updated[] = [
                     'bill_product_id'   => $line->id,
@@ -115,6 +125,10 @@ class PurchaseOrderController extends Controller
                 ];
             }
         });
+
+        if ($budget) {
+            $budgetService->applyAccrualDelta($budget, $devengadoDelta);
+        }
 
         return response()->json([
             'message'      => 'Cantidad recibida actualizada correctamente.',
