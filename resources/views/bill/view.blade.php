@@ -556,8 +556,13 @@ $('.cp_link_document_auth_approved').on('click', function() {
                                             </tr>
                                             <tr>
                                                 <td colspan="8"></td>
-                                                <td class="text-end"><b>{{ __('Retención gubernamental') }}</b></td>
+                                                <td class="text-end"><b>{{ __('5% gubernamental retenido') }}</b></td>
                                                 <td class="text-end">{{ \Auth::user()->priceFormat($bill->government_withheld_total ?? 0) }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="8"></td>
+                                                <td class="text-end"><b>{{ __('Total retenciones') }}</b></td>
+                                                <td class="text-end">{{ \Auth::user()->priceFormat($bill->getWithheldTotal()) }}</td>
                                             </tr>
                                             <tr>
                                                 <td colspan="8"></td>
