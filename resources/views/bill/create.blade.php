@@ -773,7 +773,7 @@
             const grossWithTax = subtotal + itbisBilled + accountTotal;
             const finalPayable = grossWithTax - itbisWithheld - isrWithheld - governmentWithheld;
 
-            $('.itbisBilled').text(itbisBilled.toFixed(2));
+$('.itbisBilled').text(itbisBilled.toFixed(2));
             $('.itbisWithheld').text(itbisWithheld.toFixed(2));
             $('.isrWithheld').text(isrWithheld.toFixed(2));
             $('.governmentWithheld').text(governmentWithheld.toFixed(2));
@@ -1067,7 +1067,7 @@
                                     <td>&nbsp;</td>
                                     <td>&nbsp;</td>
                                     <td></td>
-                                    <td><strong>{{ __('Sub Total') }} ({{ \Auth::user()->currencySymbol() }})</strong>
+                                    <td><strong>{{ __('Monto bruto factura (sin ITBIS)') }} ({{ \Auth::user()->currencySymbol() }})</strong>
                                     </td>
                                     <td class="text-end subTotal">0.00</td>
                                     <td></td>
@@ -1098,7 +1098,7 @@
                                     <td>&nbsp;</td>
                                     <td></td>
                                     <td class="text-primary">
-                                        <strong>{{ __('ITBIS facturado') }}
+                                        <strong>{{ __('ITBIS (18%)') }}
                                             ({{ \Auth::user()->currencySymbol() }})</strong>
                                     </td>
                                     <td class="text-end itbisBilled">0.00</td>
@@ -1111,7 +1111,7 @@
                                     <td>&nbsp;</td>
                                     <td></td>
                                     <td class="text-danger">
-                                        <strong>{{ __('ITBIS retenido') }}
+                                        <strong>{{ __('Retención sobre ITBIS') }} <span class="text-muted">(<span class="itbisRetRateLabel">0</span>%)</span>
                                             ({{ \Auth::user()->currencySymbol() }})</strong>
                                     </td>
                                     <td class="text-end itbisWithheld">0.00</td>
@@ -1124,7 +1124,7 @@
                                     <td>&nbsp;</td>
                                     <td></td>
                                     <td class="text-danger">
-                                        <strong>{{ __('ISR retenido') }}
+                                        <strong>{{ __('ISR retenido (sobre neto)') }} <span class="text-muted">(<span class="isrRetRateLabel">0</span>%)</span>
                                             ({{ \Auth::user()->currencySymbol() }})</strong>
                                     </td>
                                     <td class="text-end isrWithheld">0.00</td>
@@ -1150,7 +1150,7 @@
                                     <td>&nbsp;</td>
                                     <td>&nbsp;</td>
                                     <td class="blue-text">
-                                        <strong>{{ __('Total con impuestos') }}
+                                        <strong>{{ __('Subtotal') }}
                                             ({{ \Auth::user()->currencySymbol() }})</strong>
                                     </td>
                                     <td class="blue-text text-end totalAmount">0.00</td>
