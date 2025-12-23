@@ -26,7 +26,11 @@ use App\Exports\ProductStockExport;
 use App\Exports\ProfitLossExport;
 use App\Exports\TrialBalancExport;
 use App\Exports\Dgii606Export;
+use App\Exports\Dgii607Export;
+use App\Exports\Dgii608Export;
 use App\Services\Dgii606Service;
+use App\Services\Dgii607Service;
+use App\Services\Dgii608Service;
 use App\Models\ChartOfAccountParent;
 use App\Models\Status;
 use App\Models\TransactionLines;
@@ -3603,5 +3607,83 @@ class ReportController extends Controller
         }
 
         return view('report.dgii606', compact('selectedMonth', 'selectedYear', 'months', 'years'));
+    }
+
+    public function dgii607(Request $request, Dgii607Service $service)
+    {
+        if (!\Auth::user()->can('reportes_dgii_607_generate')) {
+            return redirect()->back()->with('error', __('Permission Denied.'));
+        }
+
+        $selectedYear = (int) ($request->get('year', date('Y')));
+        $selectedMonth = (int) ($request->get('month', date('m')));
+        $years = [];
+        for ($year = date('Y') - 5; $year <= date('Y') + 1; $year++) {
+            $years[$year] = $year;
+        }
+        $months = [
+            1 => __('January'),
+            2 => __('February'),
+            3 => __('March'),
+            4 => __('April'),
+            5 => __('May'),
+            6 => __('June'),
+            7 => __('July'),
+            8 => __('August'),
+            9 => __('September'),
+            10 => __('October'),
+            11 => __('November'),
+            12 => __('December'),
+        ];
+
+        if ($request->get('action') === 'download') {
+            $fileName = sprintf('DGII_607_%04d_%02d.xlsx', $selectedYear, $selectedMonth);
+
+            return Excel::download(
+                new Dgii607Export($selectedYear, $selectedMonth, \Auth::user()->creatorId(), $service),
+                $fileName
+            );
+        }
+
+        return view('report.dgii607', compact('selectedMonth', 'selectedYear', 'months', 'years'));
+    }
+
+    public function dgii608(Request $request, Dgii608Service $service)
+    {
+        if (!\Auth::user()->can('reportes_dgii_608_generate')) {
+            return redirect()->back()->with('error', __('Permission Denied.'));
+        }
+
+        $selectedYear = (int) ($request->get('year', date('Y')));
+        $selectedMonth = (int) ($request->get('month', date('m')));
+        $years = [];
+        for ($year = date('Y') - 5; $year <= date('Y') + 1; $year++) {
+            $years[$year] = $year;
+        }
+        $months = [
+            1 => __('January'),
+            2 => __('February'),
+            3 => __('March'),
+            4 => __('April'),
+            5 => __('May'),
+            6 => __('June'),
+            7 => __('July'),
+            8 => __('August'),
+            9 => __('September'),
+            10 => __('October'),
+            11 => __('November'),
+            12 => __('December'),
+        ];
+
+        if ($request->get('action') === 'download') {
+            $fileName = sprintf('DGII_608_%04d_%02d.xlsx', $selectedYear, $selectedMonth);
+
+            return Excel::download(
+                new Dgii608Export($selectedYear, $selectedMonth, \Auth::user()->creatorId(), $service),
+                $fileName
+            );
+        }
+
+        return view('report.dgii608', compact('selectedMonth', 'selectedYear', 'months', 'years'));
     }
 }
