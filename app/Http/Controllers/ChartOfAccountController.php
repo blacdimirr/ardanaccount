@@ -135,28 +135,37 @@ class ChartOfAccountController extends Controller
                 return redirect()->back()->with('error', $messages->first());
             }
             $type = ChartOfAccountSubType::where('id',$request->sub_type)->where('created_by', '=', \Auth::user()->creatorId())->first();
-            $account = ChartOfAccount::where('id',$request->parent)->where('created_by', '=', \Auth::user()->creatorId())->first();
-            $existingparentAccount = ChartOfAccountParent::where('name',$account->name)->where('created_by',\Auth::user()->creatorId())->first();
+            $parentAccount = null;
 
-            if ($existingparentAccount) {
-                $parentAccount = $existingparentAccount;
-            } else {
-                $parentAccount         = new ChartOfAccountParent();
+            if (!empty($request->parent)) {
+                $parent = ChartOfAccount::where('id', $request->parent)
+                    ->where('created_by', '=', \Auth::user()->creatorId())
+                    ->first();
+
+                if ($parent) {
+                    $existingparentAccount = ChartOfAccountParent::where('name', $parent->name)->where('created_by', \Auth::user()->creatorId())->first();
+
+                    if ($existingparentAccount) {
+                        $parentAccount = $existingparentAccount;
+                    } else {
+                        $parentAccount         = new ChartOfAccountParent();
+                    }
+
+                    $parentAccount->name        = $parent->name;
+                    $parentAccount->sub_type    = $request->sub_type;
+                    $parentAccount->type        = $type->type;
+                    $parentAccount->account     = $request->parent;
+                    $parentAccount->created_by  = \Auth::user()->creatorId();
+                    $parentAccount->save();
+                }
             }
-
-            $parentAccount->name        = $account->name;
-            $parentAccount->sub_type    = $request->sub_type;
-            $parentAccount->type        = $type->type;
-            $parentAccount->account     = $request->parent;
-            $parentAccount->created_by  = \Auth::user()->creatorId();
-            $parentAccount->save();
 
             $account              = new ChartOfAccount();
             $account->name        = $request->name;
             $account->code        = $request->code;
             $account->type        = $type->type;
             $account->sub_type    = $request->sub_type;
-            $account->parent      = $parentAccount->id ?? '';
+            $account->parent      = $parentAccount->id ?? 0;
             $account->description = $request->description;
             $account->is_enabled  = isset($request->is_enabled) ? 1 : 0;
             $account->created_by  = \Auth::user()->creatorId();
