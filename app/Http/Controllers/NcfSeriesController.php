@@ -45,10 +45,16 @@ class NcfSeriesController extends Controller
 
         $validated = $this->validateSeries($request);
 
-        NcfSeries::create($validated + [
-            'created_by' => \Auth::user()->creatorId(),
-            'current_number' => $validated['current_number'] ?? null,
-        ]);
+        try {
+            NcfSeries::create($validated + [
+                'created_by' => \Auth::user()->creatorId(),
+                'current_number' => $validated['current_number'] ?? null,
+            ]);
+        } catch (\Throwable $exception) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', __('No se pudo guardar la serie de NCF: :message', ['message' => $exception->getMessage()]));
+        }
 
         return redirect()->route('ncf-series.index')->with('success', __('Serie de NCF creada correctamente.'));
     }
@@ -71,7 +77,14 @@ class NcfSeriesController extends Controller
         }
 
         $validated = $this->validateSeries($request, $ncfSeries);
-        $ncfSeries->update($validated);
+
+        try {
+            $ncfSeries->update($validated);
+        } catch (\Throwable $exception) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', __('No se pudo actualizar la serie de NCF: :message', ['message' => $exception->getMessage()]));
+        }
 
         return redirect()->route('ncf-series.index')->with('success', __('Serie de NCF actualizada.'));
     }
