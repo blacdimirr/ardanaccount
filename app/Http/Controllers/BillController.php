@@ -98,6 +98,7 @@ class BillController extends Controller
                     ->where('created_by', \Auth::user()->creatorId())
                     ->first();
             }
+            $bill = new Bill();
             $customFields = CustomField::where('created_by', '=', \Auth::user()->creatorId())->where('module', '=', 'bill')->get();
             $category     = ProductServiceCategory::where('created_by', \Auth::user()->creatorId())->where('type', 'expense')->orderBy('name', 'asc')->get()->pluck('name', 'id');
             $category->prepend('Select Category', '');
