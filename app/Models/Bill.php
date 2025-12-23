@@ -164,16 +164,6 @@ class Bill extends Model
         ];
     }
 
-    public function getRetentionBreakdown(): array
-    {
-        return [
-            'itbis_billed_total' => (float) ($this->itbis_billed_total ?? 0),
-            'itbis_withheld_total' => (float) ($this->itbis_withheld_total ?? 0),
-            'isr_withheld_total' => (float) ($this->isr_withheld_total ?? 0),
-            'net_payable' => $this->getNetPayable(),
-        ];
-    }
-
     public function getPaymentsTotal()
     {
         return $this->payments->sum('amount');
