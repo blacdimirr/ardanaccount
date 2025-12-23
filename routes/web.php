@@ -83,6 +83,7 @@ use App\Http\Controllers\TaxController;
 use App\Http\Controllers\ApiExternalController;
 use App\Http\Controllers\NcfSeriesController;
 use App\Http\Controllers\NcfTypeController;
+use App\Http\Controllers\PacController;
 
 /*
 |--------------------------------------------------------------------------
@@ -906,6 +907,24 @@ Route::post('/proposal/template/setting', [ProposalController::class, 'savePropo
 //Budget Planner //
 Route::post('budget/{budget}/pim', [BudgetController::class, 'updatePim'])->name('budget.pim.update')->middleware(['auth', 'XSS', 'revalidate']);
 Route::resource('budget', BudgetController::class)->middleware(['auth', 'XSS', 'revalidate']);
+
+Route::group(
+    [
+        'middleware' => [
+            'auth',
+            'XSS',
+            'revalidate',
+        ],
+    ],
+    function () {
+        Route::resource('pac', PacController::class);
+        Route::post('pac/{pac}/items', [PacController::class, 'storeItem'])->name('pac.items.store');
+        Route::put('pac/{pac}/items/{item}', [PacController::class, 'updateItem'])->name('pac.items.update');
+        Route::delete('pac/{pac}/items/{item}', [PacController::class, 'destroyItem'])->name('pac.items.destroy');
+        Route::get('pac/{pac}/report', [PacController::class, 'report'])->name('pac.report');
+        Route::get('pac/{pac}/export', [PacController::class, 'export'])->name('pac.export');
+    }
+);
 
 
 
