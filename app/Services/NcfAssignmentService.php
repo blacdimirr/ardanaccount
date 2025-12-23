@@ -30,6 +30,10 @@ class NcfAssignmentService
                 return ['error' => __('La serie de NCF seleccionada no existe.')];
             }
 
+            if (!$series->active) {
+                return ['error' => __('La serie de NCF seleccionada está inactiva.')];
+            }
+
             if ($expectedTypeId && $series->ncf_type_id !== $expectedTypeId) {
                 return ['error' => __('El tipo de NCF no coincide con la serie seleccionada.')];
             }

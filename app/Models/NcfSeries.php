@@ -17,7 +17,12 @@ class NcfSeries extends Model
         'valid_from',
         'valid_to',
         'status',
+        'active',
         'created_by',
+    ];
+
+    protected $casts = [
+        'active' => 'boolean',
     ];
 
     public function type()
