@@ -29,6 +29,22 @@
             </select>
 
         </div>
+        <div class="form-group col-md-12 classifier-field {{$category->type =='product & service'? 'd-none':''}}">
+            {{ Form::label('objeto_gasto_id', __('Objeto del gasto'), ['class' => 'form-label']) }}
+            {{ Form::select('objeto_gasto_id', $objects, null, ['class' => 'form-control select', 'placeholder' => __('Seleccionar')]) }}
+        </div>
+        <div class="form-group col-md-12 classifier-field {{$category->type =='product & service'? 'd-none':''}}">
+            {{ Form::label('fuente_financiamiento_id', __('Fuente de financiamiento'), ['class' => 'form-label']) }}
+            {{ Form::select('fuente_financiamiento_id', $fundingSources, null, ['class' => 'form-control select', 'placeholder' => __('Seleccionar')]) }}
+        </div>
+        <div class="form-group col-md-12 classifier-field {{$category->type =='product & service'? 'd-none':''}}">
+            {{ Form::label('programa_id', __('Programa'), ['class' => 'form-label']) }}
+            {{ Form::select('programa_id', $programs, null, ['class' => 'form-control select', 'placeholder' => __('Seleccionar')]) }}
+        </div>
+        <div class="form-group col-md-12 classifier-field {{$category->type =='product & service'? 'd-none':''}}">
+            {{ Form::label('proyecto_id', __('Proyecto'), ['class' => 'form-label']) }}
+            {{ Form::select('proyecto_id', $projects, null, ['class' => 'form-control select', 'placeholder' => __('Seleccionar')]) }}
+        </div>
         <div class="form-group col-md-12">
             {{ Form::label('color', __('Category Color'), ['class' => 'form-label']) }}<x-required></x-required>
             {{ Form::color('color', null, ['class' => 'form-control jscolor', 'required' => 'required']) }}
@@ -49,18 +65,12 @@
 
     $(document).on('click', '.cattype', function ()
     {
-        var type = $(this).val();
-        if (type != 'product & service') {
-            $('.account').removeClass('d-none')
-            $('.account').addClass('d-block');
-        } else {
-            $('.account').addClass('d-none')
-            $('.account').removeClass('d-block');
-        }
+        toggleBudgetFields($(this).val());
     });
 
     $(document).on('change', '#type', function () {
         var type = $(this).val();
+        toggleBudgetFields(type);
 
         $.ajax({
             url: '{{route('productServiceCategory.getaccount')}}',
@@ -96,5 +106,14 @@
     });
     $(document).ready(function (){
         $('#type').trigger('change')
+        toggleBudgetFields($('#type').val());
     })
+
+    function toggleBudgetFields(type) {
+        if (type != 'product & service') {
+            $('.account, .classifier-field').removeClass('d-none').addClass('d-block');
+        } else {
+            $('.account, .classifier-field').addClass('d-none').removeClass('d-block');
+        }
+    }
 </script>

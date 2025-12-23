@@ -7,6 +7,10 @@ use App\Models\ChartOfAccount;
 use App\Models\Invoice;
 use App\Models\ProductService;
 use App\Models\ProductServiceCategory;
+use App\Models\ClasificadorObjetoGasto;
+use App\Models\FundingSource;
+use App\Models\Program;
+use App\Models\Project;
 use Illuminate\Http\Request;
 
 class ProductServiceCategoryController extends Controller
@@ -42,7 +46,48 @@ class ProductServiceCategoryController extends Controller
                 
             $chart_accounts->prepend('Select Account', '');
 
-            return view('productServiceCategory.create', compact('types'));
+            $creatorId = \Auth::user()->creatorId();
+
+            $objects = ClasificadorObjetoGasto::where(function ($query) use ($creatorId) {
+                $query->where('created_by', $creatorId)
+                    ->orWhere('created_by', 0);
+            })->where('active', true)
+                ->orderBy('code')
+                ->get()
+                ->mapWithKeys(function ($object) {
+                    return [$object->id => "{$object->code} - {$object->description}"];
+                });
+
+            $fundingSources = FundingSource::where(function ($query) use ($creatorId) {
+                $query->where('created_by', $creatorId)
+                    ->orWhere('created_by', 0);
+            })->where('active', true)
+                ->orderBy('code')
+                ->get()
+                ->mapWithKeys(function ($source) {
+                    return [$source->id => "{$source->code} - {$source->description}"];
+                });
+
+            $programs = Program::where(function ($query) use ($creatorId) {
+                $query->where('created_by', $creatorId)
+                    ->orWhere('created_by', 0);
+            })->where('active', true)
+                ->orderBy('code')
+                ->get()
+                ->pluck('code', 'id');
+
+            $projects = Project::with('program')
+                ->where(function ($query) use ($creatorId) {
+                    $query->where('created_by', $creatorId)
+                        ->orWhere('created_by', 0);
+                })->where('active', true)
+                ->orderBy('code')
+                ->get()
+                ->mapWithKeys(function ($project) {
+                    return [$project->id => "{$project->code}" . ($project->program ? " ({$project->program->code})" : '')];
+                });
+
+            return view('productServiceCategory.create', compact('types', 'objects', 'fundingSources', 'programs', 'projects'));
         }
         else
         {
@@ -74,6 +119,10 @@ class ProductServiceCategoryController extends Controller
             $category->color      = $request->color;
             $category->type       = $request->type;
             $category->chart_account_id = !empty($request->chart_account) ? $request->chart_account : 0;
+            $category->objeto_gasto_id = $request->objeto_gasto_id ?: null;
+            $category->fuente_financiamiento_id = $request->fuente_financiamiento_id ?: null;
+            $category->programa_id = $request->programa_id ?: null;
+            $category->proyecto_id = $request->proyecto_id ?: null;
             $category->created_by = \Auth::user()->creatorId();
             $category->save();
 
@@ -94,7 +143,48 @@ class ProductServiceCategoryController extends Controller
             $types    = ProductServiceCategory::$catTypes;
             $category = ProductServiceCategory::find($id);
 
-            return view('productServiceCategory.edit', compact('category', 'types'));
+            $creatorId = \Auth::user()->creatorId();
+
+            $objects = ClasificadorObjetoGasto::where(function ($query) use ($creatorId) {
+                $query->where('created_by', $creatorId)
+                    ->orWhere('created_by', 0);
+            })->where('active', true)
+                ->orderBy('code')
+                ->get()
+                ->mapWithKeys(function ($object) {
+                    return [$object->id => "{$object->code} - {$object->description}"];
+                });
+
+            $fundingSources = FundingSource::where(function ($query) use ($creatorId) {
+                $query->where('created_by', $creatorId)
+                    ->orWhere('created_by', 0);
+            })->where('active', true)
+                ->orderBy('code')
+                ->get()
+                ->mapWithKeys(function ($source) {
+                    return [$source->id => "{$source->code} - {$source->description}"];
+                });
+
+            $programs = Program::where(function ($query) use ($creatorId) {
+                $query->where('created_by', $creatorId)
+                    ->orWhere('created_by', 0);
+            })->where('active', true)
+                ->orderBy('code')
+                ->get()
+                ->pluck('code', 'id');
+
+            $projects = Project::with('program')
+                ->where(function ($query) use ($creatorId) {
+                    $query->where('created_by', $creatorId)
+                        ->orWhere('created_by', 0);
+                })->where('active', true)
+                ->orderBy('code')
+                ->get()
+                ->mapWithKeys(function ($project) {
+                    return [$project->id => "{$project->code}" . ($project->program ? " ({$project->program->code})" : '')];
+                });
+
+            return view('productServiceCategory.edit', compact('category', 'types', 'objects', 'fundingSources', 'programs', 'projects'));
         }
         else
         {
@@ -127,6 +217,10 @@ class ProductServiceCategoryController extends Controller
                 $category->name  = $request->name;
                 $category->color = $request->color;
                 $category->type  = $request->type;
+                $category->objeto_gasto_id = $request->objeto_gasto_id ?: null;
+                $category->fuente_financiamiento_id = $request->fuente_financiamiento_id ?: null;
+                $category->programa_id = $request->programa_id ?: null;
+                $category->proyecto_id = $request->proyecto_id ?: null;
                 $category->save();
 
                 return redirect()->route('product-category.index')->with('success', __('Category successfully updated.'));

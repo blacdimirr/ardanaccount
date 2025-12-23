@@ -6,6 +6,10 @@ use App\Models\ChartOfAccount;
 use App\Models\ChartOfAccountParent;
 use App\Models\ChartOfAccountSubType;
 use App\Models\ChartOfAccountType;
+use App\Models\ClasificadorObjetoGasto;
+use App\Models\FundingSource;
+use App\Models\Program;
+use App\Models\Project;
 use App\Models\User;
 use App\Models\Utility;
 use Illuminate\Http\Request;
@@ -70,7 +74,48 @@ class ChartOfAccountController extends Controller
 
         $account_type =  array_merge($selectAcc, $account_type);
 
-        return view('chartOfAccount.create', compact('account_type'));
+        $creatorId = \Auth::user()->creatorId();
+
+        $objects = ClasificadorObjetoGasto::where(function ($query) use ($creatorId) {
+            $query->where('created_by', $creatorId)
+                ->orWhere('created_by', 0);
+        })->where('active', true)
+            ->orderBy('code')
+            ->get()
+            ->mapWithKeys(function ($object) {
+                return [$object->id => "{$object->code} - {$object->description}"];
+            });
+
+        $fundingSources = FundingSource::where(function ($query) use ($creatorId) {
+            $query->where('created_by', $creatorId)
+                ->orWhere('created_by', 0);
+        })->where('active', true)
+            ->orderBy('code')
+            ->get()
+            ->mapWithKeys(function ($source) {
+                return [$source->id => "{$source->code} - {$source->description}"];
+            });
+
+        $programs = Program::where(function ($query) use ($creatorId) {
+            $query->where('created_by', $creatorId)
+                ->orWhere('created_by', 0);
+        })->where('active', true)
+            ->orderBy('code')
+            ->get()
+            ->pluck('code', 'id');
+
+        $projects = Project::with('program')
+            ->where(function ($query) use ($creatorId) {
+                $query->where('created_by', $creatorId)
+                    ->orWhere('created_by', 0);
+            })->where('active', true)
+            ->orderBy('code')
+            ->get()
+            ->mapWithKeys(function ($project) {
+                return [$project->id => "{$project->code}" . ($project->program ? " ({$project->program->code})" : '')];
+            });
+
+        return view('chartOfAccount.create', compact('account_type', 'objects', 'fundingSources', 'programs', 'projects'));
     }
 
 
@@ -115,6 +160,10 @@ class ChartOfAccountController extends Controller
             $account->description = $request->description;
             $account->is_enabled  = isset($request->is_enabled) ? 1 : 0;
             $account->created_by  = \Auth::user()->creatorId();
+            $account->objeto_gasto_id = $request->objeto_gasto_id ?: null;
+            $account->fuente_financiamiento_id = $request->fuente_financiamiento_id ?: null;
+            $account->programa_id = $request->programa_id ?: null;
+            $account->proyecto_id = $request->proyecto_id ?: null;
             $account->save();
 
             return redirect()->route('chart-of-account.index')->with('success', __('Account successfully created.'));
@@ -135,7 +184,48 @@ class ChartOfAccountController extends Controller
         $types = ChartOfAccountType::get()->pluck('name', 'id');
         $types->prepend('--', 0);
 
-        return view('chartOfAccount.edit', compact('chartOfAccount', 'types'));
+        $creatorId = \Auth::user()->creatorId();
+
+        $objects = ClasificadorObjetoGasto::where(function ($query) use ($creatorId) {
+            $query->where('created_by', $creatorId)
+                ->orWhere('created_by', 0);
+        })->where('active', true)
+            ->orderBy('code')
+            ->get()
+            ->mapWithKeys(function ($object) {
+                return [$object->id => "{$object->code} - {$object->description}"];
+            });
+
+        $fundingSources = FundingSource::where(function ($query) use ($creatorId) {
+            $query->where('created_by', $creatorId)
+                ->orWhere('created_by', 0);
+        })->where('active', true)
+            ->orderBy('code')
+            ->get()
+            ->mapWithKeys(function ($source) {
+                return [$source->id => "{$source->code} - {$source->description}"];
+            });
+
+        $programs = Program::where(function ($query) use ($creatorId) {
+            $query->where('created_by', $creatorId)
+                ->orWhere('created_by', 0);
+        })->where('active', true)
+            ->orderBy('code')
+            ->get()
+            ->pluck('code', 'id');
+
+        $projects = Project::with('program')
+            ->where(function ($query) use ($creatorId) {
+                $query->where('created_by', $creatorId)
+                    ->orWhere('created_by', 0);
+            })->where('active', true)
+            ->orderBy('code')
+            ->get()
+            ->mapWithKeys(function ($project) {
+                return [$project->id => "{$project->code}" . ($project->program ? " ({$project->program->code})" : '')];
+            });
+
+        return view('chartOfAccount.edit', compact('chartOfAccount', 'types', 'objects', 'fundingSources', 'programs', 'projects'));
     }
 
 
@@ -160,6 +250,10 @@ class ChartOfAccountController extends Controller
             $chartOfAccount->code        = $request->code;
             $chartOfAccount->description = $request->description;
             $chartOfAccount->is_enabled  = isset($request->is_enabled) ? 1 : 0;
+            $chartOfAccount->objeto_gasto_id = $request->objeto_gasto_id ?: null;
+            $chartOfAccount->fuente_financiamiento_id = $request->fuente_financiamiento_id ?: null;
+            $chartOfAccount->programa_id = $request->programa_id ?: null;
+            $chartOfAccount->proyecto_id = $request->proyecto_id ?: null;
             $chartOfAccount->save();
 
             return redirect()->route('chart-of-account.index')->with('success', __('Account successfully updated.'));

@@ -119,7 +119,10 @@
     <table class="table table-bordered table-item data">
         <thead>
         <tr>
-            <td rowspan="2"></td>
+            <th rowspan="2">{{ __('Category') }}</th>
+            <th rowspan="2">{{ __('Objeto del gasto') }}</th>
+            <th rowspan="2">{{ __('Programa') }}</th>
+            <th rowspan="2">{{ __('Proyecto') }}</th>
             @foreach($monthList as $month)
                 <th colspan="3" scope="colgroup" class="text-center br-1px">{{__($month)}}</th>
             @endforeach
@@ -135,7 +138,7 @@
 
         <!----INCOME Category ---------------------->
         <tr>
-            <th colspan="37" class="text-dark light_blue"><span>{{__('Income :')}}</span></th>
+            <th colspan="{{ count($monthList) * 3 + 4 }}" class="text-dark light_blue"><span>{{__('Income :')}}</span></th>
         </tr>
 
         @php $overBudgetTotal = []; @endphp
@@ -143,6 +146,9 @@
         @foreach ($incomeproduct as $productService)
             <tr>
                 <td class="text-dark">{{ $productService->name }}</td>
+                <td class="text-dark">{{ optional($productService->objetoGasto)->code ?? '-' }}</td>
+                <td class="text-dark">{{ optional($productService->programa)->code ?? '-' }}</td>
+                <td class="text-dark">{{ optional($productService->proyecto)->code ?? '-' }}</td>
                 @foreach($monthList as $month)
                     @php
                         $budgetAmount = data_get($budget['income_data'], $productService->id.'.'.$month, 0);
@@ -177,7 +183,7 @@
         @endphp
 
         <tr class="total">
-            <td class="text-dark"><strong>{{__('Total :')}}</strong></td>
+            <td class="text-dark" colspan="4"><strong>{{__('Total :')}}</strong></td>
             @foreach($monthList as $month)
                 @php
                     $bt = $budgetTotal[$month] ?? 0;
@@ -200,7 +206,7 @@
 
         <!------------ EXPENSE Category ---------------------->
         <tr>
-            <th colspan="37" class="text-dark light_blue"><span>{{__('Expense :')}}</span></th>
+            <th colspan="{{ count($monthList) * 3 + 4 }}" class="text-dark light_blue"><span>{{__('Expense :')}}</span></th>
         </tr>
 
         @php $overExpenseBudgetTotal = []; @endphp
@@ -208,6 +214,9 @@
         @foreach ($expenseproduct as $productService)
             <tr>
                 <td class="text-dark">{{ $productService->name }}</td>
+                <td class="text-dark">{{ optional($productService->objetoGasto)->code ?? '-' }}</td>
+                <td class="text-dark">{{ optional($productService->programa)->code ?? '-' }}</td>
+                <td class="text-dark">{{ optional($productService->proyecto)->code ?? '-' }}</td>
                 @foreach($monthList as $month)
                     @php
                         $budgetAmount = data_get($budget['expense_data'], $productService->id.'.'.$month, 0);
@@ -242,7 +251,7 @@
         @endphp
 
         <tr class="total">
-            <td class="text-dark"><strong>{{__('Total :')}}</strong></td>
+            <td class="text-dark" colspan="4"><strong>{{__('Total :')}}</strong></td>
             @foreach($monthList as $month)
                 @php
                     $be = $budgetExpenseTotal[$month] ?? 0;
@@ -265,7 +274,7 @@
 
         <tfoot>
         <tr class="total" style="background:#f8f9fd;">
-            <td class="text-dark"><strong>{{__('NET PROFIT :')}}</strong></td>
+            <td class="text-dark" colspan="4"><strong>{{__('NET PROFIT :')}}</strong></td>
             @php
                 $overbudgetprofit = [];
                 foreach(array_unique(array_merge(array_keys($overBudgetTotalArr ?? []), array_keys($overExpenseBudgetTotalArr ?? []))) as $v){
@@ -302,7 +311,10 @@
     <table class="table table-bordered table-item data">
         <thead>
         <tr>
-            <td rowspan="2"></td>
+            <th rowspan="2">{{ __('Category') }}</th>
+            <th rowspan="2">{{ __('Objeto del gasto') }}</th>
+            <th rowspan="2">{{ __('Programa') }}</th>
+            <th rowspan="2">{{ __('Proyecto') }}</th>
             @foreach($quarterly_monthlist as $month)
                 <th colspan="3" scope="colgroup" class="text-center br-1px">{{$month}}</th>
             @endforeach
@@ -318,7 +330,7 @@
 
         <!----INCOME Category ---------------------->
         <tr>
-            <th colspan="37" class="text-dark light_blue"><span>{{__('Income :')}}</span></th>
+            <th colspan="{{ count($quarterly_monthlist) * 3 + 4 }}" class="text-dark light_blue"><span>{{__('Income :')}}</span></th>
         </tr>
 
         @php $overBudgetTotal = []; @endphp
@@ -326,6 +338,9 @@
         @foreach ($incomeproduct as $productService)
             <tr>
                 <td class="text-dark">{{$productService->name}}</td>
+                <td class="text-dark">{{ optional($productService->objetoGasto)->code ?? '-' }}</td>
+                <td class="text-dark">{{ optional($productService->programa)->code ?? '-' }}</td>
+                <td class="text-dark">{{ optional($productService->proyecto)->code ?? '-' }}</td>
                 @foreach($quarterly_monthlist as $month)
                     @php
                         $budgetAmount = data_get($budget['income_data'], $productService->id.'.'.$month, 0);
@@ -360,7 +375,7 @@
         @endphp
 
         <tr class="total">
-            <td class="text-dark"><strong>{{__('Total :')}}</strong></td>
+            <td class="text-dark" colspan="4"><strong>{{__('Total :')}}</strong></td>
             @foreach($quarterly_monthlist as $month)
                 @php
                     $bt = $budgetTotal[$month] ?? 0;
@@ -383,7 +398,7 @@
 
         <!------------ EXPENSE Category ---------------------->
         <tr>
-            <th colspan="37" class="text-dark light_blue"><span>{{__('Expense :')}}</span></th>
+            <th colspan="{{ count($quarterly_monthlist) * 3 + 4 }}" class="text-dark light_blue"><span>{{__('Expense :')}}</span></th>
         </tr>
 
         @php $overExpenseBudgetTotal = []; @endphp
@@ -391,6 +406,9 @@
         @foreach ($expenseproduct as $productService)
             <tr>
                 <td class="text-dark">{{$productService->name}}</td>
+                <td class="text-dark">{{ optional($productService->objetoGasto)->code ?? '-' }}</td>
+                <td class="text-dark">{{ optional($productService->programa)->code ?? '-' }}</td>
+                <td class="text-dark">{{ optional($productService->proyecto)->code ?? '-' }}</td>
                 @foreach($quarterly_monthlist as $month)
                     @php
                         $budgetAmount = data_get($budget['expense_data'], $productService->id.'.'.$month, 0);
@@ -425,7 +443,7 @@
         @endphp
 
         <tr class="total">
-            <td class="text-dark"><strong>{{__('Total :')}}</strong></td>
+            <td class="text-dark" colspan="4"><strong>{{__('Total :')}}</strong></td>
             @foreach($quarterly_monthlist as $month)
                 @php
                     $be = $budgetExpenseTotal[$month] ?? 0;
@@ -448,7 +466,7 @@
 
         <tfoot>
         <tr class="total" style="background:#f8f9fd;">
-            <td class="text-dark"><strong>{{__('NET PROFIT :')}}</strong></td>
+            <td class="text-dark" colspan="4"><strong>{{__('NET PROFIT :')}}</strong></td>
             @php
                 $overbudgetprofit = [];
                 foreach(array_unique(array_merge(array_keys($overBudgetTotalArr ?? []), array_keys($overExpenseBudgetTotalArr ?? []))) as $v){
@@ -478,7 +496,10 @@
     <table class="table table-bordered table-item data">
         <thead>
         <tr>
-            <td rowspan="2"></td>
+            <th rowspan="2">{{ __('Category') }}</th>
+            <th rowspan="2">{{ __('Objeto del gasto') }}</th>
+            <th rowspan="2">{{ __('Programa') }}</th>
+            <th rowspan="2">{{ __('Proyecto') }}</th>
             @foreach($half_yearly_monthlist as $month)
                 <th colspan="3" scope="colgroup" class="text-center br-1px">{{$month}}</th>
             @endforeach
@@ -494,7 +515,7 @@
 
         <!----INCOME Category ---------------------->
         <tr>
-            <th colspan="37" class="text-dark light_blue"><span>{{__('Income :')}}</span></th>
+            <th colspan="{{ count($half_yearly_monthlist) * 3 + 4 }}" class="text-dark light_blue"><span>{{__('Income :')}}</span></th>
         </tr>
 
         @php $overBudgetTotal = []; @endphp
@@ -502,6 +523,9 @@
         @foreach ($incomeproduct as $productService)
             <tr>
                 <td class="text-dark">{{$productService->name}}</td>
+                <td class="text-dark">{{ optional($productService->objetoGasto)->code ?? '-' }}</td>
+                <td class="text-dark">{{ optional($productService->programa)->code ?? '-' }}</td>
+                <td class="text-dark">{{ optional($productService->proyecto)->code ?? '-' }}</td>
                 @foreach($half_yearly_monthlist as $month)
                     @php
                         $budgetAmount = data_get($budget['income_data'], $productService->id.'.'.$month, 0);
@@ -536,7 +560,7 @@
         @endphp
 
         <tr class="total">
-            <td class="text-dark"><strong>{{__('Total :')}}</strong></td>
+            <td class="text-dark" colspan="4"><strong>{{__('Total :')}}</strong></td>
             @foreach($half_yearly_monthlist as $month)
                 @php
                     $bt = $budgetTotal[$month] ?? 0;
@@ -559,7 +583,7 @@
 
         <!------------ EXPENSE Category ---------------------->
         <tr>
-            <th colspan="37" class="text-dark light_blue"><span>{{__('Expense :')}}</span></th>
+            <th colspan="{{ count($half_yearly_monthlist) * 3 + 4 }}" class="text-dark light_blue"><span>{{__('Expense :')}}</span></th>
         </tr>
 
         @php $overExpenseBudgetTotal = []; @endphp
@@ -567,6 +591,9 @@
         @foreach ($expenseproduct as $productService)
             <tr>
                 <td class="text-dark">{{$productService->name}}</td>
+                <td class="text-dark">{{ optional($productService->objetoGasto)->code ?? '-' }}</td>
+                <td class="text-dark">{{ optional($productService->programa)->code ?? '-' }}</td>
+                <td class="text-dark">{{ optional($productService->proyecto)->code ?? '-' }}</td>
                 @foreach($half_yearly_monthlist as $month)
                     @php
                         $budgetAmount = data_get($budget['expense_data'], $productService->id.'.'.$month, 0);
@@ -601,7 +628,7 @@
         @endphp
 
         <tr class="total">
-            <td class="text-dark"><strong>{{__('Total :')}}</strong></td>
+            <td class="text-dark" colspan="4"><strong>{{__('Total :')}}</strong></td>
             @foreach($half_yearly_monthlist as $month)
                 @php
                     $be = $budgetExpenseTotal[$month] ?? 0;
@@ -624,7 +651,7 @@
 
         <tfoot>
         <tr class="total" style="background:#f8f9fd;">
-            <td class="text-dark"><strong>{{__('NET PROFIT :')}}</strong></td>
+            <td class="text-dark" colspan="4"><strong>{{__('NET PROFIT :')}}</strong></td>
             @php
                 $overbudgetprofit = [];
                 foreach(array_unique(array_merge(array_keys($overBudgetTotalArr ?? []), array_keys($overExpenseBudgetTotalArr ?? []))) as $v){
@@ -654,7 +681,10 @@
     <table class="table table-bordered table-item data">
         <thead>
         <tr>
-            <td rowspan="2"></td>
+            <th rowspan="2">{{ __('Category') }}</th>
+            <th rowspan="2">{{ __('Objeto del gasto') }}</th>
+            <th rowspan="2">{{ __('Programa') }}</th>
+            <th rowspan="2">{{ __('Proyecto') }}</th>
             @foreach($yearly_monthlist as $month)
                 <th colspan="3" scope="colgroup" class="text-center br-1px">{{$month}}</th>
             @endforeach
@@ -670,7 +700,7 @@
 
         <!----INCOME Category ---------------------->
         <tr>
-            <th colspan="37" class="text-dark light_blue"><span>{{__('Income :')}}</span></th>
+            <th colspan="{{ count($yearly_monthlist) * 3 + 4 }}" class="text-dark light_blue"><span>{{__('Income :')}}</span></th>
         </tr>
 
         @php $overBudgetTotal = []; @endphp
@@ -678,6 +708,9 @@
         @foreach ($incomeproduct as $productService)
             <tr>
                 <td class="text-dark">{{$productService->name}}</td>
+                <td class="text-dark">{{ optional($productService->objetoGasto)->code ?? '-' }}</td>
+                <td class="text-dark">{{ optional($productService->programa)->code ?? '-' }}</td>
+                <td class="text-dark">{{ optional($productService->proyecto)->code ?? '-' }}</td>
                 @foreach($yearly_monthlist as $month)
                     @php
                         $budgetAmount = data_get($budget['income_data'], $productService->id.'.'.$month, 0);
@@ -712,7 +745,7 @@
         @endphp
 
         <tr class="total text-dark">
-            <td><strong>{{__('Total :')}}</strong></td>
+            <td colspan="4"><strong>{{__('Total :')}}</strong></td>
             @foreach($yearly_monthlist as $month)
                 @php
                     $bt = $budgetTotal[$month] ?? 0;
@@ -735,7 +768,7 @@
 
         <!------------ EXPENSE Category ---------------------->
         <tr>
-            <th colspan="37" class="text-dark light_blue"><span>{{__('Expense :')}}</span></th>
+            <th colspan="{{ count($yearly_monthlist) * 3 + 4 }}" class="text-dark light_blue"><span>{{__('Expense :')}}</span></th>
         </tr>
 
         @php $overExpenseBudgetTotal = []; @endphp
@@ -743,6 +776,9 @@
         @foreach ($expenseproduct as $productService)
             <tr>
                 <td class="text-dark">{{$productService->name}}</td>
+                <td class="text-dark">{{ optional($productService->objetoGasto)->code ?? '-' }}</td>
+                <td class="text-dark">{{ optional($productService->programa)->code ?? '-' }}</td>
+                <td class="text-dark">{{ optional($productService->proyecto)->code ?? '-' }}</td>
                 @foreach($yearly_monthlist as $month)
                     @php
                         $budgetAmount = data_get($budget['expense_data'], $productService->id.'.'.$month, 0);
@@ -776,7 +812,7 @@
         @endphp
 
         <tr class="total">
-            <td class="text-dark"><strong>{{__('Total :')}}</strong></td>
+            <td class="text-dark" colspan="4"><strong>{{__('Total :')}}</strong></td>
             @foreach($yearly_monthlist as $month)
                 @php
                     $be = $budgetExpenseTotal[$month] ?? 0;
@@ -799,7 +835,7 @@
 
         <tfoot>
         <tr class="total" style="background:#f8f9fd;">
-            <td class="text-dark"><strong>{{__('NET PROFIT :')}}</strong></td>
+            <td class="text-dark" colspan="4"><strong>{{__('NET PROFIT :')}}</strong></td>
             @php
                 $overbudgetprofit = [];
                 foreach(array_unique(array_merge(array_keys($overBudgetTotalArr ?? []), array_keys($overExpenseBudgetTotalArr ?? []))) as $v){

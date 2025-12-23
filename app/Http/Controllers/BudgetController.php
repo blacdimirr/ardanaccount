@@ -60,8 +60,14 @@ class BudgetController extends Controller
 
             $data['yearList'] = $this->yearList();
 
-            $incomeproduct  = ProductServiceCategory::where('created_by', '=', \Auth::user()->creatorId())->where('type', '=', 'income')->get();
-            $expenseproduct = ProductServiceCategory::where('created_by', '=', \Auth::user()->creatorId())->where('type', '=', 'expense')->get();
+            $incomeproduct  = ProductServiceCategory::where('created_by', '=', \Auth::user()->creatorId())
+                ->where('type', '=', 'income')
+                ->with(['objetoGasto', 'programa', 'proyecto'])
+                ->get();
+            $expenseproduct = ProductServiceCategory::where('created_by', '=', \Auth::user()->creatorId())
+                ->where('type', '=', 'expense')
+                ->with(['objetoGasto', 'programa', 'proyecto'])
+                ->get();
 
             return view('budget.create', compact('periods', 'incomeproduct', 'expenseproduct'), $data);
         } else {
@@ -192,7 +198,10 @@ class BudgetController extends Controller
             $year = !empty($budget->from) ? $budget->from : date('Y');
             $data['currentYear'] = $year;
 
-            $incomeproduct = ProductServiceCategory::where('created_by', '=', \Auth::user()->creatorId())->where('type', '=', 'income')->get();
+            $incomeproduct = ProductServiceCategory::where('created_by', '=', \Auth::user()->creatorId())
+                ->where('type', '=', 'income')
+                ->with(['objetoGasto', 'programa', 'proyecto'])
+                ->get();
 
             $incomeArr      = [];
             $incomeTotalArr = [];
@@ -298,7 +307,10 @@ class BudgetController extends Controller
                 }
             }
 
-            $expenseproduct = ProductServiceCategory::where('created_by', '=', \Auth::user()->creatorId())->where('type', '=', 'expense')->get();
+            $expenseproduct = ProductServiceCategory::where('created_by', '=', \Auth::user()->creatorId())
+                ->where('type', '=', 'expense')
+                ->with(['objetoGasto', 'programa', 'proyecto'])
+                ->get();
 
             $expenseArr      = [];
             $expenseTotalArr = [];
@@ -515,8 +527,14 @@ class BudgetController extends Controller
                 $data['yearList'] = [$budget->from => $budget->from] + $data['yearList'];
             }
 
-            $incomeproduct  = ProductServiceCategory::where('created_by', '=', \Auth::user()->creatorId())->where('type', '=', 'income')->get();
-            $expenseproduct = ProductServiceCategory::where('created_by', '=', \Auth::user()->creatorId())->where('type', '=', 'expense')->get();
+            $incomeproduct  = ProductServiceCategory::where('created_by', '=', \Auth::user()->creatorId())
+                ->where('type', '=', 'income')
+                ->with(['objetoGasto', 'programa', 'proyecto'])
+                ->get();
+            $expenseproduct = ProductServiceCategory::where('created_by', '=', \Auth::user()->creatorId())
+                ->where('type', '=', 'expense')
+                ->with(['objetoGasto', 'programa', 'proyecto'])
+                ->get();
 
             return view('budget.edit', compact('periods', 'budget', 'incomeproduct', 'expenseproduct'), $data);
         } else {
