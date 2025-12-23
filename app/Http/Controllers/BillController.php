@@ -128,13 +128,27 @@ class BillController extends Controller
             $ncfTypes = NcfType::where(function ($query) {
                 $query->where('created_by', \Auth::user()->creatorId())
                     ->orWhere('created_by', 0);
-            })->pluck('code', 'id');
+            })
+                ->where(function ($query) use ($bill) {
+                    $query->where('active', true);
+                    if ($bill->ncf_type_id) {
+                        $query->orWhere('id', $bill->ncf_type_id);
+                    }
+                })
+                ->pluck('code', 'id');
             $ncfTypes->prepend(__('Select NCF Type'), '');
 
             $ncfSeries = NcfSeries::with('type')->where(function ($query) {
                 $query->where('created_by', \Auth::user()->creatorId())
                     ->orWhere('created_by', 0);
-            })->get()->mapWithKeys(function ($series) {
+            })
+                ->where(function ($query) use ($bill) {
+                    $query->where('active', true);
+                    if ($bill->ncf_series_id) {
+                        $query->orWhere('id', $bill->ncf_series_id);
+                    }
+                })
+                ->get()->mapWithKeys(function ($series) {
                 $label = trim((optional($series->type)->code ? $series->type->code . ' - ' : '') . ($series->series ?? __('Series')));
                 $range = $series->start_number . ' - ' . $series->end_number;
 
@@ -492,13 +506,27 @@ class BillController extends Controller
             $ncfTypes = NcfType::where(function ($query) {
                 $query->where('created_by', \Auth::user()->creatorId())
                     ->orWhere('created_by', 0);
-            })->pluck('code', 'id');
+            })
+                ->where(function ($query) use ($bill) {
+                    $query->where('active', true);
+                    if ($bill->ncf_type_id) {
+                        $query->orWhere('id', $bill->ncf_type_id);
+                    }
+                })
+                ->pluck('code', 'id');
             $ncfTypes->prepend(__('Select NCF Type'), '');
 
             $ncfSeries = NcfSeries::with('type')->where(function ($query) {
                 $query->where('created_by', \Auth::user()->creatorId())
                     ->orWhere('created_by', 0);
-            })->get()->mapWithKeys(function ($series) {
+            })
+                ->where(function ($query) use ($bill) {
+                    $query->where('active', true);
+                    if ($bill->ncf_series_id) {
+                        $query->orWhere('id', $bill->ncf_series_id);
+                    }
+                })
+                ->get()->mapWithKeys(function ($series) {
                 $label = trim((optional($series->type)->code ? $series->type->code . ' - ' : '') . ($series->series ?? __('Series')));
                 $range = $series->start_number . ' - ' . $series->end_number;
 
@@ -544,12 +572,26 @@ class BillController extends Controller
             $ncfTypes = NcfType::where(function ($query) {
                 $query->where('created_by', \Auth::user()->creatorId())
                     ->orWhere('created_by', 0);
-            })->pluck('code', 'id');
+            })
+                ->where(function ($query) use ($bill) {
+                    $query->where('active', true);
+                    if ($bill->ncf_type_id) {
+                        $query->orWhere('id', $bill->ncf_type_id);
+                    }
+                })
+                ->pluck('code', 'id');
             $ncfTypes->prepend(__('Select NCF Type'), '');
             $ncfSeries = NcfSeries::with('type')->where(function ($query) {
                 $query->where('created_by', \Auth::user()->creatorId())
                     ->orWhere('created_by', 0);
-            })->get()->mapWithKeys(function ($series) {
+            })
+                ->where(function ($query) use ($bill) {
+                    $query->where('active', true);
+                    if ($bill->ncf_series_id) {
+                        $query->orWhere('id', $bill->ncf_series_id);
+                    }
+                })
+                ->get()->mapWithKeys(function ($series) {
                 $label = trim((optional($series->type)->code ? $series->type->code . ' - ' : '') . ($series->series ?? __('Series')));
                 $range = $series->start_number . ' - ' . $series->end_number;
 

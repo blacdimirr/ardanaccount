@@ -94,13 +94,27 @@ class InvoiceController extends Controller
             $ncfTypes = NcfType::where(function ($query) {
                 $query->where('created_by', \Auth::user()->creatorId())
                     ->orWhere('created_by', 0);
-            })->pluck('code', 'id');
+            })
+                ->where(function ($query) use ($invoice) {
+                    $query->where('active', true);
+                    if ($invoice->ncf_type_id) {
+                        $query->orWhere('id', $invoice->ncf_type_id);
+                    }
+                })
+                ->pluck('code', 'id');
             $ncfTypes->prepend(__('Select NCF Type'), '');
 
             $ncfSeries = NcfSeries::with('type')->where(function ($query) {
                 $query->where('created_by', \Auth::user()->creatorId())
                     ->orWhere('created_by', 0);
-            })->get()->mapWithKeys(function ($series) {
+            })
+                ->where(function ($query) use ($invoice) {
+                    $query->where('active', true);
+                    if ($invoice->ncf_series_id) {
+                        $query->orWhere('id', $invoice->ncf_series_id);
+                    }
+                })
+                ->get()->mapWithKeys(function ($series) {
                 $label = trim((optional($series->type)->code ? $series->type->code . ' - ' : '') . ($series->series ?? __('Series')));
                 $range = $series->start_number . ' - ' . $series->end_number;
 
@@ -281,13 +295,13 @@ class InvoiceController extends Controller
             $ncfTypes = NcfType::where(function ($query) {
                 $query->where('created_by', \Auth::user()->creatorId())
                     ->orWhere('created_by', 0);
-            })->pluck('code', 'id');
+            })->where('active', true)->pluck('code', 'id');
             $ncfTypes->prepend(__('Select NCF Type'), '');
 
             $ncfSeries = NcfSeries::with('type')->where(function ($query) {
                 $query->where('created_by', \Auth::user()->creatorId())
                     ->orWhere('created_by', 0);
-            })->get()->mapWithKeys(function ($series) {
+            })->where('active', true)->get()->mapWithKeys(function ($series) {
                 $label = trim((optional($series->type)->code ? $series->type->code . ' - ' : '') . ($series->series ?? __('Series')));
                 $range = $series->start_number . ' - ' . $series->end_number;
 
