@@ -8,7 +8,18 @@ use Illuminate\Database\Eloquent\Model;
 class Budget extends Model
 {
     protected $fillable = [
-        'name','start_date','end_date','period','created_by'
+        'name',
+        'start_date',
+        'end_date',
+        'period',
+        'created_by',
+        'monto_pia',
+        'monto_pim',
+    ];
+
+    protected $casts = [
+        'monto_pia' => 'array',
+        'monto_pim' => 'array',
     ];
 
     public static $period = [

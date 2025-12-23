@@ -109,6 +109,119 @@
         <h6 class="report-text text-center mb-0">{{__('Year :')}} {{ $budget->from }}</h6>
     </div>
 </div>
+<div class="col-12">
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">{{ __('Budget overview (PIA / PIM)') }}</h5>
+        </div>
+        <div class="card-body table-border-style">
+            <div class="table-responsive">
+                @php
+                    $summarySections = [
+                        'income' => [
+                            'label' => __('Income'),
+                            'products' => $incomeproduct,
+                            'executed' => $executedIncomeTotals ?? [],
+                        ],
+                        'expense' => [
+                            'label' => __('Expense'),
+                            'products' => $expenseproduct,
+                            'executed' => $executedExpenseTotals ?? [],
+                        ],
+                    ];
+                    $pimModalData = [];
+                @endphp
+                <table class="table align-middle">
+                    <thead>
+                    <tr>
+                        <th>{{ __('Category') }}</th>
+                        <th>{{ __('PIA') }}</th>
+                        <th>{{ __('PIM') }}</th>
+                        <th>{{ __('Executed') }}</th>
+                        @if($canEditPim)
+                            <th class="text-end" width="10%">{{ __('Action') }}</th>
+                        @endif
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach($summarySections as $type => $section)
+                        <tr>
+                            <th colspan="{{ $canEditPim ? 5 : 4 }}" class="text-dark light_blue">
+                                <span>{{ $section['label'] }}</span>
+                            </th>
+                        </tr>
+                        @foreach($section['products'] as $productService)
+                            @php
+                                $pia = data_get($piaTotals, $type.'.'.$productService->id, 0);
+                                $pim = data_get($pimTotals, $type.'.'.$productService->id, $pia);
+                                $executed = $section['executed'][$productService->id] ?? 0;
+                                $modalId = 'pimModal-'.$type.'-'.$productService->id;
+
+                                if($canEditPim){
+                                    $pimModalData[] = [
+                                        'id' => $modalId,
+                                        'name' => $productService->name,
+                                        'pim' => $pim,
+                                        'executed' => $executed,
+                                        'category_id' => $productService->id,
+                                        'type' => $type,
+                                    ];
+                                }
+                            @endphp
+                            <tr>
+                                <td class="text-dark">{{ $productService->name }}</td>
+                                <td class="text-dark">{{ \Auth::user()->priceFormat($pia) }}</td>
+                                <td class="text-dark">{{ \Auth::user()->priceFormat($pim) }}</td>
+                                <td class="text-dark">{{ \Auth::user()->priceFormat($executed) }}</td>
+                                @if($canEditPim)
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#{{ $modalId }}">
+                                            <i class="ti ti-edit"></i>
+                                        </button>
+                                    </td>
+                                @endif
+                            </tr>
+                        @endforeach
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @if($canEditPim)
+            @foreach($pimModalData as $modal)
+                <div class="modal fade" id="{{ $modal['id'] }}" tabindex="-1" aria-labelledby="{{ $modal['id'] }}Label" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            {{ Form::open(['route' => ['budget.pim.update', $budget->id], 'method' => 'POST']) }}
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="{{ $modal['id'] }}Label">{{ __('Update PIM') }} - {{ $modal['name'] }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                {{ Form::hidden('category_id', $modal['category_id']) }}
+                                {{ Form::hidden('type', $modal['type']) }}
+                                <div class="mb-3">
+                                    {{ Form::label('monto_pim', __('PIM'), ['class' => 'form-label']) }}<x-required></x-required>
+                                    {{ Form::number('monto_pim', $modal['pim'], ['class' => 'form-control', 'step' => '0.01', 'min' => '0', 'required' => true]) }}
+                                </div>
+                                <div class="mb-3">
+                                    {{ Form::label('reason', __('Reason'), ['class' => 'form-label']) }}<x-required></x-required>
+                                    {{ Form::textarea('reason', null, ['class' => 'form-control', 'rows' => 3, 'required' => true]) }}
+                                </div>
+                                <p class="text-muted mb-0">{{ __('Executed amount: :value', ['value' => \Auth::user()->priceFormat($modal['executed'])]) }}</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                                <button type="submit" class="btn btn-primary">{{ __('Save') }}</button>
+                            </div>
+                            {{ Form::close() }}
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        @endif
+    </div>
+</div>
 <div class="row">
 <div class="col-12">
 <div class="card">

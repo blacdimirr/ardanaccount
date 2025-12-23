@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Bill;
 use App\Models\Invoice;
 use App\Models\Budget;
+use App\Models\BudgetPimHistory;
 use App\Models\Payment;
 use App\Models\ProductServiceCategory;
 use App\Models\Revenue;
@@ -95,12 +96,16 @@ class BudgetController extends Controller
                 return redirect()->back()->with('error', $messages->first());
             }
 
+            $baseTotals = $this->calculateBaseTotals($request->input('income', []), $request->input('expense', []));
+
             $budget               = new Budget();
             $budget->name         = $request->name;
             $budget->from         = $request->year;
             $budget->period       = $request->period;
             $budget->income_data  = json_encode($request->income);
             $budget->expense_data = json_encode($request->expense);
+            $budget->monto_pia    = $baseTotals;
+            $budget->monto_pim    = $baseTotals;
             $budget->created_by   = \Auth::user()->creatorId();
             $budget->save();
 
@@ -460,6 +465,34 @@ class BudgetController extends Controller
             }
             $data['actualprofit'] = $actualprofit;
 
+            $piaTotals = $this->normalizeBaseTotals($budget->monto_pia, []);
+            $pimTotals = $this->normalizeBaseTotals($budget->monto_pim, []);
+
+            if (empty($piaTotals)) {
+                $piaTotals = $this->calculateBaseTotals(
+                    $budget['income_data'] ?? [],
+                    $budget['expense_data'] ?? []
+                );
+            }
+
+            if (empty($pimTotals)) {
+                $pimTotals = $piaTotals;
+            }
+
+            $pimTotals = $this->mergePimTotals($pimTotals, $piaTotals);
+
+            $executedIncomeTotals = [];
+            foreach ($incomeArr as $categoryId => $values) {
+                $executedIncomeTotals[$categoryId] = array_sum($values ?? []);
+            }
+
+            $executedExpenseTotals = [];
+            foreach ($expenseArr as $categoryId => $values) {
+                $executedExpenseTotals[$categoryId] = array_sum($values ?? []);
+            }
+
+            $canEditPim = \Auth::user()->can('presupuesto_modificar_pim');
+
             return view(
                 'budget.show',
                 compact(
@@ -472,7 +505,12 @@ class BudgetController extends Controller
                     'incomeTotalArr',
                     'expenseTotalArr',
                     'budgetTotal',
-                    'budgetExpenseTotal'
+                    'budgetExpenseTotal',
+                    'piaTotals',
+                    'pimTotals',
+                    'executedIncomeTotals',
+                    'executedExpenseTotals',
+                    'canEditPim'
                 ),
                 $data
             );
@@ -564,11 +602,16 @@ class BudgetController extends Controller
                     return redirect()->back()->with('error', $messages->first());
                 }
 
+                $baseTotals = $this->calculateBaseTotals($request->input('income', []), $request->input('expense', []));
+                $currentPim = $this->normalizeBaseTotals($budget->monto_pim, []);
+
                 $budget->name         = $request->name;
                 $budget->from         = $request->year;
                 $budget->period       = $request->period;
                 $budget->income_data  = json_encode($request->income);
                 $budget->expense_data = json_encode($request->expense);
+                $budget->monto_pia    = $baseTotals;
+                $budget->monto_pim    = $this->mergePimTotals($currentPim, $baseTotals);
                 $budget->save();
 
                 return redirect()->route('budget.index')->with('success', __('Budget planner successfully updated.'));
@@ -601,6 +644,73 @@ class BudgetController extends Controller
         }
     }
 
+    public function updatePim(Request $request, Budget $budget)
+    {
+        if (!\Auth::user()->can('presupuesto_modificar_pim')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        if ($budget->created_by != \Auth::user()->creatorId()) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $validator = \Validator::make($request->all(), [
+            'category_id' => 'required|integer|exists:product_service_categories,id',
+            'type'        => 'required|in:income,expense',
+            'monto_pim'   => 'required|numeric|min:0',
+            'reason'      => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            $messages = $validator->getMessageBag();
+            return redirect()->back()->with('error', $messages->first());
+        }
+
+        $category = ProductServiceCategory::find($request->category_id);
+        if (!$category) {
+            return redirect()->back()->with('error', __('Budget category not found.'));
+        }
+
+        if ($category->type != $request->type) {
+            return redirect()->back()->with('error', __('Budget category not found.'));
+        }
+
+        $piaTotals = $this->normalizeBaseTotals($budget->monto_pia, []);
+        if (empty($piaTotals)) {
+            $piaTotals = $this->calculateBaseTotals(
+                $this->normalizeBudgetData($budget->income_data),
+                $this->normalizeBudgetData($budget->expense_data)
+            );
+        }
+
+        $pimTotals = $this->normalizeBaseTotals($budget->monto_pim, $piaTotals);
+        $pimTotals = $this->mergePimTotals($pimTotals, $piaTotals);
+
+        $executed = $this->calculateExecutedForCategory($budget, $category);
+
+        if ($request->monto_pim < $executed) {
+            return redirect()->back()->with('error', __('The PIM amount cannot be lower than the executed amount.'));
+        }
+
+        $previous = data_get($pimTotals, $request->type . '.' . $category->id, 0);
+        $pimTotals[$request->type][$category->id] = $request->monto_pim;
+
+        $budget->monto_pim = $pimTotals;
+        $budget->save();
+
+        BudgetPimHistory::create([
+            'budget_id'      => $budget->id,
+            'category_id'    => $category->id,
+            'monto_anterior' => $previous,
+            'monto_nuevo'    => $request->monto_pim,
+            'fecha'          => now()->toDateString(),
+            'created_by'     => \Auth::user()->id,
+            'reason'         => $request->reason,
+        ]);
+
+        return redirect()->back()->with('success', __('PIM updated successfully.'));
+    }
+
     public function yearMonth()
     {
         $month[] = 'January';
@@ -629,5 +739,117 @@ class BudgetController extends Controller
         }
 
         return $years;
+    }
+
+    protected function calculateBaseTotals(array $income, array $expense): array
+    {
+        return [
+            'income'  => $this->sumBudgetLineTotals($income),
+            'expense' => $this->sumBudgetLineTotals($expense),
+        ];
+    }
+
+    protected function sumBudgetLineTotals(array $lines): array
+    {
+        $totals = [];
+        foreach ($lines as $categoryId => $values) {
+            $totals[$categoryId] = collect($values ?? [])->map(function ($value) {
+                return (float)$value;
+            })->sum();
+        }
+
+        return $totals;
+    }
+
+    protected function normalizeBaseTotals($value, $default = []): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        return $default;
+    }
+
+    protected function mergePimTotals(array $currentPim, array $piaTotals): array
+    {
+        $merged = [
+            'income'  => [],
+            'expense' => [],
+        ];
+
+        foreach (['income', 'expense'] as $type) {
+            $piaByType = $piaTotals[$type] ?? [];
+            foreach ($piaByType as $categoryId => $piaAmount) {
+                $merged[$type][$categoryId] = $currentPim[$type][$categoryId] ?? $piaAmount;
+            }
+        }
+
+        return $merged;
+    }
+
+    protected function calculateExecutedForCategory(Budget $budget, ProductServiceCategory $category): float
+    {
+        $creatorId = \Auth::user()->creatorId();
+        $year = $budget->from ?? date('Y');
+
+        if ($category->type == 'income') {
+            $revenueTotal = Revenue::where('created_by', $creatorId)
+                ->where('category_id', $category->id)
+                ->whereRaw('YEAR(date) = ?', [$year])
+                ->sum('amount');
+
+            $invoiceTotal = 0;
+            $invoices = Invoice::where('created_by', $creatorId)
+                ->where('category_id', $category->id)
+                ->whereRaw('YEAR(send_date) = ?', [$year])
+                ->with(['items'])
+                ->get();
+            foreach ($invoices as $invoice) {
+                $invoiceTotal += $invoice->getTotal();
+            }
+
+            return (float)$revenueTotal + (float)$invoiceTotal;
+        }
+
+        $paymentTotal = Payment::where('created_by', $creatorId)
+            ->where('category_id', $category->id)
+            ->whereRaw('YEAR(date) = ?', [$year])
+            ->sum('amount');
+
+        $billTotal = 0;
+        $bills = Bill::where('created_by', $creatorId)
+            ->where('category_id', $category->id)
+            ->whereRaw('YEAR(send_date) = ?', [$year])
+            ->with(['items', 'accounts'])
+            ->get();
+
+        foreach ($bills as $bill) {
+            $billTotal += $bill->getTotal();
+        }
+
+        return (float)$paymentTotal + (float)$billTotal;
+    }
+
+    protected function normalizeBudgetData($data): array
+    {
+        if (is_array($data)) {
+            return $data;
+        }
+
+        if (is_string($data)) {
+            $decoded = json_decode($data, true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        return [];
     }
 }

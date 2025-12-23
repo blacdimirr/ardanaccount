@@ -902,6 +902,7 @@ Route::post('/proposal/template/setting', [ProposalController::class, 'savePropo
 
 
 //Budget Planner //
+Route::post('budget/{budget}/pim', [BudgetController::class, 'updatePim'])->name('budget.pim.update')->middleware(['auth', 'XSS', 'revalidate']);
 Route::resource('budget', BudgetController::class)->middleware(['auth', 'XSS', 'revalidate']);
 
 
