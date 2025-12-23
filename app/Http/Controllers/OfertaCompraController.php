@@ -43,7 +43,7 @@ class OfertaCompraController extends Controller
         }
 
         $validator = \Validator::make($request->all(), [
-            'proceso_compra_id' => 'required|integer|exists:procesos_compra,id',
+            'proceso_compra_id' => 'required|integer|exists:purchase_processes,id',
             'proveedor' => 'required|string|max:255',
             'monto_ofertado' => 'required|numeric|min:0',
             'fecha_oferta' => 'required|date',

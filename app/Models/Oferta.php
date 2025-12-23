@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Oferta extends Model
 {
+    protected $table = 'purchase_offers';
+
     protected $fillable = [
         'proceso_compra_id',
         'proveedor',

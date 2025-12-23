@@ -42,7 +42,7 @@ class ProcesoCompraController extends Controller
         }
 
         $validator = \Validator::make($request->all(), [
-            'requisicion_id' => 'required|integer|exists:requisiciones,id',
+            'requisicion_id' => 'required|integer|exists:requisitions,id',
             'fecha_inicio' => 'required|date',
             'descripcion' => 'nullable|string',
         ]);

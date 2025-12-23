@@ -10,7 +10,7 @@
     <li class="breadcrumb-item">#{{ $proceso->id }}</li>
 @endsection
 
-@section('action-button')
+@section('action-btn')
     <a href="{{ route('compras.ofertas.create') }}" class="btn btn-sm btn-primary">
         {{ __('Register Offer') }}
     </a>

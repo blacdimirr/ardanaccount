@@ -8,9 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('contratos', function (Blueprint $table) {
+        Schema::create('purchase_contracts', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('adjudicacion_id')->constrained('adjudicaciones')->cascadeOnDelete();
+            $table->foreignId('adjudicacion_id')->constrained('purchase_awards')->cascadeOnDelete();
             $table->foreignId('partida_presupuestaria_id')->nullable()->constrained('product_service_categories');
             $table->string('proveedor');
             $table->decimal('monto_contrato', 15, 2);
@@ -25,6 +25,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('contratos');
+        Schema::dropIfExists('purchase_contracts');
     }
 };

@@ -7,6 +7,8 @@ use App\Models\ProductServiceCategory;
 
 class Adjudicacion extends Model
 {
+    protected $table = 'purchase_awards';
+
     protected $fillable = [
         'proceso_compra_id',
         'oferta_id',

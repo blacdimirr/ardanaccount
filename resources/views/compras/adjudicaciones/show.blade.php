@@ -10,7 +10,7 @@
     <li class="breadcrumb-item">#{{ $adjudicacion->id }}</li>
 @endsection
 
-@section('action-button')
+@section('action-btn')
     <a href="{{ route('compras.contratos.create') }}" class="btn btn-sm btn-primary">
         {{ __('Create Contract') }}
     </a>

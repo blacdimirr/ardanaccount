@@ -10,7 +10,7 @@
     <li class="breadcrumb-item">#{{ $requisicion->id }}</li>
 @endsection
 
-@section('action-button')
+@section('action-btn')
     <a href="{{ route('compras.procesos.create') }}" class="btn btn-sm btn-primary">
         {{ __('Start Purchase Process') }}
     </a>

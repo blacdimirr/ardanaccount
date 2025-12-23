@@ -8,10 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('adjudicaciones', function (Blueprint $table) {
+        Schema::create('purchase_awards', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('proceso_compra_id')->constrained('procesos_compra')->cascadeOnDelete();
-            $table->foreignId('oferta_id')->constrained('ofertas')->cascadeOnDelete();
+            $table->foreignId('proceso_compra_id')->constrained('purchase_processes')->cascadeOnDelete();
+            $table->foreignId('oferta_id')->constrained('purchase_offers')->cascadeOnDelete();
             $table->foreignId('partida_presupuestaria_id')->nullable()->constrained('product_service_categories');
             $table->decimal('monto_adjudicado', 15, 2);
             $table->date('fecha_adjudicacion');
@@ -24,6 +24,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('adjudicaciones');
+        Schema::dropIfExists('purchase_awards');
     }
 };

@@ -8,9 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('procesos_compra', function (Blueprint $table) {
+        Schema::create('purchase_processes', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('requisicion_id')->constrained('requisiciones')->cascadeOnDelete();
+            $table->foreignId('requisicion_id')->constrained('requisitions')->cascadeOnDelete();
             $table->text('descripcion')->nullable();
             $table->date('fecha_inicio');
             $table->string('estado')->default('en_proceso');
@@ -21,6 +21,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('procesos_compra');
+        Schema::dropIfExists('purchase_processes');
     }
 };

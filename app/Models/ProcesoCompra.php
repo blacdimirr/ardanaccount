@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ProcesoCompra extends Model
 {
-    protected $table = 'procesos_compra';
+    protected $table = 'purchase_processes';
 
     protected $fillable = [
         'requisicion_id',

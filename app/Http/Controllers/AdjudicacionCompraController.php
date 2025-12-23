@@ -52,8 +52,8 @@ class AdjudicacionCompraController extends Controller
         }
 
         $validator = \Validator::make($request->all(), [
-            'proceso_compra_id' => 'required|integer|exists:procesos_compra,id',
-            'oferta_id' => 'required|integer|exists:ofertas,id',
+            'proceso_compra_id' => 'required|integer|exists:purchase_processes,id',
+            'oferta_id' => 'required|integer|exists:purchase_offers,id',
             'partida_presupuestaria_id' => 'nullable|integer|exists:product_service_categories,id',
             'monto_adjudicado' => 'required|numeric|min:0',
             'fecha_adjudicacion' => 'required|date',

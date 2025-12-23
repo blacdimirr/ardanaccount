@@ -9,7 +9,7 @@
     <li class="breadcrumb-item">{{ __('Offers') }}</li>
 @endsection
 
-@section('action-button')
+@section('action-btn')
     <a href="{{ route('compras.ofertas.create') }}" class="btn btn-sm btn-primary">
         {{ __('Create') }}
     </a>

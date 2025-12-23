@@ -8,9 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('ofertas', function (Blueprint $table) {
+        Schema::create('purchase_offers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('proceso_compra_id')->constrained('procesos_compra')->cascadeOnDelete();
+            $table->foreignId('proceso_compra_id')->constrained('purchase_processes')->cascadeOnDelete();
             $table->string('proveedor');
             $table->decimal('monto_ofertado', 15, 2);
             $table->date('fecha_oferta');
@@ -22,6 +22,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('ofertas');
+        Schema::dropIfExists('purchase_offers');
     }
 };

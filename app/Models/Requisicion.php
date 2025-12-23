@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Requisicion extends Model
 {
+    protected $table = 'requisitions';
+
     protected $fillable = [
         'area_solicitante',
         'descripcion',

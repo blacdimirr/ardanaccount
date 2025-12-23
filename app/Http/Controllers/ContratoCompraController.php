@@ -51,7 +51,7 @@ class ContratoCompraController extends Controller
         }
 
         $validator = \Validator::make($request->all(), [
-            'adjudicacion_id' => 'required|integer|exists:adjudicaciones,id',
+            'adjudicacion_id' => 'required|integer|exists:purchase_awards,id',
             'partida_presupuestaria_id' => 'nullable|integer|exists:product_service_categories,id',
             'proveedor' => 'required|string|max:255',
             'monto_contrato' => 'required|numeric|min:0',

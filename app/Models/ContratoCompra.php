@@ -7,7 +7,7 @@ use App\Models\ProductServiceCategory;
 
 class ContratoCompra extends Model
 {
-    protected $table = 'contratos';
+    protected $table = 'purchase_contracts';
 
     protected $fillable = [
         'adjudicacion_id',
