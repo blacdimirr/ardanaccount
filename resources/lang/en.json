@@ -1628,5 +1628,18 @@
     "Zip": "Zip",
     "Zip Code": "Zip Code",
     "Zip\/Post Code": "Zip\/Post Code",
-    "Has retention": "Has retention"
+    "Has retention": "Has retention",
+    "Budget Execution": "Budget Execution",
+    "Budget Execution Report": "Budget Execution Report",
+    "Object of expenditure": "Object of expenditure",
+    "Funding Source": "Funding Source",
+    "Commitment": "Commitment",
+    "Accrued": "Accrued",
+    "Paid": "Paid",
+    "Select Budget": "Select Budget",
+    "No budget selected": "No budget selected",
+    "Classifier": "Classifier",
+    "Period": "Period",
+    "Program": "Program",
+    "Project": "Project"
 }

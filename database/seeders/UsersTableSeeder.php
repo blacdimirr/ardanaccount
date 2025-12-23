@@ -626,6 +626,12 @@ class UsersTableSeeder extends Seeder
                 'updated_at' => date('Y - m - d H:i:s'),
             ],
             [
+                'name' => 'reportes_presupuesto_view',
+                'guard_name' => 'web',
+                'created_at' => date('Y - m - d H:i:s'),
+                'updated_at' => date('Y - m - d H:i:s'),
+            ],
+            [
                 'name' => 'manage customer payment',
                 'guard_name' => 'web',
                 'created_at' => date('Y - m - d H:i:s'),
@@ -1356,6 +1362,7 @@ class UsersTableSeeder extends Seeder
             'stock report',
             'tax report',
             'loss & profit report',
+            'reportes_presupuesto_view',
             'manage transaction',
             'manage order',
             'manage credit note',
@@ -1545,6 +1552,7 @@ class UsersTableSeeder extends Seeder
             'stock report',
             'tax report',
             'loss & profit report',
+            'reportes_presupuesto_view',
             'manage transaction',
             'manage credit note',
             'create credit note',

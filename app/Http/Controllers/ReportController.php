@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BankAccount;
 use App\Models\Bill;
 use App\Models\BillProduct;
+use App\Models\Budget;
 use App\Models\ChartOfAccount;
 use App\Models\ChartOfAccountSubType;
 use App\Models\ChartOfAccountType;
@@ -22,6 +23,7 @@ use App\Models\Vender;
 use App\Models\Utility;
 use App\Exports\AccountStatementExport;
 use App\Exports\BalanceSheetExport;
+use App\Exports\BudgetExecutionExport;
 use App\Exports\ProductStockExport;
 use App\Exports\ProfitLossExport;
 use App\Exports\TrialBalancExport;
@@ -31,6 +33,7 @@ use App\Exports\Dgii608Export;
 use App\Services\Dgii606Service;
 use App\Services\Dgii607Service;
 use App\Services\Dgii608Service;
+use App\Services\BudgetExecutionReportService;
 use App\Models\ChartOfAccountParent;
 use App\Models\Status;
 use App\Models\TransactionLines;
@@ -3542,6 +3545,107 @@ class ReportController extends Controller
         ob_end_clean();
 
         return $data;
+    }
+
+    public function budgetExecution(Request $request, BudgetExecutionReportService $reportService)
+    {
+        if (!\Auth::user()->can('reportes_presupuesto_view')) {
+            return redirect()->back()->with('error', __('Permission Denied.'));
+        }
+
+        $creatorId = \Auth::user()->creatorId();
+        $budgets = Budget::where('created_by', $creatorId)
+            ->orderByDesc('from')
+            ->orderByDesc('id')
+            ->get();
+
+        $classifier = $request->get('classifier', BudgetExecutionReportService::CLASSIFIER_OBJECT);
+        $report = $reportService->reporteEjecucion($creatorId, [
+            'budget_id' => $request->get('budget_id'),
+            'classifier' => $classifier,
+        ]);
+
+        $selectedBudgetId = $request->get('budget_id') ?: ($report['budget']?->id);
+        $classifierOptions = $reportService->classifierOptions();
+
+        return view('report.budget_execution', [
+            'budgets' => $budgets,
+            'selectedBudgetId' => $selectedBudgetId,
+            'classifier' => $classifier,
+            'classifierOptions' => $classifierOptions,
+            'rows' => $report['rows'],
+            'totals' => $report['totals'],
+            'budget' => $report['budget'],
+            'budgetLabel' => $report['budgetLabel'],
+        ]);
+    }
+
+    public function budgetExecutionExport(Request $request, BudgetExecutionReportService $reportService)
+    {
+        if (!\Auth::user()->can('reportes_presupuesto_view')) {
+            return redirect()->back()->with('error', __('Permission Denied.'));
+        }
+
+        $creatorId = \Auth::user()->creatorId();
+        $report = $reportService->reporteEjecucion($creatorId, [
+            'budget_id' => $request->get('budget_id'),
+            'classifier' => $request->get('classifier', BudgetExecutionReportService::CLASSIFIER_OBJECT),
+        ]);
+
+        $classifierOptions = $reportService->classifierOptions();
+        $classifierLabel = $classifierOptions[$report['classifier']] ?? $report['classifier'];
+
+        $rows = $this->buildBudgetExecutionExportRows(
+            $report['rows'],
+            $report['totals'],
+            $report['budgetLabel'],
+            $classifierLabel
+        );
+
+        $name = 'budget_execution_' . date('Y-m-d_H-i-s');
+        $data = Excel::download(new BudgetExecutionExport($rows), $name . '.xlsx');
+        ob_end_clean();
+
+        return $data;
+    }
+
+    protected function buildBudgetExecutionExportRows(array $rows, array $totals, string $budgetLabel, string $classifierLabel): array
+    {
+        $exportRows = [];
+        $exportRows[] = [__('Budget Execution Report')];
+        $exportRows[] = [__('Period'), $budgetLabel];
+        $exportRows[] = [__('Classifier'), $classifierLabel];
+        $exportRows[] = [''];
+        $exportRows[] = [
+            __('Classifier'),
+            __('PIA'),
+            __('PIM'),
+            __('Commitment'),
+            __('Accrued'),
+            __('Paid'),
+        ];
+
+        foreach ($rows as $row) {
+            $exportRows[] = [
+                $row['label'],
+                $row['pia'],
+                $row['pim'],
+                $row['compromiso'],
+                $row['devengado'],
+                $row['pagado'],
+            ];
+        }
+
+        $exportRows[] = [
+            __('Total'),
+            $totals['pia'],
+            $totals['pim'],
+            $totals['compromiso'],
+            $totals['devengado'],
+            $totals['pagado'],
+        ];
+
+        return $exportRows;
     }
 
     public function productStock(Request $request)
