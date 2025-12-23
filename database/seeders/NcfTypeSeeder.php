@@ -22,6 +22,7 @@ class NcfTypeSeeder extends Seeder
                 ['code' => $type['code']],
                 [
                     'description' => $type['description'],
+                    'active' => true,
                     'created_by' => 0,
                 ]
             );
