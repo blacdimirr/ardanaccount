@@ -518,7 +518,8 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                 Gate::check('bill report') ||
                 Gate::check('invoice report') ||
                 Gate::check('manage transaction') ||
-                Gate::check('statement report'))
+                Gate::check('statement report') ||
+                Gate::check('reportes_presupuesto_view'))
                 <li
                     class="dash-item dash-hasmenu {{ (Request::segment(1) == 'report' || Request::segment(1) == 'transaction') && Request::segment(2) != 'ledger' && Request::segment(2) != 'balance-sheet' && Request::segment(2) != 'trial-balance' ? ' active dash-trigger' : '' }}">
                     <a href="#!" class="dash-link "><span class="dash-micon"><i
@@ -561,6 +562,13 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                             class="dash-item {{ Request::route()->getName() == 'report.income.vs.expense.summary' ? ' active' : '' }}">
                             <a class="dash-link"
                                 href="{{ route('report.income.vs.expense.summary') }}">{{ __('Income VS Expense') }}</a>
+                        </li>
+                        @endcan
+                        @can('reportes_presupuesto_view')
+                        <li
+                            class="dash-item {{ Request::route()->getName() == 'report.budget.execution' ? ' active' : '' }}">
+                            <a class="dash-link"
+                                href="{{ route('report.budget.execution') }}">{{ __('Budget Execution') }}</a>
                         </li>
                         @endcan
                         @can('tax report')

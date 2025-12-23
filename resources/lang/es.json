@@ -1665,5 +1665,18 @@
   "Proyecto creado correctamente.": "Proyecto creado correctamente.",
   "Proyecto actualizado.": "Proyecto actualizado.",
   "Proyecto desactivado.": "Proyecto desactivado.",
-  "Seleccione un programa": "Seleccione un programa"
+  "Seleccione un programa": "Seleccione un programa",
+  "Budget Execution": "Ejecución presupuestaria",
+  "Budget Execution Report": "Reporte de ejecución presupuestaria",
+  "Object of expenditure": "Objeto del gasto",
+  "Funding Source": "Fuente de financiamiento",
+  "Commitment": "Compromiso",
+  "Accrued": "Devengado",
+  "Paid": "Pagado",
+  "Select Budget": "Seleccionar presupuesto",
+  "No budget selected": "No hay presupuesto seleccionado",
+  "Classifier": "Clasificador",
+  "Period": "Período",
+  "Program": "Programa",
+  "Project": "Proyecto"
 }

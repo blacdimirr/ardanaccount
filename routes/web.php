@@ -828,6 +828,8 @@ Route::group(
         Route::get('report/income-summary', [ReportController::class, 'incomeSummary'])->name('report.income.summary');
         Route::get('report/expense-summary', [ReportController::class, 'expenseSummary'])->name('report.expense.summary');
         Route::get('report/income-vs-expense-summary', [ReportController::class, 'incomeVsExpenseSummary'])->name('report.income.vs.expense.summary');
+        Route::get('report/budget-execution', [ReportController::class, 'budgetExecution'])->name('report.budget.execution');
+        Route::post('report/budget-execution/export', [ReportController::class, 'budgetExecutionExport'])->name('report.budget.execution.export');
 
 
         Route::get('report/tax-summary', [ReportController::class, 'taxSummary'])->name('report.tax.summary');
