@@ -84,6 +84,11 @@ use App\Http\Controllers\ApiExternalController;
 use App\Http\Controllers\NcfSeriesController;
 use App\Http\Controllers\NcfTypeController;
 use App\Http\Controllers\PacController;
+use App\Http\Controllers\RequisicionController;
+use App\Http\Controllers\ProcesoCompraController;
+use App\Http\Controllers\OfertaCompraController;
+use App\Http\Controllers\AdjudicacionCompraController;
+use App\Http\Controllers\ContratoCompraController;
 
 /*
 |--------------------------------------------------------------------------
@@ -923,6 +928,34 @@ Route::group(
         Route::delete('pac/{pac}/items/{item}', [PacController::class, 'destroyItem'])->name('pac.items.destroy');
         Route::get('pac/{pac}/report', [PacController::class, 'report'])->name('pac.report');
         Route::get('pac/{pac}/export', [PacController::class, 'export'])->name('pac.export');
+    }
+);
+
+Route::group(
+    [
+        'middleware' => [
+            'auth',
+            'XSS',
+            'revalidate',
+        ],
+    ],
+    function () {
+        Route::prefix('compras')->name('compras.')->group(function () {
+            Route::resource('requisiciones', RequisicionController::class);
+            Route::get('requisiciones/{requisicion}/print', [RequisicionController::class, 'print'])
+                ->name('requisiciones.print');
+
+            Route::resource('procesos', ProcesoCompraController::class);
+            Route::resource('ofertas', OfertaCompraController::class);
+
+            Route::resource('adjudicaciones', AdjudicacionCompraController::class);
+            Route::get('adjudicaciones/{adjudicacion}/print', [AdjudicacionCompraController::class, 'print'])
+                ->name('adjudicaciones.print');
+
+            Route::resource('contratos', ContratoCompraController::class);
+            Route::get('contratos/{contrato}/print', [ContratoCompraController::class, 'print'])
+                ->name('contratos.print');
+        });
     }
 );
 
