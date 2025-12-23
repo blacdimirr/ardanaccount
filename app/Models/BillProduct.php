@@ -8,7 +8,19 @@ class BillProduct extends Model
 {
     protected $table = 'bill_products'; // si tu tabla se llama así
     protected $fillable = [
-        'product_id', 'bill_id', 'quantity', 'tax', 'discount', 'total',
+        'product_id',
+        'bill_id',
+        'quantity',
+        'tax',
+        'discount',
+        'total',
+        'price',
+        'category_id',
+        'itbis_amount',
+        'itbis_withheld_amount',
+        'isr_withheld_amount',
+        'government_withheld_amount',
+        'retention_rule_id',
     ];
 
     protected $casts = [
@@ -16,6 +28,11 @@ class BillProduct extends Model
         'tax'      => 'float',
         'discount' => 'float',
         'total'    => 'float',
+        'price'    => 'float',
+        'itbis_amount' => 'float',
+        'itbis_withheld_amount' => 'float',
+        'isr_withheld_amount' => 'float',
+        'government_withheld_amount' => 'float',
     ];
 
     public function bill()
