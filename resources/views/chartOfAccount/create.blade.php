@@ -28,6 +28,14 @@
             {{ Form::label('sub_type', __('Account Type'), ['class' => 'form-label']) }}<x-required></x-required>
             {{ Form::select('sub_type', $account_type, null, ['class' => 'form-control select', 'required' => 'required']) }}
         </div>
+        <div class="form-group col-md-6">
+            {{ Form::label('objeto_gasto_id', __('Objeto del gasto'), ['class' => 'form-label']) }}
+            {{ Form::select('objeto_gasto_id', $objects, null, ['class' => 'form-control select', 'placeholder' => __('Seleccionar')]) }}
+        </div>
+        <div class="form-group col-md-6">
+            {{ Form::label('fuente_financiamiento_id', __('Fuente de financiamiento'), ['class' => 'form-label']) }}
+            {{ Form::select('fuente_financiamiento_id', $fundingSources, null, ['class' => 'form-control select', 'placeholder' => __('Seleccionar')]) }}
+        </div>
         <div class="col-md-2">
             <div class="form-group">
                 {{ Form::label('is_enabled', __('Is Enabled'), ['class' => 'form-label']) }}

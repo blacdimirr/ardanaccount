@@ -25,6 +25,15 @@
             {{ Form::text('code', null, ['class' => 'form-control', 'required' => 'required', 'placeholder'=>__('Enter Code')]) }}
         </div>
 
+        <div class="form-group col-md-6">
+            {{ Form::label('objeto_gasto_id', __('Objeto del gasto'), ['class' => 'form-label']) }}
+            {{ Form::select('objeto_gasto_id', $objects, null, ['class' => 'form-control select', 'placeholder' => __('Seleccionar')]) }}
+        </div>
+        <div class="form-group col-md-6">
+            {{ Form::label('fuente_financiamiento_id', __('Fuente de financiamiento'), ['class' => 'form-label']) }}
+            {{ Form::select('fuente_financiamiento_id', $fundingSources, null, ['class' => 'form-control select', 'placeholder' => __('Seleccionar')]) }}
+        </div>
+
 
 
         <div class="form-group col-md-6">

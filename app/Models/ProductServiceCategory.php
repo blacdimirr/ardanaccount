@@ -11,6 +11,10 @@ class ProductServiceCategory extends Model
         'type',
         'chart_account_id',
         'created_by',
+        'objeto_gasto_id',
+        'fuente_financiamiento_id',
+        'programa_id',
+        'proyecto_id',
     ];
 
     public static $categoryType = [
@@ -84,5 +88,25 @@ class ProductServiceCategory extends Model
     public function chartAccount()
     {
         return $this->hasOne('App\Models\ChartOfAccount', 'id', 'chart_account_id');
+    }
+
+    public function objetoGasto()
+    {
+        return $this->belongsTo(ClasificadorObjetoGasto::class, 'objeto_gasto_id');
+    }
+
+    public function fuenteFinanciamiento()
+    {
+        return $this->belongsTo(FundingSource::class, 'fuente_financiamiento_id');
+    }
+
+    public function programa()
+    {
+        return $this->belongsTo(Program::class, 'programa_id');
+    }
+
+    public function proyecto()
+    {
+        return $this->belongsTo(Project::class, 'proyecto_id');
     }
 }
