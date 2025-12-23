@@ -93,6 +93,7 @@ class BillController extends Controller
     {
 
         if (\Auth::user()->can('create bill')) {
+            $bill = new Bill();
             $selectedVendor = null;
             if (!empty($vendorId)) {
                 $selectedVendor = Vender::where('id', $vendorId)
