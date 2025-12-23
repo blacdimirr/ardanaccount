@@ -615,6 +615,7 @@
         $retentionRulesJs = ($retentionRules ?? collect())
             ->map(function ($rule) {
                 return [
+                    'id' => (string) $rule->id,
                     'supplier_type' => (string) $rule->supplier_type,
                     'service_category_id' => (string) $rule->service_category_id,
                     'itbis_retention_rate' => (float) $rule->itbis_retention_rate,
@@ -643,12 +644,17 @@
             return (v ?? '').toString().trim();
         }
 
+        function _normalizeStr(v) {
+            return _safeStr(v).toLowerCase();
+        }
+
         function resolveRetentionRule(categoryId, supplierTypeId) {
             const rules = window.retentionRules || [];
             const cat = categoryId !== null && categoryId !== undefined && String(categoryId).trim() !== '' ? String(categoryId).trim() : null;
             const sup = supplierTypeId !== null && supplierTypeId !== undefined && String(supplierTypeId).trim() !== '' ? String(supplierTypeId).trim() : null;
 
             const matches = rules.filter(function (rule) {
+                const ruleIdRaw = _safeStr(rule.id);
                 const ruleCatRaw = _safeStr(rule.service_category_id);
                 const ruleSupRaw = _safeStr(rule.supplier_type);
 
@@ -656,10 +662,14 @@
                 const ruleCat = (ruleCatRaw === '' || ruleCatRaw === '0') ? null : ruleCatRaw;
                 const ruleSup = (ruleSupRaw === '' || ruleSupRaw === '0') ? null : ruleSupRaw;
 
-                const categoryMatches = (ruleCat === null) || (cat !== null && ruleCat === cat);
-                const supplierMatches = (ruleSup === null) || (sup !== null && ruleSup === sup);
+                // Coincidencia por id de regla (select devuelve id)
+                const ruleIdMatches = (sup !== null && ruleIdRaw !== '' && sup === ruleIdRaw);
 
-                return categoryMatches && supplierMatches;
+                // Coincidencia por supplier_type (compatibilidad)
+                const categoryMatches = (ruleCat === null) || (cat !== null && ruleCat === cat);
+                const supplierMatches = (ruleSup === null) || (sup !== null && _normalizeStr(ruleSup) === _normalizeStr(sup));
+
+                return ruleIdMatches || (categoryMatches && supplierMatches);
             }).sort(function (a, b) {
                 const aCat = _safeStr(a.service_category_id);
                 const bCat = _safeStr(b.service_category_id);
@@ -684,6 +694,7 @@
             let itbisWithheld = 0;
             let isrWithheld = 0;
             let governmentWithheld = 0;
+            let currentRates = { itbis: 0, isr: 0, gov: 0 };
 
             $('[data-repeater-item]').each(function () {
                 const row = $(this);
@@ -722,6 +733,8 @@
                 const isrRate = _toPercent(rule.isr_retention_rate);
                 const governmentRate = _toPercent(rule.government_retention_rate);
 
+                currentRates = { itbis: itbisRate, isr: isrRate, gov: governmentRate };
+
                 if (itbisRate > 0) itbisWithheld += (taxAmount * itbisRate / 100);
                 if (isrRate > 0) isrWithheld += (base * isrRate / 100);
                 if (governmentRate > 0) governmentWithheld += (base * governmentRate / 100);
@@ -743,6 +756,9 @@
             $('.governmentWithheld').text(governmentWithheld.toFixed(2));
             $('.totalAmount').text(grossWithTax.toFixed(2));
             $('.finalPayable').text(finalPayable.toFixed(2));
+            $('.itbisRateDisplay').text(`(${currentRates.itbis.toFixed(2)}%)`);
+            $('.isrRateDisplay').text(`(${currentRates.isr.toFixed(2)}%)`);
+            $('.governmentRateDisplay').text(`(${currentRates.gov.toFixed(2)}%)`);
 
             // Hidden inputs para persistencia
             $('.itbisBilledInput').val(itbisBilled.toFixed(2));
@@ -1084,6 +1100,7 @@
                                     <td></td>
                                     <td class="text-danger">
                                         <strong>{{ __('ITBIS retenido') }}
+                                            <span class="itbisRateDisplay">(0%)</span>
                                             ({{ \Auth::user()->currencySymbol() }})</strong>
                                     </td>
                                     <td class="text-end itbisWithheld">0.00</td>
@@ -1097,6 +1114,7 @@
                                     <td></td>
                                     <td class="text-danger">
                                         <strong>{{ __('ISR retenido') }}
+                                            <span class="isrRateDisplay">(0%)</span>
                                             ({{ \Auth::user()->currencySymbol() }})</strong>
                                     </td>
                                     <td class="text-end isrWithheld">0.00</td>
@@ -1109,6 +1127,7 @@
                                     <td></td>
                                     <td class="text-danger">
                                         <strong>{{ __('Retención gubernamental') }}
+                                            <span class="governmentRateDisplay">(0%)</span>
                                             ({{ \Auth::user()->currencySymbol() }})</strong>
                                     </td>
                                     <td class="text-end governmentWithheld">0.00</td>
