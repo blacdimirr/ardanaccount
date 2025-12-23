@@ -81,6 +81,8 @@ use App\Http\Controllers\TransferController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\TaxController;
 use App\Http\Controllers\ApiExternalController;
+use App\Http\Controllers\NcfSeriesController;
+use App\Http\Controllers\NcfTypeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -629,6 +631,8 @@ Route::resource('taxes', TaxController::class)->middleware(['auth', 'XSS', 'reva
 
 Route::resource('product-unit', ProductServiceUnitController::class)->middleware(['auth', 'XSS', 'revalidate']);
 Route::resource('retention-rules', RetentionRuleController::class)->middleware(['auth', 'XSS', 'revalidate']);
+Route::resource('ncf-types', NcfTypeController::class)->middleware(['auth', 'XSS', 'revalidate']);
+Route::resource('ncf-series', NcfSeriesController::class)->middleware(['auth', 'XSS', 'revalidate']);
 
 Route::get('invoice/pdf/{id}', [InvoiceController::class, 'invoice'])->name('invoice.pdf')->middleware(['XSS', 'revalidate']);
 
