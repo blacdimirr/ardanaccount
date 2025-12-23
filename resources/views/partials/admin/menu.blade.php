@@ -355,6 +355,27 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                 </li>
                 @endif
 
+                {{-- -------  Compras ---------- --}}
+                @if (Gate::check('compras_pac_manage'))
+                <li
+                    class="dash-item dash-hasmenu {{ Request::segment(1) == 'pac' ? ' active dash-trigger' : '' }}">
+                    <a href="#!" class="dash-link "><span class="dash-micon"><i
+                                class="ti ti-shopping-cart"></i></span><span
+                            class="dash-mtext">{{ __('Compras') }}</span>
+                        <span class="dash-arrow"><i data-feather="chevron-right"></i></span>
+                    </a>
+                    <ul class="dash-submenu {{ Request::segment(1) == 'pac' ? 'show' : '' }}">
+                        @can('compras_pac_manage')
+                        <li
+                            class="dash-item {{ Request::route()->getName() == 'pac.index' || Request::route()->getName() == 'pac.show' || Request::route()->getName() == 'pac.create' || Request::route()->getName() == 'pac.edit' ? ' active' : '' }}">
+                            <a class="dash-link"
+                                href="{{ route('pac.index') }}">{{ __('Plan Anual de Compras') }}</a>
+                        </li>
+                        @endcan
+                    </ul>
+                </li>
+                @endif
+
                 {{-- -------  Double Entry ---------- --}}
                 @if (Gate::check('manage chart of account') ||
                 Gate::check('manage journal entry') ||

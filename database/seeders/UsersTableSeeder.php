@@ -1190,6 +1190,12 @@ class UsersTableSeeder extends Seeder
                 'updated_at' => date('Y-m-d H:i:s'),
             ],
             [
+                'name' => 'compras_pac_manage',
+                'guard_name' => 'web',
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ],
+            [
                 'name' => 'config_ncf_tipos_manage',
                 'guard_name' => 'web',
                 'created_at' => date('Y-m-d H:i:s'),
@@ -1446,6 +1452,7 @@ class UsersTableSeeder extends Seeder
             'delete constant contract type',
             'config_retenciones_manage',
             'config_clasificadores_manage',
+            'compras_pac_manage',
             'config_ncf_tipos_manage',
             'config_ncf_series_manage',
             'reportes_dgii_607_generate',
@@ -1618,6 +1625,7 @@ class UsersTableSeeder extends Seeder
             'delete constant contract type',
             'config_retenciones_manage',
             'config_clasificadores_manage',
+            'compras_pac_manage',
             'config_ncf_tipos_manage',
             'config_ncf_series_manage',
             'reportes_dgii_607_generate',
