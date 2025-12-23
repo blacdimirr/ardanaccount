@@ -633,6 +633,13 @@ Route::resource('product-unit', ProductServiceUnitController::class)->middleware
 Route::resource('retention-rules', RetentionRuleController::class)->middleware(['auth', 'XSS', 'revalidate']);
 Route::resource('ncf-types', NcfTypeController::class)->middleware(['auth', 'XSS', 'revalidate']);
 Route::resource('ncf-series', NcfSeriesController::class)->middleware(['auth', 'XSS', 'revalidate']);
+Route::prefix('budget-classifiers')->name('budget-classifiers.')->middleware(['auth', 'XSS', 'revalidate'])->group(function () {
+    Route::get('/', [\App\Http\Controllers\BudgetClassifierController::class, 'index'])->name('index');
+    Route::resource('objects', \App\Http\Controllers\ClasificadorObjetoGastoController::class)->except(['index', 'show']);
+    Route::resource('funding-sources', \App\Http\Controllers\FundingSourceController::class)->except(['index', 'show']);
+    Route::resource('programs', \App\Http\Controllers\ProgramController::class)->except(['index', 'show']);
+    Route::resource('projects', \App\Http\Controllers\ProjectController::class)->except(['index', 'show']);
+});
 
 Route::get('invoice/pdf/{id}', [InvoiceController::class, 'invoice'])->name('invoice.pdf')->middleware(['XSS', 'revalidate']);
 

@@ -687,6 +687,15 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                 </li>
                 @endif
 
+                @can('config_clasificadores_manage')
+                <li class="dash-item {{ Request::route()->getName() == 'budget-classifiers.index' ? 'active' : '' }}">
+                    <a href="{{ route('budget-classifiers.index') }}" class="dash-link ">
+                        <span class="dash-micon"><i class="ti ti-category-2"></i></span>
+                        <span class="dash-mtext">{{ __('Clasificadores presupuestarios') }}</span>
+                    </a>
+                </li>
+                @endcan
+
                 @if (Gate::check('config_ncf_tipos_manage') || Gate::check('config_ncf_series_manage'))
                 <li
                     class="dash-item dash-hasmenu {{ Request::is('ncf-types*') || Request::is('ncf-series*') ? ' active dash-trigger' : '' }}">
