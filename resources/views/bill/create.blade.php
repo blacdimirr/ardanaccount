@@ -725,6 +725,11 @@
             let isrWithheld = 0;
             let governmentWithheld = 0;
 
+            // Para mostrar % aplicados (si hay múltiples reglas, mostramos 'varios')
+            const _itbisRates = new Set();
+            const _isrRates = new Set();
+            const _govRates = new Set();
+
             $('[data-repeater-item]').each(function () {
                 const row = $(this);
                 const qty = parseFloat(row.find('.quantity').val()) || 0;
@@ -760,6 +765,10 @@
                 const isrRate = toPercent(rule.isr_retention_rate);
                 const governmentRate = toPercent(rule.government_retention_rate);
 
+                if (itbisRate) _itbisRates.add(Number(itbisRate.toFixed(2)));
+                if (isrRate) _isrRates.add(Number(isrRate.toFixed(2)));
+                if (governmentRate) _govRates.add(Number(governmentRate.toFixed(2)));
+
                 if (itbisRate > 0) itbisWithheld += (taxAmount * itbisRate / 100);
                 if (isrRate > 0) isrWithheld += (base * isrRate / 100);
                 if (governmentRate > 0) governmentWithheld += (base * governmentRate / 100);
@@ -770,10 +779,23 @@
                 accountTotal += (parseFloat($(this).val()) || 0);
             });
 
-            const grossWithTax = subtotal + itbisBilled + accountTotal;
+            const grossWithTax = subtotal + itbisBilled; // subtotal ya incluye cuentas/otros cargos (neto sin ITBIS)
             const finalPayable = grossWithTax - itbisWithheld - isrWithheld - governmentWithheld;
 
-            $('.itbisBilled').text(itbisBilled.toFixed(2));
+            
+            // Actualiza etiquetas de % (si existen en el template)
+            function _setRateLabel(setObj, $el) {
+                if (!$el || $el.length === 0) return;
+                const arr = Array.from(setObj.values());
+                if (arr.length === 0) { $el.text('0'); return; }
+                if (arr.length === 1) { $el.text(String(arr[0])); return; }
+                $el.text('varios');
+            }
+            _setRateLabel(_itbisRates, $('.itbisRetRateLabel'));
+            _setRateLabel(_isrRates, $('.isrRetRateLabel'));
+            _setRateLabel(_govRates, $('.govRetRateLabel'));
+
+$('.itbisBilled').text(itbisBilled.toFixed(2));
             $('.itbisWithheld').text(itbisWithheld.toFixed(2));
             $('.isrWithheld').text(isrWithheld.toFixed(2));
             $('.governmentWithheld').text(governmentWithheld.toFixed(2));
@@ -1067,7 +1089,7 @@
                                     <td>&nbsp;</td>
                                     <td>&nbsp;</td>
                                     <td></td>
-                                    <td><strong>{{ __('Sub Total') }} ({{ \Auth::user()->currencySymbol() }})</strong>
+                                    <td><strong>{{ __('Monto bruto factura (sin ITBIS)') }} ({{ \Auth::user()->currencySymbol() }})</strong>
                                     </td>
                                     <td class="text-end subTotal">0.00</td>
                                     <td></td>
@@ -1098,7 +1120,7 @@
                                     <td>&nbsp;</td>
                                     <td></td>
                                     <td class="text-primary">
-                                        <strong>{{ __('ITBIS facturado') }}
+                                        <strong>{{ __('ITBIS (18%)') }}
                                             ({{ \Auth::user()->currencySymbol() }})</strong>
                                     </td>
                                     <td class="text-end itbisBilled">0.00</td>
@@ -1111,7 +1133,7 @@
                                     <td>&nbsp;</td>
                                     <td></td>
                                     <td class="text-danger">
-                                        <strong>{{ __('ITBIS retenido') }}
+                                        <strong>{{ __('Retención sobre ITBIS') }} <span class="text-muted">(<span class="itbisRetRateLabel">0</span>%)</span>
                                             ({{ \Auth::user()->currencySymbol() }})</strong>
                                     </td>
                                     <td class="text-end itbisWithheld">0.00</td>
@@ -1124,7 +1146,7 @@
                                     <td>&nbsp;</td>
                                     <td></td>
                                     <td class="text-danger">
-                                        <strong>{{ __('ISR retenido') }}
+                                        <strong>{{ __('ISR retenido (sobre neto)') }} <span class="text-muted">(<span class="isrRetRateLabel">0</span>%)</span>
                                             ({{ \Auth::user()->currencySymbol() }})</strong>
                                     </td>
                                     <td class="text-end isrWithheld">0.00</td>
@@ -1136,7 +1158,7 @@
                                     <td>&nbsp;</td>
                                     <td></td>
                                     <td class="text-danger">
-                                        <strong>{{ __('Retención gubernamental') }}
+                                        <strong>{{ __('Retención (sobre neto)') }} <span class="text-muted">(<span class="govRetRateLabel">0</span>%)</span>
                                             ({{ \Auth::user()->currencySymbol() }})</strong>
                                     </td>
                                     <td class="text-end governmentWithheld">0.00</td>
@@ -1150,7 +1172,7 @@
                                     <td>&nbsp;</td>
                                     <td>&nbsp;</td>
                                     <td class="blue-text">
-                                        <strong>{{ __('Total con impuestos') }}
+                                        <strong>{{ __('Subtotal') }}
                                             ({{ \Auth::user()->currencySymbol() }})</strong>
                                     </td>
                                     <td class="blue-text text-end totalAmount">0.00</td>
