@@ -9,7 +9,12 @@ class NcfType extends Model
     protected $fillable = [
         'code',
         'description',
+        'active',
         'created_by',
+    ];
+
+    protected $casts = [
+        'active' => 'boolean',
     ];
 
     public function series()

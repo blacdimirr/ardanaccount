@@ -687,6 +687,29 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                 </li>
                 @endif
 
+                @if (Gate::check('config_ncf_tipos_manage') || Gate::check('config_ncf_series_manage'))
+                <li
+                    class="dash-item dash-hasmenu {{ Request::is('ncf-types*') || Request::is('ncf-series*') ? ' active dash-trigger' : '' }}">
+                    <a href="#!" class="dash-link"><span class="dash-micon"><i
+                                class="ti ti-settings"></i></span><span
+                            class="dash-mtext">{{ __('NCF') }}</span>
+                        <span class="dash-arrow"><i data-feather="chevron-right"></i></span>
+                    </a>
+                    <ul class="dash-submenu {{ Request::is('ncf-types*') || Request::is('ncf-series*') ? 'show' : '' }}">
+                        @can('config_ncf_tipos_manage')
+                        <li class="dash-item {{ Request::route()->getName() == 'ncf-types.index' ? 'active' : '' }}">
+                            <a class="dash-link" href="{{ route('ncf-types.index') }}">{{ __('Tipos de NCF') }}</a>
+                        </li>
+                        @endcan
+                        @can('config_ncf_series_manage')
+                        <li class="dash-item {{ Request::route()->getName() == 'ncf-series.index' ? 'active' : '' }}">
+                            <a class="dash-link" href="{{ route('ncf-series.index') }}">{{ __('Series de NCF') }}</a>
+                        </li>
+                        @endcan
+                    </ul>
+                </li>
+                @endif
+
                 @if (\Auth::user()->type == 'company')
                 <li
                     class="dash-item {{ Request::route()->getName() == 'landingpage.index' ||
