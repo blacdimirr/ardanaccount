@@ -15,11 +15,17 @@ class Budget extends Model
         'created_by',
         'monto_pia',
         'monto_pim',
+        'monto_comprometido',
+        'monto_devengado',
+        'monto_pagado',
     ];
 
     protected $casts = [
         'monto_pia' => 'array',
         'monto_pim' => 'array',
+        'monto_comprometido' => 'array',
+        'monto_devengado' => 'array',
+        'monto_pagado' => 'array',
     ];
 
     public static $period = [
