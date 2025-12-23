@@ -644,6 +644,7 @@ class Utility extends Model
             'add notes',
             'send contract mail',
             'manage retainer',
+            'config_clasificadores_manage',
 
         ];
         foreach ($arrPermissions as $ap) {
@@ -678,6 +679,7 @@ class Utility extends Model
             'add notes',
             'send contract mail',
             'manage retainer',
+            'config_clasificadores_manage',
         ];
         foreach ($companyNewPermission as $op) {
             // check if permission is not assign to owner then assign.
