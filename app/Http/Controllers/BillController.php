@@ -570,9 +570,10 @@ class BillController extends Controller
             });
             $ncfSeries->prepend(__('Select NCF Series'), '');
             $retentionRules = $this->getRetentionRules();
-            $supplierTypes = $this->getSupplierTypes($bill->supplier_type);
+            $retentionRuleOptions = $this->buildRetentionRuleOptions($retentionRules);
+            $defaultRetentionRuleId = $this->guessRetentionRuleId($retentionRules, $bill->supplier_type);
 
-            return view('bill.edit', compact('venders', 'product_services', 'bill', 'bill_number', 'category', 'customFields', 'chartAccounts', 'items', 'subAccounts', 'estatus','has_retention', 'ncfTypes', 'ncfSeries', 'retentionRules', 'supplierTypes', 'productCategoryMap'));
+            return view('bill.edit', compact('venders', 'product_services', 'bill', 'bill_number', 'category', 'customFields', 'chartAccounts', 'items', 'subAccounts', 'estatus','has_retention', 'ncfTypes', 'ncfSeries', 'retentionRules', 'retentionRuleOptions', 'productCategoryMap', 'defaultRetentionRuleId'));
         } else {
             return response()->json(['error' => __('Permission denied.')], 401);
         }
