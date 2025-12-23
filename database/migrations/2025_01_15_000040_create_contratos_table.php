@@ -1,0 +1,30 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('purchase_contracts', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('adjudicacion_id')->constrained('purchase_awards')->cascadeOnDelete();
+            $table->foreignId('partida_presupuestaria_id')->nullable()->constrained('product_service_categories');
+            $table->string('proveedor');
+            $table->decimal('monto_contrato', 15, 2);
+            $table->date('fecha_inicio');
+            $table->date('fecha_fin')->nullable();
+            $table->string('estado')->default('vigente');
+            $table->boolean('compromiso_aplicado')->default(false);
+            $table->unsignedBigInteger('created_by');
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('purchase_contracts');
+    }
+};

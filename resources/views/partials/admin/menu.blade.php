@@ -356,20 +356,53 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                 @endif
 
                 {{-- -------  Compras ---------- --}}
-                @if (Gate::check('compras_pac_manage'))
+                @if (Gate::check('compras_pac_manage') || Gate::check('compras_requisicion_create') || Gate::check('compras_proceso_manage') || Gate::check('compras_adjudicar') || Gate::check('compras_contratos_manage'))
                 <li
-                    class="dash-item dash-hasmenu {{ Request::segment(1) == 'pac' ? ' active dash-trigger' : '' }}">
+                    class="dash-item dash-hasmenu {{ in_array(Request::segment(1), ['pac', 'compras']) ? ' active dash-trigger' : '' }}">
                     <a href="#!" class="dash-link "><span class="dash-micon"><i
                                 class="ti ti-shopping-cart"></i></span><span
                             class="dash-mtext">{{ __('Compras') }}</span>
                         <span class="dash-arrow"><i data-feather="chevron-right"></i></span>
                     </a>
-                    <ul class="dash-submenu {{ Request::segment(1) == 'pac' ? 'show' : '' }}">
+                    <ul class="dash-submenu {{ in_array(Request::segment(1), ['pac', 'compras']) ? 'show' : '' }}">
                         @can('compras_pac_manage')
                         <li
                             class="dash-item {{ Request::route()->getName() == 'pac.index' || Request::route()->getName() == 'pac.show' || Request::route()->getName() == 'pac.create' || Request::route()->getName() == 'pac.edit' ? ' active' : '' }}">
                             <a class="dash-link"
                                 href="{{ route('pac.index') }}">{{ __('Plan Anual de Compras') }}</a>
+                        </li>
+                        @endcan
+                        @can('compras_requisicion_create')
+                        <li
+                            class="dash-item {{ str_contains(Request::route()->getName(), 'compras.requisiciones') ? ' active' : '' }}">
+                            <a class="dash-link"
+                                href="{{ route('compras.requisiciones.index') }}">{{ __('Requisitions') }}</a>
+                        </li>
+                        @endcan
+                        @can('compras_proceso_manage')
+                        <li
+                            class="dash-item {{ str_contains(Request::route()->getName(), 'compras.procesos') ? ' active' : '' }}">
+                            <a class="dash-link"
+                                href="{{ route('compras.procesos.index') }}">{{ __('Purchase Processes') }}</a>
+                        </li>
+                        <li
+                            class="dash-item {{ str_contains(Request::route()->getName(), 'compras.ofertas') ? ' active' : '' }}">
+                            <a class="dash-link"
+                                href="{{ route('compras.ofertas.index') }}">{{ __('Offers') }}</a>
+                        </li>
+                        @endcan
+                        @can('compras_adjudicar')
+                        <li
+                            class="dash-item {{ str_contains(Request::route()->getName(), 'compras.adjudicaciones') ? ' active' : '' }}">
+                            <a class="dash-link"
+                                href="{{ route('compras.adjudicaciones.index') }}">{{ __('Awards') }}</a>
+                        </li>
+                        @endcan
+                        @can('compras_contratos_manage')
+                        <li
+                            class="dash-item {{ str_contains(Request::route()->getName(), 'compras.contratos') ? ' active' : '' }}">
+                            <a class="dash-link"
+                                href="{{ route('compras.contratos.index') }}">{{ __('Contracts') }}</a>
                         </li>
                         @endcan
                     </ul>
