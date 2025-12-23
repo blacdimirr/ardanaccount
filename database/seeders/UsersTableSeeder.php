@@ -1171,6 +1171,18 @@ class UsersTableSeeder extends Seeder
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
             ],
+            [
+                'name' => 'reportes_dgii_607_generate',
+                'guard_name' => 'web',
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ],
+            [
+                'name' => 'reportes_dgii_608_generate',
+                'guard_name' => 'web',
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ],
 
 
 
@@ -1401,6 +1413,8 @@ class UsersTableSeeder extends Seeder
             'edit constant contract type',
             'delete constant contract type',
             'config_retenciones_manage',
+            'reportes_dgii_607_generate',
+            'reportes_dgii_608_generate',
 
 
 
@@ -1566,6 +1580,8 @@ class UsersTableSeeder extends Seeder
             'edit constant contract type',
             'delete constant contract type',
             'config_retenciones_manage',
+            'reportes_dgii_607_generate',
+            'reportes_dgii_608_generate',
 
         ];
 

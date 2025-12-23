@@ -598,6 +598,20 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                                 href="{{ route('report.dgii606') }}">{{ __('DGII 606 (Compras)') }}</a>
                         </li>
                         @endcan
+                        @can('reportes_dgii_607_generate')
+                        <li
+                            class="dash-item {{ Request::route()->getName() == 'report.dgii607' ? ' active' : '' }}">
+                            <a class="dash-link"
+                                href="{{ route('report.dgii607') }}">{{ __('DGII 607 (Ventas)') }}</a>
+                        </li>
+                        @endcan
+                        @can('reportes_dgii_608_generate')
+                        <li
+                            class="dash-item {{ Request::route()->getName() == 'report.dgii608' ? ' active' : '' }}">
+                            <a class="dash-link"
+                                href="{{ route('report.dgii608') }}">{{ __('DGII 608 (Anulaciones)') }}</a>
+                        </li>
+                        @endcan
                         @can('stock report')
                         <li
                             class="dash-item {{ Request::route()->getName() == 'report.product.stock.report' ? ' active' : '' }}">

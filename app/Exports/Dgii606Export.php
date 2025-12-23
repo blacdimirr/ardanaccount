@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Services\Dgii606Service;
+use App\Services\DgiiFormatter;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -17,7 +18,7 @@ class Dgii606Export implements FromCollection, WithHeadings
     ) {
     }
 
-    public function collection()
+    public function collection(): Collection
     {
         $rows = [];
         $bills = $this->service->getPurchasesForPeriod($this->year, $this->month, $this->creatorId);
@@ -27,7 +28,7 @@ class Dgii606Export implements FromCollection, WithHeadings
             $itbisBilled = $bill->itbis_billed_total ?? 0;
             $rows[] = [
                 'rnc_cedula' => $vendor?->tax_number ?? '',
-                'tipo_id' => $this->resolveIdType($vendor?->tax_number),
+                'tipo_id' => DgiiFormatter::resolveIdType($vendor?->tax_number),
                 'ncf' => $bill->ncf_number,
                 'fecha_comprobante' => $bill->bill_date,
                 'fecha_pago' => $bill->due_date,
@@ -58,13 +59,4 @@ class Dgii606Export implements FromCollection, WithHeadings
         ];
     }
 
-    protected function resolveIdType(?string $taxNumber): string
-    {
-        if (!$taxNumber) {
-            return '';
-        }
-
-        // DGII: 1 = RNC, 2 = Cédula (heuristic by length)
-        return strlen(preg_replace('/\D/', '', $taxNumber)) === 9 ? '1' : '2';
-    }
 }
