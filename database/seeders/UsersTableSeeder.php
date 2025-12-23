@@ -986,6 +986,12 @@ class UsersTableSeeder extends Seeder
                 'updated_at' => date('Y-m-d H:i:s'),
             ],
             [
+                'name' => 'presupuesto_modificar_pim',
+                'guard_name' => 'web',
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ],
+            [
                 'name' => 'manage contract',
                 'guard_name' => 'web',
                 'created_at' => date('Y - m - d H:i:s'),
@@ -1401,6 +1407,7 @@ class UsersTableSeeder extends Seeder
             'edit budget planner',
             'delete budget planner',
             'view budget planner',
+            'presupuesto_modificar_pim',
             'manage contract',
             'create contract',
             'edit contract',
@@ -1585,6 +1592,7 @@ class UsersTableSeeder extends Seeder
             'edit budget planner',
             'delete budget planner',
             'view budget planner',
+            'presupuesto_modificar_pim',
             'manage retainer',
             'create retainer',
             'edit retainer',
