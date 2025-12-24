@@ -27,11 +27,15 @@ class NominaAportesExport implements FromCollection, WithHeadings
     {
         return collect($this->service->exportarAportes($this->periodoId, $this->creatorId))
             ->map(function ($row) {
-                $isr = $this->isrService->calcularIsr($row['base_imponible'], $row['empleado_model'], $this->creatorId);
+                $isr = $this->isrService->calcularIsr($row['base_imponible_isr'], $row['empleado_model'], $this->creatorId);
 
                 return [
                     $row['empleado'],
-                    $row['base_imponible'],
+                    $row['salario'],
+                    $row['conceptos_isr'],
+                    $row['conceptos_tss'],
+                    $row['base_imponible_isr'],
+                    $row['base_imponible_tss'],
                     $isr,
                     $row['tss_empleado'],
                     $row['infotep_empleado'],
@@ -47,7 +51,11 @@ class NominaAportesExport implements FromCollection, WithHeadings
     {
         return [
             'Empleado',
-            'Base imponible',
+            'Salario',
+            'Conceptos ISR',
+            'Conceptos TSS',
+            'Base ISR',
+            'Base TSS',
             'ISR',
             'TSS (Empleado)',
             'INFOTEP (Empleado)',

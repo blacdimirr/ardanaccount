@@ -23,6 +23,8 @@ class NominaCalculoController extends Controller
 
         $periodoSeleccionado = null;
         $calculos = collect();
+        $conceptosIsr = 0;
+        $conceptosTss = 0;
 
         if ($request->filled('nomina_periodo_id')) {
             $periodoSeleccionado = $periodos->firstWhere('id', $request->nomina_periodo_id);
@@ -30,15 +32,23 @@ class NominaCalculoController extends Controller
             if ($periodoSeleccionado) {
                 $config = $service->getConfig($creatorId);
                 $empleados = Empleado::where('created_by', $creatorId)->get();
+                $conceptosIsr = $service->montoConceptosIsr($creatorId);
+                $conceptosTss = $service->montoConceptosTss($creatorId);
 
-                $calculos = $empleados->map(function ($empleado) use ($service, $isrService, $config, $periodoSeleccionado, $creatorId) {
-                    $baseImponible = $service->baseImponible($periodoSeleccionado->id, $empleado->id, $creatorId);
-                    $aportes = $service->calcularAportes($baseImponible, $config);
-                    $isr = $isrService->calcularIsr($baseImponible, $empleado, $creatorId);
+                $calculos = $empleados->map(function ($empleado) use ($service, $isrService, $config, $creatorId, $conceptosIsr, $conceptosTss) {
+                    $salario = (float) $empleado->salario;
+                    $baseIsr = $salario + $conceptosIsr;
+                    $baseTss = $salario + $conceptosTss;
+                    $aportes = $service->calcularAportes($baseTss, $config);
+                    $isr = $isrService->calcularIsr($baseIsr, $empleado, $creatorId);
 
                     return [
                         'empleado' => $empleado,
-                        'base_imponible' => $baseImponible,
+                        'salario' => $salario,
+                        'conceptos_isr' => $conceptosIsr,
+                        'conceptos_tss' => $conceptosTss,
+                        'base_isr' => $baseIsr,
+                        'base_tss' => $baseTss,
                         'isr' => $isr,
                         'tss_empleado' => $aportes['tss_empleado'],
                         'infotep_empleado' => $aportes['infotep_empleado'],
@@ -51,7 +61,10 @@ class NominaCalculoController extends Controller
             }
         }
 
-        return view('nomina.calculos.index', compact('periodos', 'periodoSeleccionado', 'calculos'));
+        return view(
+            'nomina.calculos.index',
+            compact('periodos', 'periodoSeleccionado', 'calculos', 'conceptosIsr', 'conceptosTss')
+        );
     }
 
     public function calcular(Request $request, NominaAportesSsService $service, NominaIsrService $isrService)
@@ -80,8 +93,8 @@ class NominaCalculoController extends Controller
         $empleados = Empleado::where('created_by', $creatorId)->get();
 
         foreach ($empleados as $empleado) {
-            $resultado = $service->registrarAportesEmpleado($periodo->id, $empleado->id, $creatorId);
-            $isrService->registrarIsrEmpleado($periodo->id, $empleado, $creatorId, $resultado['base_imponible']);
+            $resultado = $service->registrarAportesEmpleado($periodo->id, $empleado, $creatorId);
+            $isrService->registrarIsrEmpleado($periodo->id, $empleado, $creatorId, $resultado['base_imponible_isr']);
         }
 
         return redirect()

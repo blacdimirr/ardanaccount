@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ConfigAporteSs;
+use App\Models\Empleado;
 use App\Models\NominaConcepto;
 use App\Models\NominaDetalle;
 
@@ -54,35 +55,35 @@ class NominaAportesSsService
         ];
     }
 
-    public function baseImponible(int $periodoId, int $empleadoId, int $creatorId): float
+    public function baseImponibleIsr(Empleado $empleado, int $creatorId): float
     {
-        return (float) NominaDetalle::query()
-            ->where('created_by', $creatorId)
-            ->where('nomina_periodo_id', $periodoId)
-            ->where('empleado_id', $empleadoId)
-            ->whereHas('concepto', function ($query) {
-                $query->where('tipo', 'ingreso');
-            })
-            ->sum('monto');
+        return $this->baseImponibleDesdeSalario($empleado, $creatorId, 'aplica_isr');
     }
 
-    public function registrarAportesEmpleado(int $periodoId, int $empleadoId, int $creatorId): array
+    public function baseImponibleTss(Empleado $empleado, int $creatorId): float
+    {
+        return $this->baseImponibleDesdeSalario($empleado, $creatorId, 'aplica_tss');
+    }
+
+    public function registrarAportesEmpleado(int $periodoId, Empleado $empleado, int $creatorId): array
     {
         $config = $this->getConfig($creatorId);
         $this->asegurarConceptos($creatorId);
 
-        $baseImponible = $this->baseImponible($periodoId, $empleadoId, $creatorId);
-        $aportes = $this->calcularAportes($baseImponible, $config);
+        $baseImponibleTss = $this->baseImponibleTss($empleado, $creatorId);
+        $baseImponibleIsr = $this->baseImponibleIsr($empleado, $creatorId);
+        $aportes = $this->calcularAportes($baseImponibleTss, $config);
 
-        $this->registrarDetalle($periodoId, $empleadoId, $creatorId, 'TSS-EMP', $aportes['tss_empleado']);
-        $this->registrarDetalle($periodoId, $empleadoId, $creatorId, 'INFOTEP-EMP', $aportes['infotep_empleado']);
-        $this->registrarDetalle($periodoId, $empleadoId, $creatorId, 'IDOPPRIL-EMP', $aportes['idoppril_empleado']);
-        $this->registrarDetalle($periodoId, $empleadoId, $creatorId, 'TSS-EMPRESA', $aportes['tss_empleador']);
-        $this->registrarDetalle($periodoId, $empleadoId, $creatorId, 'INFOTEP-EMPRESA', $aportes['infotep_empleador']);
-        $this->registrarDetalle($periodoId, $empleadoId, $creatorId, 'IDOPPRIL-EMPRESA', $aportes['idoppril_empleador']);
+        $this->registrarDetalle($periodoId, $empleado->id, $creatorId, 'TSS-EMP', $aportes['tss_empleado']);
+        $this->registrarDetalle($periodoId, $empleado->id, $creatorId, 'INFOTEP-EMP', $aportes['infotep_empleado']);
+        $this->registrarDetalle($periodoId, $empleado->id, $creatorId, 'IDOPPRIL-EMP', $aportes['idoppril_empleado']);
+        $this->registrarDetalle($periodoId, $empleado->id, $creatorId, 'TSS-EMPRESA', $aportes['tss_empleador']);
+        $this->registrarDetalle($periodoId, $empleado->id, $creatorId, 'INFOTEP-EMPRESA', $aportes['infotep_empleador']);
+        $this->registrarDetalle($periodoId, $empleado->id, $creatorId, 'IDOPPRIL-EMPRESA', $aportes['idoppril_empleador']);
 
         return [
-            'base_imponible' => $baseImponible,
+            'base_imponible_isr' => $baseImponibleIsr,
+            'base_imponible_tss' => $baseImponibleTss,
             'aportes' => $aportes,
         ];
     }
@@ -91,15 +92,23 @@ class NominaAportesSsService
     {
         $empleados = \App\Models\Empleado::where('created_by', $creatorId)->get();
         $config = $this->getConfig($creatorId);
+        $conceptosIsr = $this->montoConceptosIsr($creatorId);
+        $conceptosTss = $this->montoConceptosTss($creatorId);
 
-        return $empleados->map(function ($empleado) use ($periodoId, $creatorId, $config) {
-            $baseImponible = $this->baseImponible($periodoId, $empleado->id, $creatorId);
-            $aportes = $this->calcularAportes($baseImponible, $config);
+        return $empleados->map(function ($empleado) use ($creatorId, $config, $conceptosIsr, $conceptosTss) {
+            $salario = (float) $empleado->salario;
+            $baseImponibleIsr = $salario + $conceptosIsr;
+            $baseImponibleTss = $salario + $conceptosTss;
+            $aportes = $this->calcularAportes($baseImponibleTss, $config);
 
             return [
                 'empleado' => $empleado->nombre_completo,
                 'empleado_model' => $empleado,
-                'base_imponible' => $baseImponible,
+                'salario' => $salario,
+                'conceptos_isr' => $conceptosIsr,
+                'conceptos_tss' => $conceptosTss,
+                'base_imponible_isr' => $baseImponibleIsr,
+                'base_imponible_tss' => $baseImponibleTss,
                 'tss_empleado' => $aportes['tss_empleado'],
                 'infotep_empleado' => $aportes['infotep_empleado'],
                 'idoppril_empleado' => $aportes['idoppril_empleado'],
@@ -113,6 +122,29 @@ class NominaAportesSsService
     private function calcularMonto(float $baseImponible, float $porcentaje): float
     {
         return round($baseImponible * ($porcentaje / 100), 2);
+    }
+
+    private function baseImponibleDesdeSalario(Empleado $empleado, int $creatorId, string $campo): float
+    {
+        $montoConceptos = NominaConcepto::where('created_by', $creatorId)
+            ->where($campo, true)
+            ->sum('monto');
+
+        return (float) $empleado->salario + (float) $montoConceptos;
+    }
+
+    public function montoConceptosIsr(int $creatorId): float
+    {
+        return (float) NominaConcepto::where('created_by', $creatorId)
+            ->where('aplica_isr', true)
+            ->sum('monto');
+    }
+
+    public function montoConceptosTss(int $creatorId): float
+    {
+        return (float) NominaConcepto::where('created_by', $creatorId)
+            ->where('aplica_tss', true)
+            ->sum('monto');
     }
 
     private function asegurarConceptos(int $creatorId): void

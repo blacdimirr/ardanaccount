@@ -33,6 +33,9 @@
                                     <th>{{ __('Nombre') }}</th>
                                     <th>{{ __('Tipo') }}</th>
                                     <th>{{ __('Naturaleza') }}</th>
+                                    <th class="text-end">{{ __('Valor/Monto') }}</th>
+                                    <th class="text-center">{{ __('Aplica ISR') }}</th>
+                                    <th class="text-center">{{ __('Aplica TSS') }}</th>
                                     <th width="10%">{{ __('Action') }}</th>
                                 </tr>
                             </thead>
@@ -43,6 +46,21 @@
                                         <td>{{ $concepto->nombre }}</td>
                                         <td>{{ __(ucfirst($concepto->tipo)) }}</td>
                                         <td>{{ $concepto->naturaleza }}</td>
+                                        <td class="text-end">{{ number_format($concepto->monto ?? 0, 2) }}</td>
+                                        <td class="text-center">
+                                            @if ($concepto->aplica_isr)
+                                                <i class="ti ti-check text-success"></i>
+                                            @else
+                                                <i class="ti ti-x text-danger"></i>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            @if ($concepto->aplica_tss)
+                                                <i class="ti ti-check text-success"></i>
+                                            @else
+                                                <i class="ti ti-x text-danger"></i>
+                                            @endif
+                                        </td>
                                         <td class="Action">
                                             <span>
                                                 @can('nomina_conceptos_manage')
