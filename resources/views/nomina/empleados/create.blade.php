@@ -1,0 +1,42 @@
+{{ Form::open(['url' => 'nomina-empleados', 'class' => 'needs-validation', 'novalidate']) }}
+<div class="modal-body">
+    <div class="row">
+        <div class="form-group col-md-6">
+            {{ Form::label('first_name', __('Nombres'), ['class' => 'form-label']) }}<x-required></x-required>
+            {{ Form::text('first_name', '', ['class' => 'form-control', 'required' => 'required', 'placeholder' => __('Ingrese nombres')]) }}
+        </div>
+        <div class="form-group col-md-6">
+            {{ Form::label('last_name', __('Apellidos'), ['class' => 'form-label']) }}<x-required></x-required>
+            {{ Form::text('last_name', '', ['class' => 'form-control', 'required' => 'required', 'placeholder' => __('Ingrese apellidos')]) }}
+        </div>
+        <div class="form-group col-md-6">
+            {{ Form::label('documento_identidad', __('Documento de identidad'), ['class' => 'form-label']) }}
+            {{ Form::text('documento_identidad', '', ['class' => 'form-control', 'placeholder' => __('Ingrese documento')]) }}
+        </div>
+        <div class="form-group col-md-6">
+            {{ Form::label('email', __('Email'), ['class' => 'form-label']) }}
+            {{ Form::email('email', '', ['class' => 'form-control', 'placeholder' => __('Ingrese email')]) }}
+        </div>
+        <div class="form-group col-md-6">
+            {{ Form::label('telefono', __('Teléfono'), ['class' => 'form-label']) }}
+            {{ Form::text('telefono', '', ['class' => 'form-control', 'placeholder' => __('Ingrese teléfono')]) }}
+        </div>
+        <div class="form-group col-md-6">
+            {{ Form::label('direccion', __('Dirección'), ['class' => 'form-label']) }}
+            {{ Form::text('direccion', '', ['class' => 'form-control', 'placeholder' => __('Ingrese dirección')]) }}
+        </div>
+        <div class="form-group col-md-6">
+            {{ Form::label('tipo_vinculo', __('Tipo vínculo'), ['class' => 'form-label']) }}<x-required></x-required>
+            {{ Form::select('tipo_vinculo', $tiposVinculo, null, ['class' => 'form-control select', 'required' => 'required']) }}
+        </div>
+        <div class="form-group col-md-6">
+            {{ Form::label('unidad_servicio', __('Unidad/Servicio'), ['class' => 'form-label']) }}<x-required></x-required>
+            {{ Form::text('unidad_servicio', '', ['class' => 'form-control', 'required' => 'required', 'placeholder' => __('Ingrese unidad o servicio')]) }}
+        </div>
+    </div>
+</div>
+<div class="modal-footer">
+    <input type="button" value="{{ __('Cancel') }}" class="btn btn-light" data-bs-dismiss="modal">
+    <input type="submit" value="{{ __('Create') }}" class="btn btn-primary">
+</div>
+{{ Form::close() }}
