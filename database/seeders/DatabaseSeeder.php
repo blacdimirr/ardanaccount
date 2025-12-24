@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             $this->call(NotificationSeeder::class);
             $this->call(AiTemplateSeeder::class);
             $this->call(NcfTypeSeeder::class);
+            $this->call(NcfSeriesSeeder::class);
             Artisan::call('module:migrate LandingPage');
            Artisan::call('module:migrate LandingPage');
             Artisan::call('module:seed LandingPage');
