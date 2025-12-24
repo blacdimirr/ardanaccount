@@ -30,6 +30,10 @@
             {{ Form::select('tipo_vinculo', $tiposVinculo, null, ['class' => 'form-control select', 'required' => 'required']) }}
         </div>
         <div class="form-group col-md-6">
+            {{ Form::label('tipo_contribuyente', __('Tipo de contribuyente'), ['class' => 'form-label']) }}<x-required></x-required>
+            {{ Form::select('tipo_contribuyente', $tiposContribuyente, null, ['class' => 'form-control select', 'required' => 'required']) }}
+        </div>
+        <div class="form-group col-md-6">
             {{ Form::label('unidad_servicio', __('Unidad/Servicio'), ['class' => 'form-label']) }}<x-required></x-required>
             {{ Form::text('unidad_servicio', null, ['class' => 'form-control', 'required' => 'required']) }}
         </div>

@@ -60,7 +60,7 @@ class NominaConfigIsrController extends Controller
 
         ConfigIsrTramo::create([
             'rango_desde' => $request->rango_desde,
-            'rango_hasta' => $request->rango_hasta ?: null,
+            'rango_hasta' => $request->filled('rango_hasta') ? $request->rango_hasta : null,
             'tasa' => $request->tasa,
             'created_by' => \Auth::user()->creatorId(),
         ]);
@@ -109,7 +109,7 @@ class NominaConfigIsrController extends Controller
         }
 
         $tramo->rango_desde = $request->rango_desde;
-        $tramo->rango_hasta = $request->rango_hasta ?: null;
+        $tramo->rango_hasta = $request->filled('rango_hasta') ? $request->rango_hasta : null;
         $tramo->tasa = $request->tasa;
         $tramo->save();
 

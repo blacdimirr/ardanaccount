@@ -23,6 +23,7 @@ class NominaComprobanteController extends Controller
         $detalles = collect();
         $detallesVisibles = collect();
         $total = 0;
+        $isrTotal = 0;
 
         if ($request->filled('nomina_periodo_id') && $request->filled('empleado_id')) {
             $periodoSeleccionado = $periodos->firstWhere('id', $request->nomina_periodo_id);
@@ -35,20 +36,16 @@ class NominaComprobanteController extends Controller
                     ->where('empleado_id', $empleadoSeleccionado->id)
                     ->get();
 
-                $detallesVisibles = $detalles->filter(function ($detalle) {
-                    return !$detalle->concepto || $detalle->concepto->tipo !== 'aporte';
-                });
-                $total = $detallesVisibles
-                    ->filter(function ($detalle) {
-                        return $detalle->concepto && $detalle->concepto->tipo !== 'aporte';
-                    })
+                $total = $detalles->sum('monto');
+                $isrTotal = $detalles
+                    ->filter(fn($detalle) => $detalle->concepto && $detalle->concepto->codigo === 'ISR')
                     ->sum('monto');
             }
         }
 
         return view(
             'nomina.comprobantes.index',
-            compact('empleados', 'periodos', 'periodoSeleccionado', 'empleadoSeleccionado', 'detalles', 'detallesVisibles', 'total')
+            compact('empleados', 'periodos', 'periodoSeleccionado', 'empleadoSeleccionado', 'detalles', 'total', 'isrTotal')
         );
     }
 }

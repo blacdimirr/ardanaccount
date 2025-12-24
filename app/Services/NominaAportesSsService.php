@@ -87,7 +87,7 @@ class NominaAportesSsService
         ];
     }
 
-    public function exportarAportes(int $periodoId, int $creatorId): array
+    public function exportarAportes(int $periodoId, int $creatorId): \Illuminate\Support\Collection
     {
         $empleados = \App\Models\Empleado::where('created_by', $creatorId)->get();
         $config = $this->getConfig($creatorId);
@@ -98,6 +98,7 @@ class NominaAportesSsService
 
             return [
                 'empleado' => $empleado->nombre_completo,
+                'empleado_model' => $empleado,
                 'base_imponible' => $baseImponible,
                 'tss_empleado' => $aportes['tss_empleado'],
                 'infotep_empleado' => $aportes['infotep_empleado'],
@@ -106,7 +107,7 @@ class NominaAportesSsService
                 'infotep_empleador' => $aportes['infotep_empleador'],
                 'idoppril_empleador' => $aportes['idoppril_empleador'],
             ];
-        })->toArray();
+        });
     }
 
     private function calcularMonto(float $baseImponible, float $porcentaje): float
