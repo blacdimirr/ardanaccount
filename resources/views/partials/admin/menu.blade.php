@@ -473,6 +473,33 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                 </li>
                 @endif
 
+                {{-- -------  Nomina ---------- --}}
+                @if (Gate::check('nomina_empleados_manage') || Gate::check('nomina_conceptos_manage') || Gate::check('nomina_periodos_manage'))
+                <li class="dash-item dash-hasmenu {{ in_array(Request::segment(1), ['nomina-empleados', 'nomina-conceptos', 'nomina-periodos', 'nomina-comprobantes']) ? ' active dash-trigger' : '' }}">
+                    <a href="#!" class="dash-link"><span class="dash-micon"><i
+                                class="ti ti-briefcase"></i></span><span
+                            class="dash-mtext">{{ __('Nómina') }}</span><span class="dash-arrow"><i
+                                data-feather="chevron-right"></i></span></a>
+                    <ul class="dash-submenu {{ in_array(Request::segment(1), ['nomina-empleados', 'nomina-conceptos', 'nomina-periodos', 'nomina-comprobantes']) ? 'show' : '' }}">
+                        @can('nomina_empleados_manage')
+                        <li class="dash-item {{ Request::segment(1) == 'nomina-empleados' ? ' active' : '' }}">
+                            <a class="dash-link" href="{{ route('nomina-empleados.index') }}">{{ __('Empleados') }}</a>
+                        </li>
+                        @endcan
+                        @can('nomina_conceptos_manage')
+                        <li class="dash-item {{ Request::segment(1) == 'nomina-conceptos' ? ' active' : '' }}">
+                            <a class="dash-link" href="{{ route('nomina-conceptos.index') }}">{{ __('Conceptos de nómina') }}</a>
+                        </li>
+                        @endcan
+                        @can('nomina_periodos_manage')
+                        <li class="dash-item {{ Request::segment(1) == 'nomina-periodos' ? ' active' : '' }}">
+                            <a class="dash-link" href="{{ route('nomina-periodos.index') }}">{{ __('Periodos de nómina') }}</a>
+                        </li>
+                        @endcan
+                    </ul>
+                </li>
+                @endif
+
                 {{-- -------  Contract ---------- --}}
 
                 @if (Gate::check('manage contract'))

@@ -646,6 +646,9 @@ class Utility extends Model
             'manage retainer',
             'config_clasificadores_manage',
             'reportes_presupuesto_view',
+            'nomina_empleados_manage',
+            'nomina_conceptos_manage',
+            'nomina_periodos_manage',
 
         ];
         foreach ($arrPermissions as $ap) {
@@ -682,6 +685,9 @@ class Utility extends Model
             'manage retainer',
             'config_clasificadores_manage',
             'reportes_presupuesto_view',
+            'nomina_empleados_manage',
+            'nomina_conceptos_manage',
+            'nomina_periodos_manage',
         ];
         foreach ($companyNewPermission as $op) {
             // check if permission is not assign to owner then assign.

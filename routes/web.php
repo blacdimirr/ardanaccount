@@ -58,6 +58,10 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\AuthorizeNetController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BudgetController;
+use App\Http\Controllers\NominaComprobanteController;
+use App\Http\Controllers\NominaConceptoController;
+use App\Http\Controllers\NominaEmpleadoController;
+use App\Http\Controllers\NominaPeriodoController;
 use App\Http\Controllers\PaytrController;
 use App\Http\Controllers\YooKassaController;
 use App\Http\Controllers\XenditPaymentController;
@@ -912,6 +916,24 @@ Route::post('/proposal/template/setting', [ProposalController::class, 'savePropo
 //Budget Planner //
 Route::post('budget/{budget}/pim', [BudgetController::class, 'updatePim'])->name('budget.pim.update')->middleware(['auth', 'XSS', 'revalidate']);
 Route::resource('budget', BudgetController::class)->middleware(['auth', 'XSS', 'revalidate']);
+
+// Nomina //
+Route::group(
+    [
+        'middleware' => [
+            'auth',
+            'XSS',
+            'revalidate',
+        ],
+    ],
+    function () {
+        Route::resource('nomina-empleados', NominaEmpleadoController::class);
+        Route::resource('nomina-conceptos', NominaConceptoController::class);
+        Route::resource('nomina-periodos', NominaPeriodoController::class);
+        Route::get('nomina-comprobantes', [NominaComprobanteController::class, 'index'])
+            ->name('nomina.comprobantes.index');
+    }
+);
 
 Route::group(
     [
