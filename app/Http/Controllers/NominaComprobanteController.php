@@ -21,6 +21,7 @@ class NominaComprobanteController extends Controller
         $periodoSeleccionado = null;
         $empleadoSeleccionado = null;
         $detalles = collect();
+        $detallesVisibles = collect();
         $total = 0;
         $isrTotal = 0;
 

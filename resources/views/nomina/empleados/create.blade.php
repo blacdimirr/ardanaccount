@@ -37,6 +37,10 @@
             {{ Form::label('unidad_servicio', __('Unidad/Servicio'), ['class' => 'form-label']) }}<x-required></x-required>
             {{ Form::text('unidad_servicio', '', ['class' => 'form-control', 'required' => 'required', 'placeholder' => __('Ingrese unidad o servicio')]) }}
         </div>
+        <div class="form-group col-md-6">
+            {{ Form::label('salario', __('Salario base'), ['class' => 'form-label']) }}<x-required></x-required>
+            {{ Form::number('salario', '0.00', ['class' => 'form-control', 'required' => 'required', 'step' => '0.01', 'min' => 0]) }}
+        </div>
     </div>
 </div>
 <div class="modal-footer">

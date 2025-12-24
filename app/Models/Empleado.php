@@ -16,6 +16,7 @@ class Empleado extends Model
         'tipo_vinculo',
         'tipo_contribuyente',
         'unidad_servicio',
+        'salario',
         'created_by',
     ];
 

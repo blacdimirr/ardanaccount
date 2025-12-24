@@ -13,6 +13,11 @@ class NominaAportesSsService
         'INFOTEP-EMP' => 'Aporte INFOTEP (Empleado)',
         'IDOPPRIL-EMP' => 'Aporte IDOPPRIL (Empleado)',
     ];
+    public const CONCEPTOS_EMPLEADOR = [
+        'TSS-EMPRESA' => 'Aporte TSS (Empleador)',
+        'INFOTEP-EMPRESA' => 'Aporte INFOTEP (Empleador)',
+        'IDOPPRIL-EMPRESA' => 'Aporte IDOPPRIL (Empleador)',
+    ];
 
     public function getConfig(int $creatorId): ConfigAporteSs
     {
@@ -72,6 +77,9 @@ class NominaAportesSsService
         $this->registrarDetalle($periodoId, $empleadoId, $creatorId, 'TSS-EMP', $aportes['tss_empleado']);
         $this->registrarDetalle($periodoId, $empleadoId, $creatorId, 'INFOTEP-EMP', $aportes['infotep_empleado']);
         $this->registrarDetalle($periodoId, $empleadoId, $creatorId, 'IDOPPRIL-EMP', $aportes['idoppril_empleado']);
+        $this->registrarDetalle($periodoId, $empleadoId, $creatorId, 'TSS-EMPRESA', $aportes['tss_empleador']);
+        $this->registrarDetalle($periodoId, $empleadoId, $creatorId, 'INFOTEP-EMPRESA', $aportes['infotep_empleador']);
+        $this->registrarDetalle($periodoId, $empleadoId, $creatorId, 'IDOPPRIL-EMPRESA', $aportes['idoppril_empleador']);
 
         return [
             'base_imponible' => $baseImponible,
@@ -118,6 +126,20 @@ class NominaAportesSsService
                 [
                     'nombre' => $nombre,
                     'tipo' => 'descuento',
+                    'naturaleza' => 'Aportes seguridad social',
+                    'created_by' => $creatorId,
+                ]
+            );
+        }
+        foreach (self::CONCEPTOS_EMPLEADOR as $codigo => $nombre) {
+            NominaConcepto::firstOrCreate(
+                [
+                    'codigo' => $codigo,
+                    'created_by' => $creatorId,
+                ],
+                [
+                    'nombre' => $nombre,
+                    'tipo' => 'aporte',
                     'naturaleza' => 'Aportes seguridad social',
                     'created_by' => $creatorId,
                 ]

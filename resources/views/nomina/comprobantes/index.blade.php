@@ -51,23 +51,25 @@
                                     <tr>
                                         <th>{{ __('Concepto') }}</th>
                                         <th>{{ __('Naturaleza') }}</th>
+                                        <th>{{ __('Tipo') }}</th>
                                         <th class="text-end">{{ __('Monto') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @forelse ($detalles as $detalle)
+                                    @forelse ($detallesVisibles as $detalle)
                                         <tr>
                                             <td>{{ $detalle->concepto ? $detalle->concepto->nombre : '' }}</td>
                                             <td>{{ $detalle->concepto ? $detalle->concepto->naturaleza : '' }}</td>
+                                            <td>{{ $detalle->concepto ? __(ucfirst($detalle->concepto->tipo)) : '' }}</td>
                                             <td class="text-end">{{ number_format($detalle->monto, 2) }}</td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="3" class="text-center">{{ __('No hay conceptos registrados.') }}</td>
+                                            <td colspan="4" class="text-center">{{ __('No hay conceptos registrados.') }}</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
-                                @if ($detalles->count())
+                                @if ($detallesVisibles->count())
                                     <tfoot>
                                         <tr>
                                             <th colspan="2" class="text-end">{{ __('ISR retenido') }}</th>
