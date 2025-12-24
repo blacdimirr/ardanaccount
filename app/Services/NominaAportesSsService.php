@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\ConfigAporteSs;
-use App\Models\Empleado;
 use App\Models\NominaConcepto;
 use App\Models\NominaDetalle;
 
@@ -13,6 +12,11 @@ class NominaAportesSsService
         'TSS-EMP' => 'Aporte TSS (Empleado)',
         'INFOTEP-EMP' => 'Aporte INFOTEP (Empleado)',
         'IDOPPRIL-EMP' => 'Aporte IDOPPRIL (Empleado)',
+    ];
+    public const CONCEPTOS_EMPLEADOR = [
+        'TSS-EMPRESA' => 'Aporte TSS (Empleador)',
+        'INFOTEP-EMPRESA' => 'Aporte INFOTEP (Empleador)',
+        'IDOPPRIL-EMPRESA' => 'Aporte IDOPPRIL (Empleador)',
     ];
 
     public function getConfig(int $creatorId): ConfigAporteSs
@@ -73,6 +77,9 @@ class NominaAportesSsService
         $this->registrarDetalle($periodoId, $empleadoId, $creatorId, 'TSS-EMP', $aportes['tss_empleado']);
         $this->registrarDetalle($periodoId, $empleadoId, $creatorId, 'INFOTEP-EMP', $aportes['infotep_empleado']);
         $this->registrarDetalle($periodoId, $empleadoId, $creatorId, 'IDOPPRIL-EMP', $aportes['idoppril_empleado']);
+        $this->registrarDetalle($periodoId, $empleadoId, $creatorId, 'TSS-EMPRESA', $aportes['tss_empleador']);
+        $this->registrarDetalle($periodoId, $empleadoId, $creatorId, 'INFOTEP-EMPRESA', $aportes['infotep_empleador']);
+        $this->registrarDetalle($periodoId, $empleadoId, $creatorId, 'IDOPPRIL-EMPRESA', $aportes['idoppril_empleador']);
 
         return [
             'base_imponible' => $baseImponible,
@@ -80,7 +87,7 @@ class NominaAportesSsService
         ];
     }
 
-    public function exportarAportes(int $periodoId, int $creatorId): \Illuminate\Support\Collection
+    public function exportarAportes(int $periodoId, int $creatorId): array
     {
         $empleados = \App\Models\Empleado::where('created_by', $creatorId)->get();
         $config = $this->getConfig($creatorId);
@@ -91,7 +98,6 @@ class NominaAportesSsService
 
             return [
                 'empleado' => $empleado->nombre_completo,
-                'empleado_model' => $empleado,
                 'base_imponible' => $baseImponible,
                 'tss_empleado' => $aportes['tss_empleado'],
                 'infotep_empleado' => $aportes['infotep_empleado'],
@@ -100,7 +106,7 @@ class NominaAportesSsService
                 'infotep_empleador' => $aportes['infotep_empleador'],
                 'idoppril_empleador' => $aportes['idoppril_empleador'],
             ];
-        });
+        })->toArray();
     }
 
     private function calcularMonto(float $baseImponible, float $porcentaje): float
@@ -124,6 +130,20 @@ class NominaAportesSsService
                 ]
             );
         }
+        foreach (self::CONCEPTOS_EMPLEADOR as $codigo => $nombre) {
+            NominaConcepto::firstOrCreate(
+                [
+                    'codigo' => $codigo,
+                    'created_by' => $creatorId,
+                ],
+                [
+                    'nombre' => $nombre,
+                    'tipo' => 'aporte',
+                    'naturaleza' => 'Aportes seguridad social',
+                    'created_by' => $creatorId,
+                ]
+            );
+        }
     }
 
     private function registrarDetalle(int $periodoId, int $empleadoId, int $creatorId, string $codigoConcepto, float $monto): void
@@ -136,8 +156,6 @@ class NominaAportesSsService
             return;
         }
 
-        $empleado = Empleado::where('created_by', $creatorId)->find($empleadoId);
-
         NominaDetalle::updateOrCreate(
             [
                 'nomina_periodo_id' => $periodoId,
@@ -147,7 +165,6 @@ class NominaAportesSsService
             ],
             [
                 'monto' => $monto,
-                'servicio_id' => $empleado?->servicio_id,
             ]
         );
     }
