@@ -13,6 +13,7 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoiceProduct;
 use App\Models\JournalItem;
+use App\Models\NominaPeriodo;
 use App\Models\Payment;
 use App\Models\ProductService;
 use App\Models\ProductServiceCategory;
@@ -30,14 +31,17 @@ use App\Exports\TrialBalancExport;
 use App\Exports\Dgii606Export;
 use App\Exports\Dgii607Export;
 use App\Exports\Dgii608Export;
+use App\Exports\NominaCostosServicioExport;
 use App\Services\Dgii606Service;
 use App\Services\Dgii607Service;
 use App\Services\Dgii608Service;
+use App\Services\NominaAsientoService;
 use App\Services\BudgetExecutionReportService;
 use App\Models\ChartOfAccountParent;
 use App\Models\Status;
 use App\Models\TransactionLines;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 
@@ -3789,5 +3793,85 @@ class ReportController extends Controller
         }
 
         return view('report.dgii608', compact('selectedMonth', 'selectedYear', 'months', 'years'));
+    }
+
+    public function payrollCostsByService(Request $request, NominaAsientoService $asientoService)
+    {
+        if (!\Auth::user()->can('nomina_periodos_manage') && !\Auth::user()->can('ledger report')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $creatorId = \Auth::user()->creatorId();
+        $periodos = NominaPeriodo::where('created_by', $creatorId)->get();
+        $periodoSeleccionado = null;
+        $resumen = [
+            'services' => [],
+            'totales' => [
+                'gastos' => 0,
+                'descuentos' => 0,
+                'neto' => 0,
+            ],
+        ];
+
+        if ($request->filled('nomina_periodo_id')) {
+            $periodoSeleccionado = $periodos->firstWhere('id', $request->nomina_periodo_id);
+            if ($periodoSeleccionado) {
+                $resumen = $asientoService->previewAsientoPorServicio($periodoSeleccionado, $creatorId);
+            }
+        }
+
+        return view('report.payroll_costs_by_service', compact('periodos', 'periodoSeleccionado', 'resumen'));
+    }
+
+    public function payrollCostsByServiceExport(Request $request, NominaAsientoService $asientoService)
+    {
+        if (!\Auth::user()->can('nomina_periodos_manage') && !\Auth::user()->can('ledger report')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $request->validate([
+            'nomina_periodo_id' => 'required|integer',
+        ]);
+
+        $creatorId = \Auth::user()->creatorId();
+        $periodo = NominaPeriodo::where('created_by', $creatorId)->find($request->nomina_periodo_id);
+        if (!$periodo) {
+            return redirect()->back()->with('error', __('Payroll period not found.'));
+        }
+
+        $resumen = $asientoService->previewAsientoPorServicio($periodo, $creatorId);
+
+        return Excel::download(
+            new NominaCostosServicioExport($resumen['services'], $resumen['totales'], $periodo),
+            'costos-nomina-servicio.xlsx'
+        );
+    }
+
+    public function payrollCostsByServicePdf(Request $request, NominaAsientoService $asientoService)
+    {
+        if (!\Auth::user()->can('nomina_periodos_manage') && !\Auth::user()->can('ledger report')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $request->validate([
+            'nomina_periodo_id' => 'required|integer',
+        ]);
+
+        $creatorId = \Auth::user()->creatorId();
+        $periodo = NominaPeriodo::where('created_by', $creatorId)->find($request->nomina_periodo_id);
+        if (!$periodo) {
+            return redirect()->back()->with('error', __('Payroll period not found.'));
+        }
+
+        $resumen = $asientoService->previewAsientoPorServicio($periodo, $creatorId);
+        $settings = Utility::settings();
+
+        $pdf = Pdf::loadView('report.payroll_costs_by_service_pdf', [
+            'periodo' => $periodo,
+            'resumen' => $resumen,
+            'settings' => $settings,
+        ]);
+
+        return $pdf->download('costos-nomina-servicio.pdf');
     }
 }
