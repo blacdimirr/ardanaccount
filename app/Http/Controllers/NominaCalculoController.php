@@ -6,12 +6,13 @@ use App\Exports\NominaAportesExport;
 use App\Models\Empleado;
 use App\Models\NominaPeriodo;
 use App\Services\NominaAportesSsService;
+use App\Services\NominaIsrService;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
 class NominaCalculoController extends Controller
 {
-    public function index(Request $request, NominaAportesSsService $service)
+    public function index(Request $request, NominaAportesSsService $service, NominaIsrService $isrService)
     {
         if (!\Auth::user()->can('nomina_periodos_manage')) {
             return redirect()->back()->with('error', __('Permission denied.'));
@@ -30,13 +31,15 @@ class NominaCalculoController extends Controller
                 $config = $service->getConfig($creatorId);
                 $empleados = Empleado::where('created_by', $creatorId)->get();
 
-                $calculos = $empleados->map(function ($empleado) use ($service, $config, $periodoSeleccionado, $creatorId) {
+                $calculos = $empleados->map(function ($empleado) use ($service, $isrService, $config, $periodoSeleccionado, $creatorId) {
                     $baseImponible = $service->baseImponible($periodoSeleccionado->id, $empleado->id, $creatorId);
                     $aportes = $service->calcularAportes($baseImponible, $config);
+                    $isr = $isrService->calcularIsr($baseImponible, $empleado, $creatorId);
 
                     return [
                         'empleado' => $empleado,
                         'base_imponible' => $baseImponible,
+                        'isr' => $isr,
                         'tss_empleado' => $aportes['tss_empleado'],
                         'infotep_empleado' => $aportes['infotep_empleado'],
                         'idoppril_empleado' => $aportes['idoppril_empleado'],
@@ -51,7 +54,7 @@ class NominaCalculoController extends Controller
         return view('nomina.calculos.index', compact('periodos', 'periodoSeleccionado', 'calculos'));
     }
 
-    public function calcular(Request $request, NominaAportesSsService $service)
+    public function calcular(Request $request, NominaAportesSsService $service, NominaIsrService $isrService)
     {
         if (!\Auth::user()->can('nomina_periodos_manage')) {
             return redirect()->back()->with('error', __('Permission denied.'));
@@ -77,15 +80,16 @@ class NominaCalculoController extends Controller
         $empleados = Empleado::where('created_by', $creatorId)->get();
 
         foreach ($empleados as $empleado) {
-            $service->registrarAportesEmpleado($periodo->id, $empleado->id, $creatorId);
+            $resultado = $service->registrarAportesEmpleado($periodo->id, $empleado->id, $creatorId);
+            $isrService->registrarIsrEmpleado($periodo->id, $empleado, $creatorId, $resultado['base_imponible']);
         }
 
         return redirect()
             ->route('nomina.calculos.index', ['nomina_periodo_id' => $periodo->id])
-            ->with('success', __('Social security contributions calculated successfully.'));
+            ->with('success', __('Social security contributions and ISR calculated successfully.'));
     }
 
-    public function export(Request $request, NominaAportesSsService $service)
+    public function export(Request $request, NominaAportesSsService $service, NominaIsrService $isrService)
     {
         if (!\Auth::user()->can('nomina_periodos_manage')) {
             return redirect()->back()->with('error', __('Permission denied.'));
@@ -109,8 +113,8 @@ class NominaCalculoController extends Controller
         }
 
         return Excel::download(
-            new NominaAportesExport($periodo->id, $creatorId, $service),
-            'nomina-aportes-ss.xlsx'
+            new NominaAportesExport($periodo->id, $creatorId, $service, $isrService),
+            'nomina-aportes-isr.xlsx'
         );
     }
 }

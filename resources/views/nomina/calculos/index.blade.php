@@ -26,7 +26,7 @@
                             <div class="form-group col-md-3">
                                 <a href="{{ route('nomina.calculos.export', ['nomina_periodo_id' => $periodoSeleccionado->id]) }}"
                                     class="btn btn-secondary w-100">
-                                    {{ __('Exportar aportes') }}
+                                    {{ __('Exportar nómina') }}
                                 </a>
                             </div>
                         @endif
@@ -43,7 +43,7 @@
                 <div class="card">
                     <div class="card-header d-flex align-items-center justify-content-between">
                         <div>
-                            <h5>{{ __('Cálculo de aportes de seguridad social') }}</h5>
+                            <h5>{{ __('Cálculo de aportes de seguridad social e ISR') }}</h5>
                             <small class="text-muted">
                                 {{ $periodoSeleccionado->nombre }} ({{ $periodoSeleccionado->fecha_inicio }} - {{ $periodoSeleccionado->fecha_fin }})
                             </small>
@@ -51,7 +51,7 @@
                         {{ Form::open(['method' => 'POST', 'route' => ['nomina.calculos.calcular']]) }}
                         {{ Form::hidden('nomina_periodo_id', $periodoSeleccionado->id) }}
                         <button type="submit" class="btn btn-primary">
-                            {{ __('Calcular aportes SS') }}
+                            {{ __('Calcular aportes e ISR') }}
                         </button>
                         {{ Form::close() }}
                     </div>
@@ -62,6 +62,7 @@
                                     <tr>
                                         <th>{{ __('Empleado') }}</th>
                                         <th class="text-end">{{ __('Base imponible') }}</th>
+                                        <th class="text-end">{{ __('ISR') }}</th>
                                         <th class="text-end">{{ __('TSS (Empleado)') }}</th>
                                         <th class="text-end">{{ __('INFOTEP (Empleado)') }}</th>
                                         <th class="text-end">{{ __('IDOPPRIL (Empleado)') }}</th>
@@ -75,6 +76,7 @@
                                         <tr>
                                             <td>{{ $calculo['empleado']->nombre_completo }}</td>
                                             <td class="text-end">{{ number_format($calculo['base_imponible'], 2) }}</td>
+                                            <td class="text-end">{{ number_format($calculo['isr'], 2) }}</td>
                                             <td class="text-end">{{ number_format($calculo['tss_empleado'], 2) }}</td>
                                             <td class="text-end">{{ number_format($calculo['infotep_empleado'], 2) }}</td>
                                             <td class="text-end">{{ number_format($calculo['idoppril_empleado'], 2) }}</td>
@@ -84,7 +86,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="8" class="text-center">{{ __('No hay empleados disponibles.') }}</td>
+                                            <td colspan="9" class="text-center">{{ __('No hay empleados disponibles.') }}</td>
                                         </tr>
                                     @endforelse
                                 </tbody>

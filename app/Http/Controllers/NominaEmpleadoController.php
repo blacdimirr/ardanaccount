@@ -25,8 +25,9 @@ class NominaEmpleadoController extends Controller
         }
 
         $tiposVinculo = $this->tiposVinculo();
+        $tiposContribuyente = $this->tiposContribuyente();
 
-        return view('nomina.empleados.create', compact('tiposVinculo'));
+        return view('nomina.empleados.create', compact('tiposVinculo', 'tiposContribuyente'));
     }
 
     public function store(Request $request)
@@ -41,6 +42,7 @@ class NominaEmpleadoController extends Controller
                 'first_name' => 'required',
                 'last_name' => 'required',
                 'tipo_vinculo' => 'required',
+                'tipo_contribuyente' => 'required',
                 'unidad_servicio' => 'required',
                 'email' => 'nullable|email',
             ]
@@ -60,6 +62,7 @@ class NominaEmpleadoController extends Controller
         $empleado->telefono = $request->telefono;
         $empleado->direccion = $request->direccion;
         $empleado->tipo_vinculo = $request->tipo_vinculo;
+        $empleado->tipo_contribuyente = $request->tipo_contribuyente;
         $empleado->unidad_servicio = $request->unidad_servicio;
         $empleado->created_by = \Auth::user()->creatorId();
         $empleado->save();
@@ -79,8 +82,9 @@ class NominaEmpleadoController extends Controller
         }
 
         $tiposVinculo = $this->tiposVinculo();
+        $tiposContribuyente = $this->tiposContribuyente();
 
-        return view('nomina.empleados.edit', compact('empleado', 'tiposVinculo'));
+        return view('nomina.empleados.edit', compact('empleado', 'tiposVinculo', 'tiposContribuyente'));
     }
 
     public function update(Request $request, $id)
@@ -100,6 +104,7 @@ class NominaEmpleadoController extends Controller
                 'first_name' => 'required',
                 'last_name' => 'required',
                 'tipo_vinculo' => 'required',
+                'tipo_contribuyente' => 'required',
                 'unidad_servicio' => 'required',
                 'email' => 'nullable|email',
             ]
@@ -118,6 +123,7 @@ class NominaEmpleadoController extends Controller
         $empleado->telefono = $request->telefono;
         $empleado->direccion = $request->direccion;
         $empleado->tipo_vinculo = $request->tipo_vinculo;
+        $empleado->tipo_contribuyente = $request->tipo_contribuyente;
         $empleado->unidad_servicio = $request->unidad_servicio;
         $empleado->save();
 
@@ -145,6 +151,14 @@ class NominaEmpleadoController extends Controller
         return [
             'nombrado' => __('Nombrado'),
             'contrato' => __('Contrato'),
+            'honorarios' => __('Honorarios'),
+        ];
+    }
+
+    private function tiposContribuyente()
+    {
+        return [
+            'asalariado' => __('Asalariado'),
             'honorarios' => __('Honorarios'),
         ];
     }

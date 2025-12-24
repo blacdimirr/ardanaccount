@@ -70,6 +70,10 @@
                                 @if ($detalles->count())
                                     <tfoot>
                                         <tr>
+                                            <th colspan="2" class="text-end">{{ __('ISR retenido') }}</th>
+                                            <th class="text-end">{{ number_format($isrTotal, 2) }}</th>
+                                        </tr>
+                                        <tr>
                                             <th colspan="2" class="text-end">{{ __('Total') }}</th>
                                             <th class="text-end">{{ number_format($total, 2) }}</th>
                                         </tr>

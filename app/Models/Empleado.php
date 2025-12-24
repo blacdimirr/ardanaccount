@@ -14,6 +14,7 @@ class Empleado extends Model
         'telefono',
         'direccion',
         'tipo_vinculo',
+        'tipo_contribuyente',
         'unidad_servicio',
         'created_by',
     ];
