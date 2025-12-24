@@ -649,6 +649,7 @@ class Utility extends Model
             'nomina_empleados_manage',
             'nomina_conceptos_manage',
             'nomina_periodos_manage',
+            'nomina_config_ss_manage',
 
         ];
         foreach ($arrPermissions as $ap) {
@@ -688,6 +689,7 @@ class Utility extends Model
             'nomina_empleados_manage',
             'nomina_conceptos_manage',
             'nomina_periodos_manage',
+            'nomina_config_ss_manage',
         ];
         foreach ($companyNewPermission as $op) {
             // check if permission is not assign to owner then assign.
