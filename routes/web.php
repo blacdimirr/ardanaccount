@@ -58,7 +58,9 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\AuthorizeNetController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BudgetController;
+use App\Http\Controllers\NominaCalculoController;
 use App\Http\Controllers\NominaComprobanteController;
+use App\Http\Controllers\NominaConfigAportesSsController;
 use App\Http\Controllers\NominaConceptoController;
 use App\Http\Controllers\NominaEmpleadoController;
 use App\Http\Controllers\NominaPeriodoController;
@@ -932,6 +934,11 @@ Route::group(
         Route::resource('nomina-periodos', NominaPeriodoController::class);
         Route::get('nomina-comprobantes', [NominaComprobanteController::class, 'index'])
             ->name('nomina.comprobantes.index');
+        Route::get('nomina-calculos', [NominaCalculoController::class, 'index'])->name('nomina.calculos.index');
+        Route::post('nomina-calculos', [NominaCalculoController::class, 'calcular'])->name('nomina.calculos.calcular');
+        Route::get('nomina-calculos/export', [NominaCalculoController::class, 'export'])->name('nomina.calculos.export');
+        Route::get('nomina-config-ss', [NominaConfigAportesSsController::class, 'index'])->name('nomina.config_ss.index');
+        Route::put('nomina-config-ss', [NominaConfigAportesSsController::class, 'update'])->name('nomina.config_ss.update');
     }
 );
 

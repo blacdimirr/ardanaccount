@@ -19,6 +19,7 @@ class NominaConcepto extends Model
     public static $tipos = [
         'ingreso' => 'Ingreso',
         'descuento' => 'Descuento',
+        'aporte' => 'Aporte',
     ];
 
     public function detallesNomina()

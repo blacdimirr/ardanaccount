@@ -650,6 +650,12 @@ class UsersTableSeeder extends Seeder
                 'updated_at' => date('Y - m - d H:i:s'),
             ],
             [
+                'name' => 'nomina_config_ss_manage',
+                'guard_name' => 'web',
+                'created_at' => date('Y - m - d H:i:s'),
+                'updated_at' => date('Y - m - d H:i:s'),
+            ],
+            [
                 'name' => 'manage customer payment',
                 'guard_name' => 'web',
                 'created_at' => date('Y - m - d H:i:s'),
@@ -1414,6 +1420,7 @@ class UsersTableSeeder extends Seeder
             'nomina_empleados_manage',
             'nomina_conceptos_manage',
             'nomina_periodos_manage',
+            'nomina_config_ss_manage',
             'manage transaction',
             'manage order',
             'manage credit note',
