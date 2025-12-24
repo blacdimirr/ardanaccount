@@ -42,6 +42,7 @@ class NominaEmpleadoController extends Controller
                 'last_name' => 'required',
                 'tipo_vinculo' => 'required',
                 'unidad_servicio' => 'required',
+                'salario' => 'required|numeric|min:0',
                 'email' => 'nullable|email',
             ]
         );
@@ -61,6 +62,7 @@ class NominaEmpleadoController extends Controller
         $empleado->direccion = $request->direccion;
         $empleado->tipo_vinculo = $request->tipo_vinculo;
         $empleado->unidad_servicio = $request->unidad_servicio;
+        $empleado->salario = $request->salario;
         $empleado->created_by = \Auth::user()->creatorId();
         $empleado->save();
 
@@ -101,6 +103,7 @@ class NominaEmpleadoController extends Controller
                 'last_name' => 'required',
                 'tipo_vinculo' => 'required',
                 'unidad_servicio' => 'required',
+                'salario' => 'required|numeric|min:0',
                 'email' => 'nullable|email',
             ]
         );
@@ -119,6 +122,7 @@ class NominaEmpleadoController extends Controller
         $empleado->direccion = $request->direccion;
         $empleado->tipo_vinculo = $request->tipo_vinculo;
         $empleado->unidad_servicio = $request->unidad_servicio;
+        $empleado->salario = $request->salario;
         $empleado->save();
 
         return redirect()->route('nomina-empleados.index')->with('success', __('Employee successfully updated.'));

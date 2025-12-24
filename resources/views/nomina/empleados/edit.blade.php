@@ -33,6 +33,10 @@
             {{ Form::label('unidad_servicio', __('Unidad/Servicio'), ['class' => 'form-label']) }}<x-required></x-required>
             {{ Form::text('unidad_servicio', null, ['class' => 'form-control', 'required' => 'required']) }}
         </div>
+        <div class="form-group col-md-6">
+            {{ Form::label('salario', __('Salario base'), ['class' => 'form-label']) }}<x-required></x-required>
+            {{ Form::number('salario', null, ['class' => 'form-control', 'required' => 'required', 'step' => '0.01', 'min' => 0]) }}
+        </div>
     </div>
 </div>
 <div class="modal-footer">

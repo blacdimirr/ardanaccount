@@ -32,6 +32,7 @@
                                     <th>{{ __('Nombre') }}</th>
                                     <th>{{ __('Tipo vínculo') }}</th>
                                     <th>{{ __('Unidad/Servicio') }}</th>
+                                    <th class="text-end">{{ __('Salario base') }}</th>
                                     <th width="10%">{{ __('Action') }}</th>
                                 </tr>
                             </thead>
@@ -41,6 +42,7 @@
                                         <td>{{ $empleado->nombre_completo }}</td>
                                         <td>{{ __(ucfirst($empleado->tipo_vinculo)) }}</td>
                                         <td>{{ $empleado->unidad_servicio }}</td>
+                                        <td class="text-end">{{ number_format($empleado->salario, 2) }}</td>
                                         <td class="Action">
                                             <span>
                                                 @can('nomina_empleados_manage')

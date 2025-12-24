@@ -9,6 +9,8 @@ class JournalItem extends Model
     protected $fillable = [
         'journal',
         'account',
+        'servicio_id',
+        'description',
         'debit',
         'credit',
     ];
@@ -16,6 +18,11 @@ class JournalItem extends Model
     public function accounts()
     {
         return $this->hasOne('App\Models\ChartOfAccount', 'id', 'account');
+    }
+
+    public function servicioUnidad()
+    {
+        return $this->belongsTo(ServicioUnidad::class, 'servicio_id');
     }
 
 

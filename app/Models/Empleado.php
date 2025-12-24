@@ -15,6 +15,7 @@ class Empleado extends Model
         'direccion',
         'tipo_vinculo',
         'unidad_servicio',
+        'salario',
         'created_by',
     ];
 
