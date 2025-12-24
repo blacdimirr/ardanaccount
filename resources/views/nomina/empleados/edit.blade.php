@@ -30,17 +30,12 @@
             {{ Form::select('tipo_vinculo', $tiposVinculo, null, ['class' => 'form-control select', 'required' => 'required']) }}
         </div>
         <div class="form-group col-md-6">
-            {{ Form::label('tipo_contribuyente', __('Tipo de contribuyente'), ['class' => 'form-label']) }}<x-required></x-required>
-            {{ Form::select('tipo_contribuyente', $tiposContribuyente, null, ['class' => 'form-control select', 'required' => 'required']) }}
+            {{ Form::label('unidad_servicio', __('Unidad/Servicio'), ['class' => 'form-label']) }}<x-required></x-required>
+            {{ Form::text('unidad_servicio', null, ['class' => 'form-control', 'required' => 'required']) }}
         </div>
         <div class="form-group col-md-6">
-            {{ Form::label('unidad_servicio', __('Unidad/Servicio'), ['class' => 'form-label']) }}<x-required></x-required>
-            {{ Form::text('unidad_servicio', null, ['class' => 'form-control', 'required' => 'required', 'list' => 'servicios-unidades']) }}
-            <datalist id="servicios-unidades">
-                @foreach ($servicios as $servicio)
-                    <option value="{{ $servicio->nombre }}"></option>
-                @endforeach
-            </datalist>
+            {{ Form::label('salario', __('Salario base'), ['class' => 'form-label']) }}<x-required></x-required>
+            {{ Form::number('salario', null, ['class' => 'form-control', 'required' => 'required', 'step' => '0.01', 'min' => 0]) }}
         </div>
     </div>
 </div>

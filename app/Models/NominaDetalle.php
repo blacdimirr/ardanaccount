@@ -12,7 +12,6 @@ class NominaDetalle extends Model
         'nomina_periodo_id',
         'empleado_id',
         'nomina_concepto_id',
-        'servicio_id',
         'monto',
         'created_by',
     ];
@@ -30,10 +29,5 @@ class NominaDetalle extends Model
     public function concepto()
     {
         return $this->belongsTo(NominaConcepto::class, 'nomina_concepto_id');
-    }
-
-    public function servicioUnidad()
-    {
-        return $this->belongsTo(ServicioUnidad::class, 'servicio_id');
     }
 }

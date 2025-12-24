@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\JournalEntry;
 
 class NominaPeriodo extends Model
 {
@@ -14,7 +13,6 @@ class NominaPeriodo extends Model
         'fecha_inicio',
         'fecha_fin',
         'estado',
-        'journal_entry_id',
         'created_by',
     ];
 
@@ -26,10 +24,5 @@ class NominaPeriodo extends Model
     public function detallesNomina()
     {
         return $this->hasMany(NominaDetalle::class, 'nomina_periodo_id');
-    }
-
-    public function journalEntry()
-    {
-        return $this->belongsTo(JournalEntry::class, 'journal_entry_id');
     }
 }
