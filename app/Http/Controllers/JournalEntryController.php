@@ -155,10 +155,13 @@ class JournalEntryController extends Controller
         {
             if($journalEntry->created_by == \Auth::user()->creatorId())
             {
-                $accounts = $journalEntry->accounts;
+                $accounts = $journalEntry->accounts()->with(['accounts', 'servicioUnidad'])->get();
                 $settings = Utility::settings();
+                $mostrarServicio = $accounts->contains(function ($account) {
+                    return !empty($account->servicio_id);
+                });
 
-                return view('journalEntry.view', compact('journalEntry', 'accounts', 'settings'));
+                return view('journalEntry.view', compact('journalEntry', 'accounts', 'settings', 'mostrarServicio'));
             }
             else
             {

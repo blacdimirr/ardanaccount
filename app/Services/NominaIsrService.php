@@ -113,6 +113,8 @@ class NominaIsrService
             return;
         }
 
+        $empleado = Empleado::where('created_by', $creatorId)->find($empleadoId);
+
         NominaDetalle::updateOrCreate(
             [
                 'nomina_periodo_id' => $periodoId,
@@ -122,6 +124,7 @@ class NominaIsrService
             ],
             [
                 'monto' => $monto,
+                'servicio_id' => $empleado?->servicio_id,
             ]
         );
     }

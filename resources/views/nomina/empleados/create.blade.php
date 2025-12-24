@@ -35,7 +35,12 @@
         </div>
         <div class="form-group col-md-6">
             {{ Form::label('unidad_servicio', __('Unidad/Servicio'), ['class' => 'form-label']) }}<x-required></x-required>
-            {{ Form::text('unidad_servicio', '', ['class' => 'form-control', 'required' => 'required', 'placeholder' => __('Ingrese unidad o servicio')]) }}
+            {{ Form::text('unidad_servicio', '', ['class' => 'form-control', 'required' => 'required', 'placeholder' => __('Ingrese unidad o servicio'), 'list' => 'servicios-unidades']) }}
+            <datalist id="servicios-unidades">
+                @foreach ($servicios as $servicio)
+                    <option value="{{ $servicio->nombre }}"></option>
+                @endforeach
+            </datalist>
         </div>
     </div>
 </div>

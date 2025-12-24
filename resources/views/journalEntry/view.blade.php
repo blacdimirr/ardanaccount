@@ -68,6 +68,9 @@
                                             <tr>
                                                 <th data-width="40" class="text-dark">#</th>
                                                 <th class="text-dark">{{__('Account')}}</th>
+                                                @if (!empty($mostrarServicio))
+                                                    <th class="text-dark">{{ __('Servicio/Unidad') }}</th>
+                                                @endif
                                                 <th class="text-dark" width="25%">{{__('Description')}}</th>
                                                 <th class="text-dark">{{__('Debit')}}</th>
                                                 <th class="text-dark">{{__('Credit')}}</th>
@@ -81,6 +84,9 @@
                                                 <tr>
                                                     <td>{{$key+1}}</td>
                                                     <td>{{!empty($account->accounts)?$account->accounts->code.' - '.$account->accounts->name:''}}</td>
+                                                    @if (!empty($mostrarServicio))
+                                                        <td>{{ $account->servicioUnidad?->nombre ?? '-' }}</td>
+                                                    @endif
                                                     <td>{{!empty($account->description)?$account->description:'-'}}</td>
                                                     <td>{{\Auth::user()->priceFormat($account->debit)}}</td>
                                                     <td>{{\Auth::user()->priceFormat($account->credit)}}</td>
@@ -110,12 +116,12 @@
                                             <tfoot>
 
                                             <tr>
-                                                <td colspan="4"></td>
+                                                <td colspan="{{ !empty($mostrarServicio) ? 5 : 4 }}"></td>
                                                 <td class="text-end"><b>{{__('Total Credit')}}</b></td>
                                                 <td>{{\Auth::user()->priceFormat($journalEntry->totalCredit())}}</td>
                                             </tr>
                                             <tr>
-                                                <td colspan="4"></td>
+                                                <td colspan="{{ !empty($mostrarServicio) ? 5 : 4 }}"></td>
                                                 <td class="text-end"><b>{{__('Total Debit')}}</b></td>
                                                 <td>{{\Auth::user()->priceFormat($journalEntry->totalDebit())}}</td>
                                             </tr>
