@@ -615,7 +615,8 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                 Gate::check('invoice report') ||
                 Gate::check('manage transaction') ||
                 Gate::check('statement report') ||
-                Gate::check('reportes_presupuesto_view'))
+                Gate::check('reportes_presupuesto_view') ||
+                Gate::check('nomina_periodos_manage'))
                 <li
                     class="dash-item dash-hasmenu {{ (Request::segment(1) == 'report' || Request::segment(1) == 'transaction') && Request::segment(2) != 'ledger' && Request::segment(2) != 'balance-sheet' && Request::segment(2) != 'trial-balance' ? ' active dash-trigger' : '' }}">
                     <a href="#!" class="dash-link "><span class="dash-micon"><i
@@ -721,6 +722,13 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                             class="dash-item {{ Request::route()->getName() == 'report.product.stock.report' ? ' active' : '' }}">
                             <a class="dash-link"
                                 href="{{ route('report.product.stock.report') }}">{{ __('Product Stock') }}</a>
+                        </li>
+                        @endcan
+                        @can('nomina_periodos_manage')
+                        <li
+                            class="dash-item {{ Request::route()->getName() == 'report.nomina.costos.servicio' ? ' active' : '' }}">
+                            <a class="dash-link"
+                                href="{{ route('report.nomina.costos.servicio') }}">{{ __('Costos de nómina por servicio') }}</a>
                         </li>
                         @endcan
 

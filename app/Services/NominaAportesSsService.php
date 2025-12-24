@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ConfigAporteSs;
+use App\Models\Empleado;
 use App\Models\NominaConcepto;
 use App\Models\NominaDetalle;
 
@@ -135,6 +136,8 @@ class NominaAportesSsService
             return;
         }
 
+        $empleado = Empleado::where('created_by', $creatorId)->find($empleadoId);
+
         NominaDetalle::updateOrCreate(
             [
                 'nomina_periodo_id' => $periodoId,
@@ -144,6 +147,7 @@ class NominaAportesSsService
             ],
             [
                 'monto' => $monto,
+                'servicio_id' => $empleado?->servicio_id,
             ]
         );
     }

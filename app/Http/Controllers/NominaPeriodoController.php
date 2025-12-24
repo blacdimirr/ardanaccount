@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\NominaPeriodo;
+use App\Services\NominaAsientoService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
 class NominaPeriodoController extends Controller
@@ -62,7 +64,7 @@ class NominaPeriodoController extends Controller
         return redirect()->route('nomina-periodos.index')->with('success', __('Payroll period successfully created.'));
     }
 
-    public function edit($id)
+    public function edit($id, NominaAsientoService $asientoService)
     {
         if (!\Auth::user()->can('nomina_periodos_manage')) {
             return response()->json(['error' => __('Permission denied.')], 401);
@@ -74,11 +76,12 @@ class NominaPeriodoController extends Controller
         }
 
         $estados = NominaPeriodo::$estados;
+        $asientoPreview = $asientoService->previewAsientoPorServicio($periodo, \Auth::user()->creatorId());
 
-        return view('nomina.periodos.edit', compact('periodo', 'estados'));
+        return view('nomina.periodos.edit', compact('periodo', 'estados', 'asientoPreview'));
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, $id, NominaAsientoService $asientoService)
     {
         if (!\Auth::user()->can('nomina_periodos_manage')) {
             return redirect()->back()->with('error', __('Permission denied.'));
@@ -105,11 +108,23 @@ class NominaPeriodoController extends Controller
             return redirect()->back()->with('error', $messages->first());
         }
 
-        $periodo->nombre = $request->nombre;
-        $periodo->fecha_inicio = $request->fecha_inicio;
-        $periodo->fecha_fin = $request->fecha_fin;
-        $periodo->estado = $request->estado;
-        $periodo->save();
+        $estadoAnterior = $periodo->estado;
+
+        try {
+            DB::transaction(function () use ($periodo, $request, $estadoAnterior, $asientoService) {
+                $periodo->nombre = $request->nombre;
+                $periodo->fecha_inicio = $request->fecha_inicio;
+                $periodo->fecha_fin = $request->fecha_fin;
+                $periodo->estado = $request->estado;
+                $periodo->save();
+
+                if ($estadoAnterior !== 'cerrado' && $periodo->estado === 'cerrado') {
+                    $asientoService->generarAsientoPorServicio($periodo, \Auth::user()->creatorId());
+                }
+            });
+        } catch (\Throwable $exception) {
+            return redirect()->back()->with('error', $exception->getMessage());
+        }
 
         return redirect()->route('nomina-periodos.index')->with('success', __('Payroll period successfully updated.'));
     }

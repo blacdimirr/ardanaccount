@@ -866,6 +866,9 @@ Route::group(
         Route::get('report/ledger', [ReportController::class, 'ledgerSummary'])->name('report.ledger');
         Route::get('report/trial-balance/{view?}', [ReportController::class, 'trialBalanceSummary'])->name('trial.balance');
         Route::post('export/trial-balance', [ReportController::class, 'trialBalanceExport'])->name('trial.balance.export');
+        Route::get('report/nomina-costos-servicio', [ReportController::class, 'payrollCostsByService'])->name('report.nomina.costos.servicio');
+        Route::post('report/nomina-costos-servicio/export', [ReportController::class, 'payrollCostsByServiceExport'])->name('report.nomina.costos.servicio.export');
+        Route::post('report/nomina-costos-servicio/pdf', [ReportController::class, 'payrollCostsByServicePdf'])->name('report.nomina.costos.servicio.pdf');
         Route::get('report/dgii-606', [ReportController::class, 'dgii606'])->name('report.dgii606');
         Route::get('report/dgii-607', [ReportController::class, 'dgii607'])->name('report.dgii607');
         Route::get('report/dgii-608', [ReportController::class, 'dgii608'])->name('report.dgii608');

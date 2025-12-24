@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Empleado;
+use App\Models\ServicioUnidad;
 use Illuminate\Http\Request;
 
 class NominaEmpleadoController extends Controller
@@ -26,8 +27,11 @@ class NominaEmpleadoController extends Controller
 
         $tiposVinculo = $this->tiposVinculo();
         $tiposContribuyente = $this->tiposContribuyente();
+        $servicios = ServicioUnidad::where('created_by', \Auth::user()->creatorId())
+            ->orderBy('nombre')
+            ->get();
 
-        return view('nomina.empleados.create', compact('tiposVinculo', 'tiposContribuyente'));
+        return view('nomina.empleados.create', compact('tiposVinculo', 'tiposContribuyente', 'servicios'));
     }
 
     public function store(Request $request)
@@ -63,7 +67,8 @@ class NominaEmpleadoController extends Controller
         $empleado->direccion = $request->direccion;
         $empleado->tipo_vinculo = $request->tipo_vinculo;
         $empleado->tipo_contribuyente = $request->tipo_contribuyente;
-        $empleado->unidad_servicio = $request->unidad_servicio;
+        $empleado->unidad_servicio = trim($request->unidad_servicio);
+        $empleado->servicio_id = $this->resolveServicioId($empleado->unidad_servicio);
         $empleado->created_by = \Auth::user()->creatorId();
         $empleado->save();
 
@@ -83,8 +88,11 @@ class NominaEmpleadoController extends Controller
 
         $tiposVinculo = $this->tiposVinculo();
         $tiposContribuyente = $this->tiposContribuyente();
+        $servicios = ServicioUnidad::where('created_by', \Auth::user()->creatorId())
+            ->orderBy('nombre')
+            ->get();
 
-        return view('nomina.empleados.edit', compact('empleado', 'tiposVinculo', 'tiposContribuyente'));
+        return view('nomina.empleados.edit', compact('empleado', 'tiposVinculo', 'tiposContribuyente', 'servicios'));
     }
 
     public function update(Request $request, $id)
@@ -124,7 +132,8 @@ class NominaEmpleadoController extends Controller
         $empleado->direccion = $request->direccion;
         $empleado->tipo_vinculo = $request->tipo_vinculo;
         $empleado->tipo_contribuyente = $request->tipo_contribuyente;
-        $empleado->unidad_servicio = $request->unidad_servicio;
+        $empleado->unidad_servicio = trim($request->unidad_servicio);
+        $empleado->servicio_id = $this->resolveServicioId($empleado->unidad_servicio);
         $empleado->save();
 
         return redirect()->route('nomina-empleados.index')->with('success', __('Employee successfully updated.'));
@@ -161,5 +170,28 @@ class NominaEmpleadoController extends Controller
             'asalariado' => __('Asalariado'),
             'honorarios' => __('Honorarios'),
         ];
+    }
+
+    private function resolveServicioId(?string $nombre): ?int
+    {
+        $nombre = trim((string) $nombre);
+        if ($nombre === '') {
+            return null;
+        }
+
+        $creatorId = \Auth::user()->creatorId();
+
+        $servicio = ServicioUnidad::firstOrCreate(
+            [
+                'nombre' => $nombre,
+                'created_by' => $creatorId,
+            ],
+            [
+                'nombre' => $nombre,
+                'created_by' => $creatorId,
+            ]
+        );
+
+        return $servicio->id;
     }
 }
