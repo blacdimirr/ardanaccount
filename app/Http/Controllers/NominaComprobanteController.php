@@ -36,6 +36,7 @@ class NominaComprobanteController extends Controller
                     ->where('empleado_id', $empleadoSeleccionado->id)
                     ->get();
 
+                $detallesVisibles = $detalles;
                 $total = $detalles->sum('monto');
                 $isrTotal = $detalles
                     ->filter(fn($detalle) => $detalle->concepto && $detalle->concepto->codigo === 'ISR')
@@ -45,7 +46,16 @@ class NominaComprobanteController extends Controller
 
         return view(
             'nomina.comprobantes.index',
-            compact('empleados', 'periodos', 'periodoSeleccionado', 'empleadoSeleccionado', 'detalles', 'total', 'isrTotal')
+            compact(
+                'empleados',
+                'periodos',
+                'periodoSeleccionado',
+                'empleadoSeleccionado',
+                'detalles',
+                'detallesVisibles',
+                'total',
+                'isrTotal'
+            )
         );
     }
 }

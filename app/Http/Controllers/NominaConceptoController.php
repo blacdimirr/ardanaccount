@@ -48,6 +48,9 @@ class NominaConceptoController extends Controller
                 'nombre' => 'required',
                 'tipo' => 'required',
                 'naturaleza' => 'required',
+                'monto' => 'nullable|numeric',
+                'aplica_isr' => 'nullable|boolean',
+                'aplica_tss' => 'nullable|boolean',
             ]
         );
 
@@ -62,6 +65,9 @@ class NominaConceptoController extends Controller
         $concepto->nombre = $request->nombre;
         $concepto->tipo = $request->tipo;
         $concepto->naturaleza = $request->naturaleza;
+        $concepto->monto = $request->input('monto', 0);
+        $concepto->aplica_isr = $request->boolean('aplica_isr');
+        $concepto->aplica_tss = $request->boolean('aplica_tss');
         $concepto->created_by = \Auth::user()->creatorId();
         $concepto->save();
 
@@ -109,6 +115,9 @@ class NominaConceptoController extends Controller
                 'nombre' => 'required',
                 'tipo' => 'required',
                 'naturaleza' => 'required',
+                'monto' => 'nullable|numeric',
+                'aplica_isr' => 'nullable|boolean',
+                'aplica_tss' => 'nullable|boolean',
             ]
         );
 
@@ -122,6 +131,9 @@ class NominaConceptoController extends Controller
         $concepto->nombre = $request->nombre;
         $concepto->tipo = $request->tipo;
         $concepto->naturaleza = $request->naturaleza;
+        $concepto->monto = $request->input('monto', 0);
+        $concepto->aplica_isr = $request->boolean('aplica_isr');
+        $concepto->aplica_tss = $request->boolean('aplica_tss');
         $concepto->save();
 
         return redirect()->route('nomina-conceptos.index')->with('success', __('Payroll concept successfully updated.'));
