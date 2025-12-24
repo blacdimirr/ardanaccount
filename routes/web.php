@@ -61,6 +61,7 @@ use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\NominaCalculoController;
 use App\Http\Controllers\NominaComprobanteController;
 use App\Http\Controllers\NominaConfigAportesSsController;
+use App\Http\Controllers\NominaConfigIsrController;
 use App\Http\Controllers\NominaConceptoController;
 use App\Http\Controllers\NominaEmpleadoController;
 use App\Http\Controllers\NominaPeriodoController;
@@ -939,6 +940,14 @@ Route::group(
         Route::get('nomina-calculos/export', [NominaCalculoController::class, 'export'])->name('nomina.calculos.export');
         Route::get('nomina-config-ss', [NominaConfigAportesSsController::class, 'index'])->name('nomina.config_ss.index');
         Route::put('nomina-config-ss', [NominaConfigAportesSsController::class, 'update'])->name('nomina.config_ss.update');
+        Route::get('nomina-config-isr', [NominaConfigIsrController::class, 'index'])->name('nomina.config_isr.index');
+        Route::post('nomina-config-isr', [NominaConfigIsrController::class, 'store'])->name('nomina.config_isr.store');
+        Route::get('nomina-config-isr/create', [NominaConfigIsrController::class, 'create'])->name('nomina.config_isr.create');
+        Route::get('nomina-config-isr/{tramo}/edit', [NominaConfigIsrController::class, 'edit'])->name('nomina.config_isr.edit');
+        Route::put('nomina-config-isr/{tramo}', [NominaConfigIsrController::class, 'update'])->name('nomina.config_isr.update');
+        Route::delete('nomina-config-isr/{tramo}', [NominaConfigIsrController::class, 'destroy'])->name('nomina.config_isr.destroy');
+        Route::put('nomina-config-isr-honorarios', [NominaConfigIsrController::class, 'updateHonorarios'])
+            ->name('nomina.config_isr.honorarios.update');
     }
 );
 
