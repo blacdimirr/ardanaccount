@@ -244,8 +244,30 @@ class NominaAsientoService
             return $bankAccount->chart_account_id;
         }
 
+        $account = ChartOfAccount::where('created_by', $creatorId)
+            ->whereIn('name', ['Checking Account', 'Petty Cash'])
+            ->orderBy('code')
+            ->first();
+
+        if ($account) {
+            return $account->id;
+        }
+
+        $assetType = ChartOfAccountType::where('created_by', $creatorId)
+            ->where('name', 'Assets')
+            ->first();
+
+        if (!$assetType) {
+            return null;
+        }
+
         return ChartOfAccount::where('created_by', $creatorId)
-            ->where('name', 'Checking Account')
+            ->where('type', $assetType->id)
+            ->where(function ($query) {
+                $query->where('name', 'like', '%Cash%')
+                    ->orWhere('name', 'like', '%Bank%');
+            })
+            ->orderBy('code')
             ->value('id');
     }
 

@@ -128,6 +128,22 @@ class NominaPeriodoController extends Controller
         return redirect()->route('nomina-periodos.index')->with('success', __('Payroll period successfully updated.'));
     }
 
+    public function previewAsiento($id, NominaAsientoService $asientoService)
+    {
+        if (!\Auth::user()->can('nomina_periodos_manage')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $periodo = NominaPeriodo::find($id);
+        if ($periodo->created_by != \Auth::user()->creatorId()) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $resumen = $asientoService->previewAsientoPorServicio($periodo, \Auth::user()->creatorId());
+
+        return view('nomina.periodos.preview_asiento', compact('periodo', 'resumen'));
+    }
+
     public function destroy($id)
     {
         if (!\Auth::user()->can('nomina_periodos_manage')) {
