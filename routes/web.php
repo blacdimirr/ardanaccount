@@ -935,6 +935,8 @@ Route::group(
     function () {
         Route::resource('nomina-empleados', NominaEmpleadoController::class);
         Route::resource('nomina-conceptos', NominaConceptoController::class);
+        Route::get('nomina-periodos/{nomina_periodo}/asiento-servicio', [NominaPeriodoController::class, 'previewAsiento'])
+            ->name('nomina-periodos.preview-asiento');
         Route::resource('nomina-periodos', NominaPeriodoController::class);
         Route::get('nomina-comprobantes', [NominaComprobanteController::class, 'index'])
             ->name('nomina.comprobantes.index');
