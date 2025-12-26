@@ -211,7 +211,9 @@ class NominaAsientoService
 
     private function getLiabilityAccountId(int $creatorId): ?int
     {
-        $account = ChartOfAccount::where('created_by', $creatorId)
+        $createdByScope = [$creatorId, 1];
+
+        $account = ChartOfAccount::whereIn('created_by', $createdByScope)
             ->where('name', 'Accr. Benefits - Payroll Taxes')
             ->first();
 
@@ -219,7 +221,7 @@ class NominaAsientoService
             return $account->id;
         }
 
-        $type = ChartOfAccountType::where('created_by', $creatorId)
+        $type = ChartOfAccountType::whereIn('created_by', $createdByScope)
             ->where('name', 'Liabilities')
             ->first();
 
@@ -227,7 +229,7 @@ class NominaAsientoService
             return null;
         }
 
-        return ChartOfAccount::where('created_by', $creatorId)
+        return ChartOfAccount::whereIn('created_by', $createdByScope)
             ->where('type', $type->id)
             ->where('name', 'like', '%Payroll%')
             ->orderBy('code')
@@ -238,14 +240,56 @@ class NominaAsientoService
     {
         $bankAccount = BankAccount::where('created_by', $creatorId)
             ->whereNotNull('chart_account_id')
+            ->orderBy('id')
             ->first();
+        $createdByScope = [$creatorId, 1];
 
-        if ($bankAccount) {
+        if ($bankAccount?->chart_account_id) {
             return $bankAccount->chart_account_id;
         }
 
-        return ChartOfAccount::where('created_by', $creatorId)
-            ->where('name', 'Checking Account')
+        $bankAccount = BankAccount::where('created_by', $creatorId)->orderBy('id')->first();
+        if ($bankAccount) {
+            $matchedAccount = ChartOfAccount::whereIn('created_by', $createdByScope)
+                ->whereIn('name', array_filter([
+                    $bankAccount->holder_name,
+                    $bankAccount->bank_name,
+                ]))
+                ->orderBy('code')
+                ->first();
+
+            if ($matchedAccount) {
+                $bankAccount->chart_account_id = $matchedAccount->id;
+                $bankAccount->save();
+
+                return $matchedAccount->id;
+            }
+        }
+
+        $account = ChartOfAccount::whereIn('created_by', $createdByScope)
+            ->whereIn('name', ['Checking Account', 'Petty Cash'])
+            ->orderBy('code')
+            ->first();
+
+        if ($account) {
+            return $account->id;
+        }
+
+        $assetType = ChartOfAccountType::whereIn('created_by', $createdByScope)
+            ->where('name', 'Assets')
+            ->first();
+
+        if (!$assetType) {
+            return null;
+        }
+
+        return ChartOfAccount::whereIn('created_by', $createdByScope)
+            ->where('type', $assetType->id)
+            ->where(function ($query) {
+                $query->where('name', 'like', '%Cash%')
+                    ->orWhere('name', 'like', '%Bank%');
+            })
+            ->orderBy('code')
             ->value('id');
     }
 
