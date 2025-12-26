@@ -1717,6 +1717,24 @@ class UsersTableSeeder extends Seeder
             ->whereIn('name', ['Checking Account', 'Petty Cash'])
             ->orderBy('code')
             ->value('id');
+        $liabilityTemplate = \App\Models\ChartOfAccount::where('created_by', 1)
+            ->where('name', 'Accr. Benefits - Payroll Taxes')
+            ->first();
+
+        if ($liabilityTemplate) {
+            \App\Models\ChartOfAccount::firstOrCreate(
+                [
+                    'created_by' => $company->id,
+                    'name' => $liabilityTemplate->name,
+                ],
+                [
+                    'code' => $liabilityTemplate->code,
+                    'type' => $liabilityTemplate->type,
+                    'sub_type' => $liabilityTemplate->sub_type,
+                    'is_enabled' => 1,
+                ]
+            );
+        }
 
         \App\Models\BankAccount::updateOrCreate(
             [

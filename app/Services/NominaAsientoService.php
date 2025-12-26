@@ -211,7 +211,9 @@ class NominaAsientoService
 
     private function getLiabilityAccountId(int $creatorId): ?int
     {
-        $account = ChartOfAccount::where('created_by', $creatorId)
+        $createdByScope = [$creatorId, 1];
+
+        $account = ChartOfAccount::whereIn('created_by', $createdByScope)
             ->where('name', 'Accr. Benefits - Payroll Taxes')
             ->first();
 
@@ -219,7 +221,7 @@ class NominaAsientoService
             return $account->id;
         }
 
-        $type = ChartOfAccountType::where('created_by', $creatorId)
+        $type = ChartOfAccountType::whereIn('created_by', $createdByScope)
             ->where('name', 'Liabilities')
             ->first();
 
@@ -227,7 +229,7 @@ class NominaAsientoService
             return null;
         }
 
-        return ChartOfAccount::where('created_by', $creatorId)
+        return ChartOfAccount::whereIn('created_by', $createdByScope)
             ->where('type', $type->id)
             ->where('name', 'like', '%Payroll%')
             ->orderBy('code')
