@@ -237,13 +237,14 @@ class NominaAsientoService
     private function getBankAccountId(int $creatorId): ?int
     {
         $bankAccount = BankAccount::where('created_by', $creatorId)->first();
+        $createdByScope = [$creatorId, 1];
 
         if ($bankAccount?->chart_account_id) {
             return $bankAccount->chart_account_id;
         }
 
         if ($bankAccount) {
-            $matchedAccount = ChartOfAccount::where('created_by', $creatorId)
+            $matchedAccount = ChartOfAccount::whereIn('created_by', $createdByScope)
                 ->whereIn('name', array_filter([
                     $bankAccount->holder_name,
                     $bankAccount->bank_name,
@@ -259,7 +260,7 @@ class NominaAsientoService
             }
         }
 
-        $account = ChartOfAccount::where('created_by', $creatorId)
+        $account = ChartOfAccount::whereIn('created_by', $createdByScope)
             ->whereIn('name', ['Checking Account', 'Petty Cash'])
             ->orderBy('code')
             ->first();
@@ -268,7 +269,7 @@ class NominaAsientoService
             return $account->id;
         }
 
-        $assetType = ChartOfAccountType::where('created_by', $creatorId)
+        $assetType = ChartOfAccountType::whereIn('created_by', $createdByScope)
             ->where('name', 'Assets')
             ->first();
 
@@ -276,7 +277,7 @@ class NominaAsientoService
             return null;
         }
 
-        return ChartOfAccount::where('created_by', $creatorId)
+        return ChartOfAccount::whereIn('created_by', $createdByScope)
             ->where('type', $assetType->id)
             ->where(function ($query) {
                 $query->where('name', 'like', '%Cash%')
