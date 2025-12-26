@@ -38,20 +38,27 @@ class BankAccountController extends Controller
         if (\Auth::user()->can('create bank account')) {
 
             // Fetch chart accounts
-            $chartAccounts = ChartOfAccount::select([\DB::raw('CONCAT(code, " - ", name) AS code_name'),'id'])
-                ->where('parent', '=', 0)
-                ->whereIn('created_by', [\Auth::user()->creatorId(), 1])
-                ->get()
+            $chartAccountsQuery = ChartOfAccount::select([\DB::raw('CONCAT(code, " - ", name) AS code_name'),'id'])
+                ->where('parent', '=', 0);
+            if (\Auth::user()->type !== 'super admin') {
+                $chartAccountsQuery->where('created_by', \Auth::user()->creatorId());
+            } else {
+                $chartAccountsQuery->whereIn('created_by', [\Auth::user()->creatorId(), 1]);
+            }
+            $chartAccounts = $chartAccountsQuery->get()
                 ->pluck('code_name', 'id')
                 ->prepend('Select Account', 0);
 
             // Fetch sub-accounts
-            $subAccounts = ChartOfAccount::select(['chart_of_accounts.id', 'chart_of_accounts.code', 'chart_of_accounts.name', 'chart_of_account_parents.account'])
+            $subAccountsQuery = ChartOfAccount::select(['chart_of_accounts.id', 'chart_of_accounts.code', 'chart_of_accounts.name', 'chart_of_account_parents.account'])
                 ->leftjoin('chart_of_account_parents', 'chart_of_accounts.parent', '=', 'chart_of_account_parents.id')
-                ->where('chart_of_accounts.parent', '!=', 0)
-                ->whereIn('chart_of_accounts.created_by', [\Auth::user()->creatorId(), 1])
-                ->get()
-                ->toArray();    
+                ->where('chart_of_accounts.parent', '!=', 0);
+            if (\Auth::user()->type !== 'super admin') {
+                $subAccountsQuery->where('chart_of_accounts.created_by', \Auth::user()->creatorId());
+            } else {
+                $subAccountsQuery->whereIn('chart_of_accounts.created_by', [\Auth::user()->creatorId(), 1]);
+            }
+            $subAccounts = $subAccountsQuery->get()->toArray();    
             
             $customFields = CustomField::where('created_by', '=', \Auth::user()->creatorId())->where('module', '=', 'account')->get();
 
@@ -82,7 +89,7 @@ class BankAccountController extends Controller
             }
 
             $account                  = new BankAccount();
-            $account->chart_account_id = $request->chart_account_id;
+            $account->chart_account_id = $this->resolveChartAccountForTenant((int) $request->chart_account_id);
             $account->holder_name     = $request->holder_name;
             $account->bank_name       = $request->bank_name;
             $account->account_number  = $request->account_number;
@@ -102,6 +109,7 @@ class BankAccountController extends Controller
                 'reference_id' => $account->id,
                 'reference_sub_id' => 0,
                 'date' => date('Y-m-d'),
+                'created_by' => $account->created_by,
             ];
 
             Utility::addTransactionLines($data);
@@ -120,23 +128,30 @@ class BankAccountController extends Controller
             if ($bankAccount->created_by == \Auth::user()->creatorId() || \Auth::user()->type === 'super admin') {
 
                 // Fetch chart accounts
-                $chartAccounts = ChartOfAccount::select([
+                $chartAccountsQuery = ChartOfAccount::select([
                     \DB::raw('CONCAT(code, " - ", name) AS code_name'),
                     'id'
                 ])
-                    ->where('parent', '=', 0)
-                    ->whereIn('created_by', [\Auth::user()->creatorId(), 1])
-                    ->get()
+                    ->where('parent', '=', 0);
+                if (\Auth::user()->type !== 'super admin') {
+                    $chartAccountsQuery->where('created_by', \Auth::user()->creatorId());
+                } else {
+                    $chartAccountsQuery->whereIn('created_by', [\Auth::user()->creatorId(), 1]);
+                }
+                $chartAccounts = $chartAccountsQuery->get()
                     ->pluck('code_name', 'id')
                     ->prepend('Select Account', 0);
 
                 // Fetch sub-accounts
-                $subAccounts = ChartOfAccount::select(['chart_of_accounts.id', 'chart_of_accounts.code', 'chart_of_accounts.name', 'chart_of_account_parents.account'])
+                $subAccountsQuery = ChartOfAccount::select(['chart_of_accounts.id', 'chart_of_accounts.code', 'chart_of_accounts.name', 'chart_of_account_parents.account'])
                     ->leftjoin('chart_of_account_parents', 'chart_of_accounts.parent', '=', 'chart_of_account_parents.id')
-                    ->where('chart_of_accounts.parent', '!=', 0)
-                    ->whereIn('chart_of_accounts.created_by', [\Auth::user()->creatorId(), 1])
-                    ->get()
-                    ->toArray();
+                    ->where('chart_of_accounts.parent', '!=', 0);
+                if (\Auth::user()->type !== 'super admin') {
+                    $subAccountsQuery->where('chart_of_accounts.created_by', \Auth::user()->creatorId());
+                } else {
+                    $subAccountsQuery->whereIn('chart_of_accounts.created_by', [\Auth::user()->creatorId(), 1]);
+                }
+                $subAccounts = $subAccountsQuery->get()->toArray();
 
                 $bankAccount->customField = CustomField::getData($bankAccount, 'account');
                 $customFields             = CustomField::where('created_by', '=', \Auth::user()->creatorId())->where('module', '=', 'account')->get();
@@ -171,7 +186,7 @@ class BankAccountController extends Controller
                 return redirect()->route('bank-account.index')->with('error', $messages->first());
             }
 
-            $bankAccount->chart_account_id = $request->chart_account_id;
+            $bankAccount->chart_account_id = $this->resolveChartAccountForTenant((int) $request->chart_account_id);
             $bankAccount->holder_name     = $request->holder_name;
             $bankAccount->bank_name       = $request->bank_name;
             $bankAccount->account_number  = $request->account_number;
@@ -194,6 +209,7 @@ class BankAccountController extends Controller
                 'reference_id' => $bankAccount->id,
                 'reference_sub_id' => 0,
                 'date' => date('Y-m-d'),
+                'created_by' => $bankAccount->created_by,
             ];
 
             Utility::addTransactionLines($data);
@@ -230,5 +246,37 @@ class BankAccountController extends Controller
         } else {
             return redirect()->back()->with('error', __('Permission denied.'));
         }
+    }
+
+    private function resolveChartAccountForTenant(int $accountId): int
+    {
+        $account = ChartOfAccount::find($accountId);
+        if (!$account) {
+            return $accountId;
+        }
+
+        $creatorId = \Auth::user()->creatorId();
+        if ((int) $account->created_by === $creatorId) {
+            return $account->id;
+        }
+
+        if (\Auth::user()->type === 'super admin') {
+            return $account->id;
+        }
+
+        $tenantAccount = ChartOfAccount::firstOrCreate(
+            [
+                'created_by' => $creatorId,
+                'name' => $account->name,
+            ],
+            [
+                'code' => $account->code,
+                'type' => $account->type,
+                'sub_type' => $account->sub_type,
+                'is_enabled' => $account->is_enabled ?? 1,
+            ]
+        );
+
+        return $tenantAccount->id;
     }
 }

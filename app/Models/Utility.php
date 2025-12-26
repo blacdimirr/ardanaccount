@@ -3839,7 +3839,7 @@ class Utility extends Model
             $transactionLines->credit = 0;
             $transactionLines->debit = $data['transaction_amount'];
         }
-        $transactionLines->created_by = \Auth::user()->creatorId();
+        $transactionLines->created_by = $data['created_by'] ?? \Auth::user()->creatorId();
         $transactionLines->save();
     }
 
