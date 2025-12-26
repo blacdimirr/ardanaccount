@@ -16,6 +16,7 @@ class Empleado extends Model
         'tipo_vinculo',
         'tipo_contribuyente',
         'unidad_servicio',
+        'servicio_id',
         'salario',
         'created_by',
     ];
@@ -23,6 +24,11 @@ class Empleado extends Model
     public function detallesNomina()
     {
         return $this->hasMany(NominaDetalle::class, 'empleado_id');
+    }
+
+    public function servicioUnidad()
+    {
+        return $this->belongsTo(ServicioUnidad::class, 'servicio_id');
     }
 
     public function getNombreCompletoAttribute()
