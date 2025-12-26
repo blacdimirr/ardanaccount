@@ -69,6 +69,15 @@
                                                     </div>
                                                 @endcan
                                                 @can('nomina_periodos_manage')
+                                                    <div class="action-btn me-2">
+                                                        <a href="{{ route('nomina-periodos.preview-asiento', $periodo->id) }}"
+                                                            class="mx-3 btn btn-sm align-items-center bg-primary"
+                                                            data-bs-toggle="tooltip" data-original-title="{{ __('Asiento por servicio') }}">
+                                                            <i class="ti ti-list-details text-white"></i>
+                                                        </a>
+                                                    </div>
+                                                @endcan
+                                                @can('nomina_periodos_manage')
                                                     <div class="action-btn">
                                                         {!! Form::open(['method' => 'DELETE', 'route' => ['nomina-periodos.destroy', $periodo->id], 'id' => 'delete-form-' . $periodo->id]) !!}
                                                         <a href="#" class="mx-3 btn btn-sm align-items-center bs-pass-para bg-danger"
