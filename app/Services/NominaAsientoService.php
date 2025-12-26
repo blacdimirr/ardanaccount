@@ -50,6 +50,10 @@ class NominaAsientoService
                 $resumen[$key]['gastos'] += (float) $detalle->monto;
             } elseif ($concepto->tipo === 'descuento') {
                 $resumen[$key]['descuentos'] += (float) $detalle->monto;
+            } elseif ($concepto->tipo === 'aporte') {
+                $monto = (float) $detalle->monto;
+                $resumen[$key]['gastos'] += $monto;
+                $resumen[$key]['descuentos'] += $monto;
             }
         }
 
