@@ -10,12 +10,30 @@
             {{ Form::text('nombre', null, ['class' => 'form-control', 'required' => 'required']) }}
         </div>
         <div class="form-group col-md-6">
+            {{ Form::label('nomina_periodo_id', __('Periodo de nómina'), ['class' => 'form-label']) }}
+            {{ Form::select('nomina_periodo_id', ['' => __('Todos los periodos')] + $periodos->pluck('nombre', 'id')->toArray(), $concepto->nomina_periodo_id, ['class' => 'form-control select']) }}
+        </div>
+        <div class="form-group col-md-6">
             {{ Form::label('tipo', __('Tipo'), ['class' => 'form-label']) }}<x-required></x-required>
             {{ Form::select('tipo', $tipos, null, ['class' => 'form-control select', 'required' => 'required']) }}
         </div>
         <div class="form-group col-md-6">
             {{ Form::label('naturaleza', __('Naturaleza'), ['class' => 'form-label']) }}<x-required></x-required>
             {{ Form::text('naturaleza', null, ['class' => 'form-control', 'required' => 'required']) }}
+        </div>
+        <div class="form-group col-md-6">
+            {{ Form::label('monto', __('Valor/Monto'), ['class' => 'form-label']) }}
+            {{ Form::number('monto', $concepto->monto ?? 0, ['class' => 'form-control', 'step' => '0.01', 'min' => '0']) }}
+        </div>
+        <div class="form-group col-md-6 d-flex flex-column justify-content-end">
+            <div class="form-check mb-2">
+                {{ Form::checkbox('aplica_isr', 1, (bool) $concepto->aplica_isr, ['class' => 'form-check-input', 'id' => 'aplica_isr']) }}
+                {{ Form::label('aplica_isr', __('Aplica ISR'), ['class' => 'form-check-label']) }}
+            </div>
+            <div class="form-check">
+                {{ Form::checkbox('aplica_tss', 1, (bool) $concepto->aplica_tss, ['class' => 'form-check-input', 'id' => 'aplica_tss']) }}
+                {{ Form::label('aplica_tss', __('Aplica TSS'), ['class' => 'form-check-label']) }}
+            </div>
         </div>
     </div>
 </div>

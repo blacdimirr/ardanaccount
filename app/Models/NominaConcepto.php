@@ -13,6 +13,10 @@ class NominaConcepto extends Model
         'nombre',
         'tipo',
         'naturaleza',
+        'monto',
+        'aplica_isr',
+        'aplica_tss',
+        'nomina_periodo_id',
         'created_by',
     ];
 
@@ -21,6 +25,17 @@ class NominaConcepto extends Model
         'descuento' => 'Descuento',
         'aporte' => 'Aporte',
     ];
+
+    protected $casts = [
+        'monto' => 'decimal:2',
+        'aplica_isr' => 'boolean',
+        'aplica_tss' => 'boolean',
+    ];
+
+    public function periodo()
+    {
+        return $this->belongsTo(NominaPeriodo::class, 'nomina_periodo_id');
+    }
 
     public function detallesNomina()
     {
