@@ -20,7 +20,12 @@ class BankAccountController extends Controller
     public function index()
     {
         if (\Auth::user()->can('create bank account')) {
-            $accounts = BankAccount::with('chartAccount')->where('created_by', '=', \Auth::user()->creatorId())->get();
+            $accountsQuery = BankAccount::with('chartAccount');
+            if (!\Auth::user()->type || \Auth::user()->type !== 'super admin') {
+                $accountsQuery->where('created_by', '=', \Auth::user()->creatorId());
+            }
+
+            $accounts = $accountsQuery->get();
 
             return view('bankAccount.index', compact('accounts'));
         } else {
@@ -112,7 +117,7 @@ class BankAccountController extends Controller
     public function edit(BankAccount $bankAccount)
     {
         if (\Auth::user()->can('edit bank account')) {
-            if ($bankAccount->created_by == \Auth::user()->creatorId()) {
+            if ($bankAccount->created_by == \Auth::user()->creatorId() || \Auth::user()->type === 'super admin') {
 
                 // Fetch chart accounts
                 $chartAccounts = ChartOfAccount::select([
@@ -173,7 +178,11 @@ class BankAccountController extends Controller
             $bankAccount->opening_balance = $request->opening_balance ? $request->opening_balance : 0;
             $bankAccount->contact_number  = $request->contact_number ? $request->contact_number : '-';
             $bankAccount->bank_address    = $request->bank_address ? $request->bank_address : '-';
-            $bankAccount->created_by      = \Auth::user()->creatorId();
+            if ($bankAccount->created_by != \Auth::user()->creatorId() && \Auth::user()->type === 'super admin') {
+                $bankAccount->created_by = $bankAccount->created_by;
+            } else {
+                $bankAccount->created_by = \Auth::user()->creatorId();
+            }
             $bankAccount->save();
             CustomField::saveData($bankAccount, $request->customField);
 
@@ -199,7 +208,7 @@ class BankAccountController extends Controller
     public function destroy(BankAccount $bankAccount)
     {
         if (\Auth::user()->can('delete bank account')) {
-            if ($bankAccount->created_by == \Auth::user()->creatorId()) {
+            if ($bankAccount->created_by == \Auth::user()->creatorId() || \Auth::user()->type === 'super admin') {
                 $revenue        = Revenue::where('account_id', $bankAccount->id)->first();
                 $invoicePayment = InvoicePayment::where('account_id', $bankAccount->id)->first();
                 $transaction    = Transaction::where('account', $bankAccount->id)->first();

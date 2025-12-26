@@ -221,6 +221,11 @@ class NominaAsientoService
             return $this->resolveAccountForTenant($account, $creatorId);
         }
 
+        $account = $this->ensureLiabilityTemplate($creatorId, $createdByScope);
+        if ($account) {
+            return $account;
+        }
+
         $type = ChartOfAccountType::whereIn('created_by', $createdByScope)
             ->where('name', 'Liabilities')
             ->first();
@@ -334,5 +339,45 @@ class NominaAsientoService
         );
 
         return $tenantAccount->id;
+    }
+
+    private function ensureLiabilityTemplate(int $creatorId, array $createdByScope): ?int
+    {
+        $template = ChartOfAccount::whereIn('created_by', $createdByScope)
+            ->where('name', 'Accr. Benefits - Payroll Taxes')
+            ->orderBy('created_by')
+            ->first();
+
+        if ($template) {
+            return $this->resolveAccountForTenant($template, $creatorId);
+        }
+
+        $type = ChartOfAccountType::whereIn('created_by', $createdByScope)
+            ->where('name', 'Liabilities')
+            ->first();
+
+        if (!$type) {
+            return null;
+        }
+
+        $subType = \App\Models\ChartOfAccountSubType::whereIn('created_by', $createdByScope)
+            ->where('type', $type->id)
+            ->where('name', 'Current Liabilities')
+            ->first();
+
+        $account = ChartOfAccount::firstOrCreate(
+            [
+                'created_by' => $creatorId,
+                'name' => 'Accr. Benefits - Payroll Taxes',
+            ],
+            [
+                'code' => '2340',
+                'type' => $type->id,
+                'sub_type' => $subType?->id,
+                'is_enabled' => 1,
+            ]
+        );
+
+        return $account->id;
     }
 }
