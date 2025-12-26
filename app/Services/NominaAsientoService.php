@@ -211,15 +211,17 @@ class NominaAsientoService
 
     private function getLiabilityAccountId(int $creatorId): ?int
     {
-        $account = ChartOfAccount::where('created_by', $creatorId)
+        $createdByScope = [$creatorId, 1];
+
+        $account = ChartOfAccount::whereIn('created_by', $createdByScope)
             ->where('name', 'Accr. Benefits - Payroll Taxes')
             ->first();
 
         if ($account) {
-            return $account->id;
+            return $this->resolveAccountForTenant($account, $creatorId);
         }
 
-        $type = ChartOfAccountType::where('created_by', $creatorId)
+        $type = ChartOfAccountType::whereIn('created_by', $createdByScope)
             ->where('name', 'Liabilities')
             ->first();
 
@@ -227,26 +229,78 @@ class NominaAsientoService
             return null;
         }
 
-        return ChartOfAccount::where('created_by', $creatorId)
+        $account = ChartOfAccount::whereIn('created_by', $createdByScope)
             ->where('type', $type->id)
             ->where('name', 'like', '%Payroll%')
             ->orderBy('code')
-            ->value('id');
+            ->first();
+
+        return $this->resolveAccountForTenant($account, $creatorId);
     }
 
     private function getBankAccountId(int $creatorId): ?int
     {
         $bankAccount = BankAccount::where('created_by', $creatorId)
             ->whereNotNull('chart_account_id')
+            ->orderBy('id')
             ->first();
+        $createdByScope = [$creatorId, 1];
 
-        if ($bankAccount) {
+        if ($bankAccount?->chart_account_id) {
             return $bankAccount->chart_account_id;
         }
 
-        return ChartOfAccount::where('created_by', $creatorId)
-            ->where('name', 'Checking Account')
-            ->value('id');
+        $bankAccount = BankAccount::where('created_by', $creatorId)->orderBy('id')->first();
+        if ($bankAccount) {
+            $matchedAccount = ChartOfAccount::whereIn('created_by', $createdByScope)
+                ->whereIn('name', array_filter([
+                    $bankAccount->holder_name,
+                    $bankAccount->bank_name,
+                ]))
+                ->orderBy('code')
+                ->first();
+
+            if ($matchedAccount) {
+                $resolvedId = $this->resolveAccountForTenant($matchedAccount, $creatorId);
+
+                if ($resolvedId) {
+                    $bankAccount->chart_account_id = $resolvedId;
+                    $bankAccount->save();
+
+                    return $resolvedId;
+                }
+
+                return null;
+            }
+        }
+
+        $account = ChartOfAccount::whereIn('created_by', $createdByScope)
+            ->whereIn('name', ['Checking Account', 'Petty Cash'])
+            ->orderBy('code')
+            ->first();
+
+        if ($account) {
+            return $this->resolveAccountForTenant($account, $creatorId);
+        }
+
+        $assetType = ChartOfAccountType::whereIn('created_by', $createdByScope)
+            ->where('name', 'Assets')
+            ->first();
+
+        if (!$assetType) {
+            return null;
+        }
+
+        $account = ChartOfAccount::whereIn('created_by', $createdByScope)
+            ->where('type', $assetType->id)
+            ->where(function ($query) {
+                $query->where('name', 'like', '%Cash%')
+                    ->orWhere('name', 'like', '%Bank%');
+            })
+            ->orderBy('code')
+            ->first();
+
+        return $this->resolveAccountForTenant($account, $creatorId);
     }
 
     private function nextJournalNumber(int $creatorId): int
@@ -254,5 +308,31 @@ class NominaAsientoService
         $latest = JournalEntry::where('created_by', $creatorId)->latest()->first();
 
         return $latest ? $latest->journal_id + 1 : 1;
+    }
+
+    private function resolveAccountForTenant(?ChartOfAccount $account, int $creatorId): ?int
+    {
+        if (!$account) {
+            return null;
+        }
+
+        if ((int) $account->created_by === $creatorId) {
+            return $account->id;
+        }
+
+        $tenantAccount = ChartOfAccount::firstOrCreate(
+            [
+                'created_by' => $creatorId,
+                'name' => $account->name,
+            ],
+            [
+                'code' => $account->code,
+                'type' => $account->type,
+                'sub_type' => $account->sub_type,
+                'is_enabled' => $account->is_enabled ?? 1,
+            ]
+        );
+
+        return $tenantAccount->id;
     }
 }
