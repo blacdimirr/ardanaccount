@@ -1711,19 +1711,27 @@ class UsersTableSeeder extends Seeder
         );
         $accountant->assignRole($accountantRole);
 
-        \App\Models\BankAccount::create(
+        Utility::chartOfAccountTypeData();
+        Utility::chartOfAccountData($company);
+        $cashAccountId = \App\Models\ChartOfAccount::where('created_by', $company->id)
+            ->whereIn('name', ['Checking Account', 'Petty Cash'])
+            ->orderBy('code')
+            ->value('id');
+
+        \App\Models\BankAccount::updateOrCreate(
             [
                 'holder_name' => 'Cash',
+                'created_by' => $company->id,
+            ],
+            [
                 'bank_name' => '',
                 'account_number' => '-',
                 'opening_balance' => '0.00',
                 'contact_number' => '-',
                 'bank_address' => '-',
-                'created_by' => $company->id,
+                'chart_account_id' => $cashAccountId,
             ]
         );
-        Utility::chartOfAccountTypeData();
-        Utility::chartOfAccountData($company);
         $company->defaultEmail();
         $company->userDefaultData();
         Utility::languagecreate();
