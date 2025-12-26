@@ -236,13 +236,17 @@ class NominaAsientoService
 
     private function getBankAccountId(int $creatorId): ?int
     {
-        $bankAccount = BankAccount::where('created_by', $creatorId)->first();
+        $bankAccount = BankAccount::where('created_by', $creatorId)
+            ->whereNotNull('chart_account_id')
+            ->orderBy('id')
+            ->first();
         $createdByScope = [$creatorId, 1];
 
         if ($bankAccount?->chart_account_id) {
             return $bankAccount->chart_account_id;
         }
 
+        $bankAccount = BankAccount::where('created_by', $creatorId)->orderBy('id')->first();
         if ($bankAccount) {
             $matchedAccount = ChartOfAccount::whereIn('created_by', $createdByScope)
                 ->whereIn('name', array_filter([
