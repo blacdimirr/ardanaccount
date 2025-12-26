@@ -128,6 +128,7 @@ class NominaAsientoService
                 'reference_id' => $journalEntry->id,
                 'reference_sub_id' => $journalItem->id,
                 'date' => $journalEntry->date,
+                'created_by' => $creatorId,
             ]);
         }
 
@@ -148,6 +149,7 @@ class NominaAsientoService
                 'reference_id' => $journalEntry->id,
                 'reference_sub_id' => $journalItem->id,
                 'date' => $journalEntry->date,
+                'created_by' => $creatorId,
             ]);
         }
 
@@ -168,7 +170,17 @@ class NominaAsientoService
                 'reference_id' => $journalEntry->id,
                 'reference_sub_id' => $journalItem->id,
                 'date' => $journalEntry->date,
+                'created_by' => $creatorId,
             ]);
+
+            $bankAccount = BankAccount::where('created_by', $creatorId)
+                ->where('chart_account_id', $bankAccountId)
+                ->orderBy('id')
+                ->first();
+
+            if ($bankAccount) {
+                Utility::bankAccountBalance($bankAccount->id, $resumen['totales']['neto'], 'debit');
+            }
         }
 
         $periodo->journal_entry_id = $journalEntry->id;
