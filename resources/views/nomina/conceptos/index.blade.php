@@ -31,6 +31,7 @@
                                 <tr>
                                     <th>{{ __('Código') }}</th>
                                     <th>{{ __('Nombre') }}</th>
+                                    <th>{{ __('Periodo') }}</th>
                                     <th>{{ __('Tipo') }}</th>
                                     <th>{{ __('Naturaleza') }}</th>
                                     <th class="text-end">{{ __('Valor/Monto') }}</th>
@@ -44,6 +45,7 @@
                                     <tr>
                                         <td>{{ $concepto->codigo }}</td>
                                         <td>{{ $concepto->nombre }}</td>
+                                        <td>{{ $concepto->periodo?->nombre ?? __('Todos') }}</td>
                                         <td>{{ __(ucfirst($concepto->tipo)) }}</td>
                                         <td>{{ $concepto->naturaleza }}</td>
                                         <td class="text-end">{{ number_format($concepto->monto ?? 0, 2) }}</td>

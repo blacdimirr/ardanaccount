@@ -16,6 +16,7 @@ class NominaConcepto extends Model
         'monto',
         'aplica_isr',
         'aplica_tss',
+        'nomina_periodo_id',
         'created_by',
     ];
 
@@ -30,6 +31,11 @@ class NominaConcepto extends Model
         'aplica_isr' => 'boolean',
         'aplica_tss' => 'boolean',
     ];
+
+    public function periodo()
+    {
+        return $this->belongsTo(NominaPeriodo::class, 'nomina_periodo_id');
+    }
 
     public function detallesNomina()
     {

@@ -55,14 +55,14 @@ class NominaAportesSsService
         ];
     }
 
-    public function baseImponibleIsr(Empleado $empleado, int $creatorId): float
+    public function baseImponibleIsr(Empleado $empleado, int $creatorId, int $periodoId): float
     {
-        return $this->baseImponibleDesdeSalario($empleado, $creatorId, 'aplica_isr');
+        return $this->baseImponibleDesdeSalario($empleado, $creatorId, 'aplica_isr', $periodoId);
     }
 
-    public function baseImponibleTss(Empleado $empleado, int $creatorId): float
+    public function baseImponibleTss(Empleado $empleado, int $creatorId, int $periodoId): float
     {
-        return $this->baseImponibleDesdeSalario($empleado, $creatorId, 'aplica_tss');
+        return $this->baseImponibleDesdeSalario($empleado, $creatorId, 'aplica_tss', $periodoId);
     }
 
     public function registrarAportesEmpleado(int $periodoId, Empleado $empleado, int $creatorId): array
@@ -70,8 +70,8 @@ class NominaAportesSsService
         $config = $this->getConfig($creatorId);
         $this->asegurarConceptos($creatorId);
 
-        $baseImponibleTss = $this->baseImponibleTss($empleado, $creatorId);
-        $baseImponibleIsr = $this->baseImponibleIsr($empleado, $creatorId);
+        $baseImponibleTss = $this->baseImponibleTss($empleado, $creatorId, $periodoId);
+        $baseImponibleIsr = $this->baseImponibleIsr($empleado, $creatorId, $periodoId);
         $aportes = $this->calcularAportes($baseImponibleTss, $config);
 
         $this->registrarDetalle($periodoId, $empleado->id, $creatorId, 'TSS-EMP', $aportes['tss_empleado']);
@@ -92,8 +92,8 @@ class NominaAportesSsService
     {
         $empleados = \App\Models\Empleado::where('created_by', $creatorId)->get();
         $config = $this->getConfig($creatorId);
-        $conceptosIsr = $this->montoConceptosIsr($creatorId);
-        $conceptosTss = $this->montoConceptosTss($creatorId);
+        $conceptosIsr = $this->montoConceptosIsr($creatorId, $periodoId);
+        $conceptosTss = $this->montoConceptosTss($creatorId, $periodoId);
 
         return $empleados->map(function ($empleado) use ($creatorId, $config, $conceptosIsr, $conceptosTss) {
             $salario = (float) $empleado->salario;
@@ -124,26 +124,31 @@ class NominaAportesSsService
         return round($baseImponible * ($porcentaje / 100), 2);
     }
 
-    private function baseImponibleDesdeSalario(Empleado $empleado, int $creatorId, string $campo): float
+    private function baseImponibleDesdeSalario(Empleado $empleado, int $creatorId, string $campo, int $periodoId): float
     {
-        $montoConceptos = NominaConcepto::where('created_by', $creatorId)
-            ->where($campo, true)
-            ->sum('monto');
+        $montoConceptos = $this->montoConceptosPorPeriodo($creatorId, $periodoId, $campo);
 
         return (float) $empleado->salario + (float) $montoConceptos;
     }
 
-    public function montoConceptosIsr(int $creatorId): float
+    public function montoConceptosIsr(int $creatorId, int $periodoId): float
     {
-        return (float) NominaConcepto::where('created_by', $creatorId)
-            ->where('aplica_isr', true)
-            ->sum('monto');
+        return (float) $this->montoConceptosPorPeriodo($creatorId, $periodoId, 'aplica_isr');
     }
 
-    public function montoConceptosTss(int $creatorId): float
+    public function montoConceptosTss(int $creatorId, int $periodoId): float
+    {
+        return (float) $this->montoConceptosPorPeriodo($creatorId, $periodoId, 'aplica_tss');
+    }
+
+    private function montoConceptosPorPeriodo(int $creatorId, int $periodoId, string $campo): float
     {
         return (float) NominaConcepto::where('created_by', $creatorId)
-            ->where('aplica_tss', true)
+            ->where($campo, true)
+            ->where(function ($query) use ($periodoId) {
+                $query->whereNull('nomina_periodo_id')
+                    ->orWhere('nomina_periodo_id', $periodoId);
+            })
             ->sum('monto');
     }
 

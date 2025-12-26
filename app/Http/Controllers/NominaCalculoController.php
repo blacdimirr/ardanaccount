@@ -32,8 +32,8 @@ class NominaCalculoController extends Controller
             if ($periodoSeleccionado) {
                 $config = $service->getConfig($creatorId);
                 $empleados = Empleado::where('created_by', $creatorId)->get();
-                $conceptosIsr = $service->montoConceptosIsr($creatorId);
-                $conceptosTss = $service->montoConceptosTss($creatorId);
+                $conceptosIsr = $service->montoConceptosIsr($creatorId, $periodoSeleccionado->id);
+                $conceptosTss = $service->montoConceptosTss($creatorId, $periodoSeleccionado->id);
 
                 $calculos = $empleados->map(function ($empleado) use ($service, $isrService, $config, $creatorId, $conceptosIsr, $conceptosTss) {
                     $salario = (float) $empleado->salario;

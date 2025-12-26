@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\NominaConcepto;
+use App\Models\NominaPeriodo;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -14,7 +15,9 @@ class NominaConceptoController extends Controller
             return redirect()->back()->with('error', __('Permission denied.'));
         }
 
-        $conceptos = NominaConcepto::where('created_by', \Auth::user()->creatorId())->get();
+        $conceptos = NominaConcepto::with('periodo')
+            ->where('created_by', \Auth::user()->creatorId())
+            ->get();
 
         return view('nomina.conceptos.index', compact('conceptos'));
     }
@@ -26,8 +29,9 @@ class NominaConceptoController extends Controller
         }
 
         $tipos = NominaConcepto::$tipos;
+        $periodos = NominaPeriodo::where('created_by', \Auth::user()->creatorId())->get();
 
-        return view('nomina.conceptos.create', compact('tipos'));
+        return view('nomina.conceptos.create', compact('tipos', 'periodos'));
     }
 
     public function store(Request $request)
@@ -51,6 +55,7 @@ class NominaConceptoController extends Controller
                 'monto' => 'nullable|numeric',
                 'aplica_isr' => 'nullable|boolean',
                 'aplica_tss' => 'nullable|boolean',
+                'nomina_periodo_id' => 'nullable|integer',
             ]
         );
 
@@ -68,6 +73,7 @@ class NominaConceptoController extends Controller
         $concepto->monto = $request->input('monto', 0);
         $concepto->aplica_isr = $request->boolean('aplica_isr');
         $concepto->aplica_tss = $request->boolean('aplica_tss');
+        $concepto->nomina_periodo_id = $this->resolverPeriodo($request->nomina_periodo_id);
         $concepto->created_by = \Auth::user()->creatorId();
         $concepto->save();
 
@@ -86,8 +92,9 @@ class NominaConceptoController extends Controller
         }
 
         $tipos = NominaConcepto::$tipos;
+        $periodos = NominaPeriodo::where('created_by', \Auth::user()->creatorId())->get();
 
-        return view('nomina.conceptos.edit', compact('concepto', 'tipos'));
+        return view('nomina.conceptos.edit', compact('concepto', 'tipos', 'periodos'));
     }
 
     public function update(Request $request, $id)
@@ -118,6 +125,7 @@ class NominaConceptoController extends Controller
                 'monto' => 'nullable|numeric',
                 'aplica_isr' => 'nullable|boolean',
                 'aplica_tss' => 'nullable|boolean',
+                'nomina_periodo_id' => 'nullable|integer',
             ]
         );
 
@@ -134,6 +142,7 @@ class NominaConceptoController extends Controller
         $concepto->monto = $request->input('monto', 0);
         $concepto->aplica_isr = $request->boolean('aplica_isr');
         $concepto->aplica_tss = $request->boolean('aplica_tss');
+        $concepto->nomina_periodo_id = $this->resolverPeriodo($request->nomina_periodo_id);
         $concepto->save();
 
         return redirect()->route('nomina-conceptos.index')->with('success', __('Payroll concept successfully updated.'));
@@ -153,5 +162,16 @@ class NominaConceptoController extends Controller
         $concepto->delete();
 
         return redirect()->route('nomina-conceptos.index')->with('success', __('Payroll concept successfully deleted.'));
+    }
+
+    private function resolverPeriodo($periodoId): ?int
+    {
+        if (!$periodoId) {
+            return null;
+        }
+
+        $periodo = NominaPeriodo::where('created_by', \Auth::user()->creatorId())->find($periodoId);
+
+        return $periodo ? $periodo->id : null;
     }
 }

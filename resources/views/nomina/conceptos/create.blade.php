@@ -10,6 +10,10 @@
             {{ Form::text('nombre', '', ['class' => 'form-control', 'required' => 'required', 'placeholder' => __('Ingrese nombre')]) }}
         </div>
         <div class="form-group col-md-6">
+            {{ Form::label('nomina_periodo_id', __('Periodo de nómina'), ['class' => 'form-label']) }}
+            {{ Form::select('nomina_periodo_id', ['' => __('Todos los periodos')] + $periodos->pluck('nombre', 'id')->toArray(), null, ['class' => 'form-control select']) }}
+        </div>
+        <div class="form-group col-md-6">
             {{ Form::label('tipo', __('Tipo'), ['class' => 'form-label']) }}<x-required></x-required>
             {{ Form::select('tipo', $tipos, null, ['class' => 'form-control select', 'required' => 'required']) }}
         </div>
