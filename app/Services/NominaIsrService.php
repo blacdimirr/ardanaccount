@@ -50,7 +50,7 @@ class NominaIsrService
         $this->asegurarConcepto($creatorId);
         $isr = $this->calcularIsr($baseImponible, $empleado, $creatorId);
 
-        $this->registrarDetalle($periodoId, $empleado->id, $creatorId, $isr);
+        $this->registrarDetalle($periodoId, $empleado, $creatorId, $isr);
 
         return $isr;
     }
@@ -103,7 +103,7 @@ class NominaIsrService
         );
     }
 
-    private function registrarDetalle(int $periodoId, int $empleadoId, int $creatorId, float $monto): void
+    private function registrarDetalle(int $periodoId, Empleado $empleado, int $creatorId, float $monto): void
     {
         $concepto = NominaConcepto::where('codigo', self::CONCEPTO_ISR)
             ->where('created_by', $creatorId)
@@ -116,12 +116,13 @@ class NominaIsrService
         NominaDetalle::updateOrCreate(
             [
                 'nomina_periodo_id' => $periodoId,
-                'empleado_id' => $empleadoId,
+                'empleado_id' => $empleado->id,
                 'nomina_concepto_id' => $concepto->id,
                 'created_by' => $creatorId,
             ],
             [
                 'monto' => $monto,
+                'servicio_id' => $empleado->servicio_id,
             ]
         );
     }

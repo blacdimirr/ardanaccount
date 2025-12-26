@@ -20,7 +20,12 @@ class BankAccountController extends Controller
     public function index()
     {
         if (\Auth::user()->can('create bank account')) {
-            $accounts = BankAccount::with('chartAccount')->where('created_by', '=', \Auth::user()->creatorId())->get();
+            $accountsQuery = BankAccount::with('chartAccount');
+            if (!\Auth::user()->type || \Auth::user()->type !== 'super admin') {
+                $accountsQuery->where('created_by', '=', \Auth::user()->creatorId());
+            }
+
+            $accounts = $accountsQuery->get();
 
             return view('bankAccount.index', compact('accounts'));
         } else {
@@ -33,10 +38,20 @@ class BankAccountController extends Controller
         if (\Auth::user()->can('create bank account')) {
 
             // Fetch chart accounts
-            $chartAccounts = ChartOfAccount::select([\DB::raw('CONCAT(code, " - ", name) AS code_name'),'id'])->where('parent', '=', 0)->where('created_by', \Auth::user()->creatorId())->get()->pluck('code_name', 'id')->prepend('Select Account', 0);
+            $chartAccounts = ChartOfAccount::select([\DB::raw('CONCAT(code, " - ", name) AS code_name'),'id'])
+                ->where('parent', '=', 0)
+                ->whereIn('created_by', [\Auth::user()->creatorId(), 1])
+                ->get()
+                ->pluck('code_name', 'id')
+                ->prepend('Select Account', 0);
 
             // Fetch sub-accounts
-            $subAccounts = ChartOfAccount::select(['chart_of_accounts.id', 'chart_of_accounts.code', 'chart_of_accounts.name', 'chart_of_account_parents.account'])->leftjoin('chart_of_account_parents', 'chart_of_accounts.parent', '=', 'chart_of_account_parents.id')->where('chart_of_accounts.parent', '!=', 0)->where('chart_of_accounts.created_by', \Auth::user()->creatorId())->get()->toArray();    
+            $subAccounts = ChartOfAccount::select(['chart_of_accounts.id', 'chart_of_accounts.code', 'chart_of_accounts.name', 'chart_of_account_parents.account'])
+                ->leftjoin('chart_of_account_parents', 'chart_of_accounts.parent', '=', 'chart_of_account_parents.id')
+                ->where('chart_of_accounts.parent', '!=', 0)
+                ->whereIn('chart_of_accounts.created_by', [\Auth::user()->creatorId(), 1])
+                ->get()
+                ->toArray();    
             
             $customFields = CustomField::where('created_by', '=', \Auth::user()->creatorId())->where('module', '=', 'account')->get();
 
@@ -102,16 +117,26 @@ class BankAccountController extends Controller
     public function edit(BankAccount $bankAccount)
     {
         if (\Auth::user()->can('edit bank account')) {
-            if ($bankAccount->created_by == \Auth::user()->creatorId()) {
+            if ($bankAccount->created_by == \Auth::user()->creatorId() || \Auth::user()->type === 'super admin') {
 
                 // Fetch chart accounts
                 $chartAccounts = ChartOfAccount::select([
                     \DB::raw('CONCAT(code, " - ", name) AS code_name'),
                     'id'
-                ])->where('parent', '=', 0)->where('created_by', \Auth::user()->creatorId())->get()->pluck('code_name', 'id')->prepend('Select Account', 0);
+                ])
+                    ->where('parent', '=', 0)
+                    ->whereIn('created_by', [\Auth::user()->creatorId(), 1])
+                    ->get()
+                    ->pluck('code_name', 'id')
+                    ->prepend('Select Account', 0);
 
                 // Fetch sub-accounts
-                $subAccounts = ChartOfAccount::select(['chart_of_accounts.id', 'chart_of_accounts.code', 'chart_of_accounts.name', 'chart_of_account_parents.account'])->leftjoin('chart_of_account_parents', 'chart_of_accounts.parent', '=', 'chart_of_account_parents.id')->where('chart_of_accounts.parent', '!=', 0)->where('chart_of_accounts.created_by', \Auth::user()->creatorId())->get()->toArray();
+                $subAccounts = ChartOfAccount::select(['chart_of_accounts.id', 'chart_of_accounts.code', 'chart_of_accounts.name', 'chart_of_account_parents.account'])
+                    ->leftjoin('chart_of_account_parents', 'chart_of_accounts.parent', '=', 'chart_of_account_parents.id')
+                    ->where('chart_of_accounts.parent', '!=', 0)
+                    ->whereIn('chart_of_accounts.created_by', [\Auth::user()->creatorId(), 1])
+                    ->get()
+                    ->toArray();
 
                 $bankAccount->customField = CustomField::getData($bankAccount, 'account');
                 $customFields             = CustomField::where('created_by', '=', \Auth::user()->creatorId())->where('module', '=', 'account')->get();
@@ -153,7 +178,11 @@ class BankAccountController extends Controller
             $bankAccount->opening_balance = $request->opening_balance ? $request->opening_balance : 0;
             $bankAccount->contact_number  = $request->contact_number ? $request->contact_number : '-';
             $bankAccount->bank_address    = $request->bank_address ? $request->bank_address : '-';
-            $bankAccount->created_by      = \Auth::user()->creatorId();
+            if ($bankAccount->created_by != \Auth::user()->creatorId() && \Auth::user()->type === 'super admin') {
+                $bankAccount->created_by = $bankAccount->created_by;
+            } else {
+                $bankAccount->created_by = \Auth::user()->creatorId();
+            }
             $bankAccount->save();
             CustomField::saveData($bankAccount, $request->customField);
 
@@ -179,7 +208,7 @@ class BankAccountController extends Controller
     public function destroy(BankAccount $bankAccount)
     {
         if (\Auth::user()->can('delete bank account')) {
-            if ($bankAccount->created_by == \Auth::user()->creatorId()) {
+            if ($bankAccount->created_by == \Auth::user()->creatorId() || \Auth::user()->type === 'super admin') {
                 $revenue        = Revenue::where('account_id', $bankAccount->id)->first();
                 $invoicePayment = InvoicePayment::where('account_id', $bankAccount->id)->first();
                 $transaction    = Transaction::where('account', $bankAccount->id)->first();
