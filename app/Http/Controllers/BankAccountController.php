@@ -33,10 +33,20 @@ class BankAccountController extends Controller
         if (\Auth::user()->can('create bank account')) {
 
             // Fetch chart accounts
-            $chartAccounts = ChartOfAccount::select([\DB::raw('CONCAT(code, " - ", name) AS code_name'),'id'])->where('parent', '=', 0)->where('created_by', \Auth::user()->creatorId())->get()->pluck('code_name', 'id')->prepend('Select Account', 0);
+            $chartAccounts = ChartOfAccount::select([\DB::raw('CONCAT(code, " - ", name) AS code_name'),'id'])
+                ->where('parent', '=', 0)
+                ->whereIn('created_by', [\Auth::user()->creatorId(), 1])
+                ->get()
+                ->pluck('code_name', 'id')
+                ->prepend('Select Account', 0);
 
             // Fetch sub-accounts
-            $subAccounts = ChartOfAccount::select(['chart_of_accounts.id', 'chart_of_accounts.code', 'chart_of_accounts.name', 'chart_of_account_parents.account'])->leftjoin('chart_of_account_parents', 'chart_of_accounts.parent', '=', 'chart_of_account_parents.id')->where('chart_of_accounts.parent', '!=', 0)->where('chart_of_accounts.created_by', \Auth::user()->creatorId())->get()->toArray();    
+            $subAccounts = ChartOfAccount::select(['chart_of_accounts.id', 'chart_of_accounts.code', 'chart_of_accounts.name', 'chart_of_account_parents.account'])
+                ->leftjoin('chart_of_account_parents', 'chart_of_accounts.parent', '=', 'chart_of_account_parents.id')
+                ->where('chart_of_accounts.parent', '!=', 0)
+                ->whereIn('chart_of_accounts.created_by', [\Auth::user()->creatorId(), 1])
+                ->get()
+                ->toArray();    
             
             $customFields = CustomField::where('created_by', '=', \Auth::user()->creatorId())->where('module', '=', 'account')->get();
 
@@ -108,10 +118,20 @@ class BankAccountController extends Controller
                 $chartAccounts = ChartOfAccount::select([
                     \DB::raw('CONCAT(code, " - ", name) AS code_name'),
                     'id'
-                ])->where('parent', '=', 0)->where('created_by', \Auth::user()->creatorId())->get()->pluck('code_name', 'id')->prepend('Select Account', 0);
+                ])
+                    ->where('parent', '=', 0)
+                    ->whereIn('created_by', [\Auth::user()->creatorId(), 1])
+                    ->get()
+                    ->pluck('code_name', 'id')
+                    ->prepend('Select Account', 0);
 
                 // Fetch sub-accounts
-                $subAccounts = ChartOfAccount::select(['chart_of_accounts.id', 'chart_of_accounts.code', 'chart_of_accounts.name', 'chart_of_account_parents.account'])->leftjoin('chart_of_account_parents', 'chart_of_accounts.parent', '=', 'chart_of_account_parents.id')->where('chart_of_accounts.parent', '!=', 0)->where('chart_of_accounts.created_by', \Auth::user()->creatorId())->get()->toArray();
+                $subAccounts = ChartOfAccount::select(['chart_of_accounts.id', 'chart_of_accounts.code', 'chart_of_accounts.name', 'chart_of_account_parents.account'])
+                    ->leftjoin('chart_of_account_parents', 'chart_of_accounts.parent', '=', 'chart_of_account_parents.id')
+                    ->where('chart_of_accounts.parent', '!=', 0)
+                    ->whereIn('chart_of_accounts.created_by', [\Auth::user()->creatorId(), 1])
+                    ->get()
+                    ->toArray();
 
                 $bankAccount->customField = CustomField::getData($bankAccount, 'account');
                 $customFields             = CustomField::where('created_by', '=', \Auth::user()->creatorId())->where('module', '=', 'account')->get();

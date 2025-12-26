@@ -34,8 +34,14 @@
             {{ Form::select('tipo_contribuyente', $tiposContribuyente, null, ['class' => 'form-control select', 'required' => 'required']) }}
         </div>
         <div class="form-group col-md-6">
-            {{ Form::label('unidad_servicio', __('Unidad/Servicio'), ['class' => 'form-label']) }}<x-required></x-required>
-            {{ Form::text('unidad_servicio', null, ['class' => 'form-control', 'required' => 'required']) }}
+            {{ Form::label('servicio_id', __('Servicio/Unidad registrada'), ['class' => 'form-label']) }}
+            {{ Form::select('servicio_id', ['' => __('Seleccionar servicio')] + $servicios->pluck('nombre', 'id')->toArray(), $empleado->servicio_id, ['class' => 'form-control select']) }}
+            <small class="text-muted">{{ __('Seleccione un servicio para asociarlo al empleado si está registrado.') }}</small>
+        </div>
+        <div class="form-group col-md-6">
+            {{ Form::label('unidad_servicio', __('Unidad/Servicio'), ['class' => 'form-label']) }}
+            {{ Form::text('unidad_servicio', null, ['class' => 'form-control']) }}
+            <small class="text-muted">{{ __('Este campo es obligatorio si no selecciona un servicio registrado.') }}</small>
         </div>
         <div class="form-group col-md-6">
             {{ Form::label('salario', __('Salario base'), ['class' => 'form-label']) }}<x-required></x-required>

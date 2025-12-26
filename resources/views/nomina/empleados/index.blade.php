@@ -41,7 +41,7 @@
                                     <tr>
                                         <td>{{ $empleado->nombre_completo }}</td>
                                         <td>{{ __(ucfirst($empleado->tipo_vinculo)) }}</td>
-                                        <td>{{ $empleado->unidad_servicio }}</td>
+                                        <td>{{ $empleado->servicioUnidad?->nombre ?? $empleado->unidad_servicio }}</td>
                                         <td class="text-end">{{ number_format($empleado->salario, 2) }}</td>
                                         <td class="Action">
                                             <span>
