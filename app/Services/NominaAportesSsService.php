@@ -74,12 +74,12 @@ class NominaAportesSsService
         $baseImponibleIsr = $this->baseImponibleIsr($empleado, $creatorId, $periodoId);
         $aportes = $this->calcularAportes($baseImponibleTss, $config);
 
-        $this->registrarDetalle($periodoId, $empleado->id, $creatorId, 'TSS-EMP', $aportes['tss_empleado']);
-        $this->registrarDetalle($periodoId, $empleado->id, $creatorId, 'INFOTEP-EMP', $aportes['infotep_empleado']);
-        $this->registrarDetalle($periodoId, $empleado->id, $creatorId, 'IDOPPRIL-EMP', $aportes['idoppril_empleado']);
-        $this->registrarDetalle($periodoId, $empleado->id, $creatorId, 'TSS-EMPRESA', $aportes['tss_empleador']);
-        $this->registrarDetalle($periodoId, $empleado->id, $creatorId, 'INFOTEP-EMPRESA', $aportes['infotep_empleador']);
-        $this->registrarDetalle($periodoId, $empleado->id, $creatorId, 'IDOPPRIL-EMPRESA', $aportes['idoppril_empleador']);
+        $this->registrarDetalle($periodoId, $empleado, $creatorId, 'TSS-EMP', $aportes['tss_empleado']);
+        $this->registrarDetalle($periodoId, $empleado, $creatorId, 'INFOTEP-EMP', $aportes['infotep_empleado']);
+        $this->registrarDetalle($periodoId, $empleado, $creatorId, 'IDOPPRIL-EMP', $aportes['idoppril_empleado']);
+        $this->registrarDetalle($periodoId, $empleado, $creatorId, 'TSS-EMPRESA', $aportes['tss_empleador']);
+        $this->registrarDetalle($periodoId, $empleado, $creatorId, 'INFOTEP-EMPRESA', $aportes['infotep_empleador']);
+        $this->registrarDetalle($periodoId, $empleado, $creatorId, 'IDOPPRIL-EMPRESA', $aportes['idoppril_empleador']);
 
         return [
             'base_imponible_isr' => $baseImponibleIsr,
@@ -184,7 +184,7 @@ class NominaAportesSsService
         }
     }
 
-    private function registrarDetalle(int $periodoId, int $empleadoId, int $creatorId, string $codigoConcepto, float $monto): void
+    private function registrarDetalle(int $periodoId, Empleado $empleado, int $creatorId, string $codigoConcepto, float $monto): void
     {
         $concepto = NominaConcepto::where('codigo', $codigoConcepto)
             ->where('created_by', $creatorId)
@@ -197,12 +197,13 @@ class NominaAportesSsService
         NominaDetalle::updateOrCreate(
             [
                 'nomina_periodo_id' => $periodoId,
-                'empleado_id' => $empleadoId,
+                'empleado_id' => $empleado->id,
                 'nomina_concepto_id' => $concepto->id,
                 'created_by' => $creatorId,
             ],
             [
                 'monto' => $monto,
+                'servicio_id' => $empleado->servicio_id,
             ]
         );
     }

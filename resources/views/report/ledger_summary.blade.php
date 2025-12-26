@@ -278,6 +278,22 @@
                                                 </tr>
                                             @endif
 
+                                            @if ($account->reference == 'Nomina')
+                                                <tr>
+                                                    <td>{{ $account->account_name }}</td>
+                                                    <td>{{ '-' }}</td>
+                                                    <td>{{ __('Nómina') }} #{{ AUth::user()->journalNumberFormat($account->reference_id) }}</td>
+                                                    <td>{{ $account->date }}</td>
+                                                    <td>{{ \Auth::user()->priceFormat($account->debit) }}</td>
+                                                    @php
+                                                        $total = $account->credit - $account->debit;
+                                                        $balance += $total;
+                                                    @endphp
+                                                    <td>{{ \Auth::user()->priceFormat($account->credit) }}</td>
+                                                    <td>{{ \Auth::user()->priceFormat($balance) }}</td>
+                                                </tr>
+                                            @endif
+
                                             @if ($account->reference == 'Journal')
                                                 <tr>
                                                     <td>{{ $account->account_name }}</td>
