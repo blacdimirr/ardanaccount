@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Empleado;
+use App\Models\ServicioUnidad;
 use Illuminate\Http\Request;
 
 class NominaEmpleadoController extends Controller
@@ -13,7 +14,9 @@ class NominaEmpleadoController extends Controller
             return redirect()->back()->with('error', __('Permission denied.'));
         }
 
-        $empleados = Empleado::where('created_by', \Auth::user()->creatorId())->get();
+        $empleados = Empleado::with('servicioUnidad')
+            ->where('created_by', \Auth::user()->creatorId())
+            ->get();
 
         return view('nomina.empleados.index', compact('empleados'));
     }
@@ -26,8 +29,11 @@ class NominaEmpleadoController extends Controller
 
         $tiposVinculo = $this->tiposVinculo();
         $tiposContribuyente = $this->tiposContribuyente();
+        $servicios = ServicioUnidad::where('created_by', \Auth::user()->creatorId())
+            ->orderBy('nombre')
+            ->get();
 
-        return view('nomina.empleados.create', compact('tiposVinculo', 'tiposContribuyente'));
+        return view('nomina.empleados.create', compact('tiposVinculo', 'tiposContribuyente', 'servicios'));
     }
 
     public function store(Request $request)
@@ -43,7 +49,8 @@ class NominaEmpleadoController extends Controller
                 'last_name' => 'required',
                 'tipo_vinculo' => 'required',
                 'tipo_contribuyente' => 'required|in:asalariado,honorarios',
-                'unidad_servicio' => 'required',
+                'servicio_id' => 'nullable|integer|exists:servicios_unidades,id',
+                'unidad_servicio' => 'required_without:servicio_id',
                 'salario' => 'required|numeric|min:0',
                 'email' => 'nullable|email',
             ]
@@ -55,6 +62,16 @@ class NominaEmpleadoController extends Controller
             return redirect()->back()->with('error', $messages->first());
         }
 
+        if ($request->filled('servicio_id')) {
+            $servicioValido = ServicioUnidad::where('created_by', \Auth::user()->creatorId())
+                ->where('id', $request->servicio_id)
+                ->exists();
+
+            if (!$servicioValido) {
+                return redirect()->back()->with('error', __('Servicio seleccionado inválido.'));
+            }
+        }
+
         $empleado = new Empleado();
         $empleado->first_name = $request->first_name;
         $empleado->last_name = $request->last_name;
@@ -64,9 +81,17 @@ class NominaEmpleadoController extends Controller
         $empleado->direccion = $request->direccion;
         $empleado->tipo_vinculo = $request->tipo_vinculo;
         $empleado->tipo_contribuyente = $request->tipo_contribuyente;
+        $empleado->servicio_id = $request->servicio_id;
         $empleado->unidad_servicio = $request->unidad_servicio;
         $empleado->salario = $request->salario;
         $empleado->created_by = \Auth::user()->creatorId();
+
+        if ($empleado->servicio_id && !$empleado->unidad_servicio) {
+            $empleado->unidad_servicio = ServicioUnidad::where('created_by', \Auth::user()->creatorId())
+                ->where('id', $empleado->servicio_id)
+                ->value('nombre');
+        }
+
         $empleado->save();
 
         return redirect()->route('nomina-empleados.index')->with('success', __('Employee successfully created.'));
@@ -85,8 +110,11 @@ class NominaEmpleadoController extends Controller
 
         $tiposVinculo = $this->tiposVinculo();
         $tiposContribuyente = $this->tiposContribuyente();
+        $servicios = ServicioUnidad::where('created_by', \Auth::user()->creatorId())
+            ->orderBy('nombre')
+            ->get();
 
-        return view('nomina.empleados.edit', compact('empleado', 'tiposVinculo', 'tiposContribuyente'));
+        return view('nomina.empleados.edit', compact('empleado', 'tiposVinculo', 'tiposContribuyente', 'servicios'));
     }
 
     public function update(Request $request, $id)
@@ -107,7 +135,8 @@ class NominaEmpleadoController extends Controller
                 'last_name' => 'required',
                 'tipo_vinculo' => 'required',
                 'tipo_contribuyente' => 'required|in:asalariado,honorarios',
-                'unidad_servicio' => 'required',
+                'servicio_id' => 'nullable|integer|exists:servicios_unidades,id',
+                'unidad_servicio' => 'required_without:servicio_id',
                 'salario' => 'required|numeric|min:0',
                 'email' => 'nullable|email',
             ]
@@ -119,6 +148,16 @@ class NominaEmpleadoController extends Controller
             return redirect()->back()->with('error', $messages->first());
         }
 
+        if ($request->filled('servicio_id')) {
+            $servicioValido = ServicioUnidad::where('created_by', \Auth::user()->creatorId())
+                ->where('id', $request->servicio_id)
+                ->exists();
+
+            if (!$servicioValido) {
+                return redirect()->back()->with('error', __('Servicio seleccionado inválido.'));
+            }
+        }
+
         $empleado->first_name = $request->first_name;
         $empleado->last_name = $request->last_name;
         $empleado->documento_identidad = $request->documento_identidad;
@@ -127,8 +166,16 @@ class NominaEmpleadoController extends Controller
         $empleado->direccion = $request->direccion;
         $empleado->tipo_vinculo = $request->tipo_vinculo;
         $empleado->tipo_contribuyente = $request->tipo_contribuyente;
+        $empleado->servicio_id = $request->servicio_id;
         $empleado->unidad_servicio = $request->unidad_servicio;
         $empleado->salario = $request->salario;
+
+        if ($empleado->servicio_id && !$empleado->unidad_servicio) {
+            $empleado->unidad_servicio = ServicioUnidad::where('created_by', \Auth::user()->creatorId())
+                ->where('id', $empleado->servicio_id)
+                ->value('nombre');
+        }
+
         $empleado->save();
 
         return redirect()->route('nomina-empleados.index')->with('success', __('Employee successfully updated.'));
