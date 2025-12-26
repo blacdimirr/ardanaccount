@@ -63,7 +63,7 @@ class NominaPeriodoController extends Controller
         return redirect()->route('nomina-periodos.index')->with('success', __('Payroll period successfully created.'));
     }
 
-    public function edit($id)
+    public function edit($id, NominaAsientoService $asientoService)
     {
         if (!\Auth::user()->can('nomina_periodos_manage')) {
             return response()->json(['error' => __('Permission denied.')], 401);
@@ -75,8 +75,9 @@ class NominaPeriodoController extends Controller
         }
 
         $estados = NominaPeriodo::$estados;
+        $resumen = $asientoService->previewAsientoPorServicio($periodo, \Auth::user()->creatorId());
 
-        return view('nomina.periodos.edit', compact('periodo', 'estados'));
+        return view('nomina.periodos.edit', compact('periodo', 'estados', 'resumen'));
     }
 
     public function update(Request $request, $id, NominaAsientoService $asientoService)
