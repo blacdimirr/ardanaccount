@@ -474,13 +474,13 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                 @endif
 
                 {{-- -------  Nomina ---------- --}}
-                @if (Gate::check('nomina_empleados_manage') || Gate::check('nomina_conceptos_manage') || Gate::check('nomina_periodos_manage') || Gate::check('nomina_config_ss_manage') || Gate::check('nomina_config_isr_manage'))
-                <li class="dash-item dash-hasmenu {{ in_array(Request::segment(1), ['nomina-empleados', 'nomina-conceptos', 'nomina-periodos', 'nomina-comprobantes', 'nomina-calculos', 'nomina-config-ss', 'nomina-config-isr']) ? ' active dash-trigger' : '' }}">
+                @if (Gate::check('nomina_empleados_manage') || Gate::check('nomina_conceptos_manage') || Gate::check('nomina_periodos_manage') || Gate::check('nomina_config_ss_manage') || Gate::check('nomina_config_isr_manage') || Gate::check('nomina_ir3_generate') || Gate::check('nomina_ir4_generate'))
+                <li class="dash-item dash-hasmenu {{ in_array(Request::segment(1), ['nomina-empleados', 'nomina-conceptos', 'nomina-periodos', 'nomina-comprobantes', 'nomina-calculos', 'nomina-config-ss', 'nomina-config-isr', 'nomina-reportes-fiscales']) ? ' active dash-trigger' : '' }}">
                     <a href="#!" class="dash-link"><span class="dash-micon"><i
                                 class="ti ti-briefcase"></i></span><span
                             class="dash-mtext">{{ __('Nómina') }}</span><span class="dash-arrow"><i
                                 data-feather="chevron-right"></i></span></a>
-                    <ul class="dash-submenu {{ in_array(Request::segment(1), ['nomina-empleados', 'nomina-conceptos', 'nomina-periodos', 'nomina-comprobantes', 'nomina-calculos', 'nomina-config-ss', 'nomina-config-isr']) ? 'show' : '' }}">
+                    <ul class="dash-submenu {{ in_array(Request::segment(1), ['nomina-empleados', 'nomina-conceptos', 'nomina-periodos', 'nomina-comprobantes', 'nomina-calculos', 'nomina-config-ss', 'nomina-config-isr', 'nomina-reportes-fiscales']) ? 'show' : '' }}">
                         @can('nomina_empleados_manage')
                         <li class="dash-item {{ Request::segment(1) == 'nomina-empleados' ? ' active' : '' }}">
                             <a class="dash-link" href="{{ route('nomina-empleados.index') }}">{{ __('Empleados') }}</a>
@@ -511,6 +511,11 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                             <a class="dash-link" href="{{ route('nomina.config_isr.index') }}">{{ __('Tramos ISR') }}</a>
                         </li>
                         @endcan
+                        @if (Gate::check('nomina_ir3_generate') || Gate::check('nomina_ir4_generate'))
+                        <li class="dash-item {{ Request::segment(1) == 'nomina-reportes-fiscales' ? ' active' : '' }}">
+                            <a class="dash-link" href="{{ route('nomina.reportes_fiscales.index') }}">{{ __('Reportes fiscales') }}</a>
+                        </li>
+                        @endif
                     </ul>
                 </li>
                 @endif
