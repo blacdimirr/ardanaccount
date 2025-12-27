@@ -26,10 +26,12 @@ use App\Models\Vender;
 use App\Models\Utility;
 use App\Models\FondoRotatorio;
 use App\Models\MovimientoFondo;
+use App\Models\MovimientoBancario;
 use App\Exports\AccountStatementExport;
 use App\Exports\BalanceSheetExport;
 use App\Exports\BudgetExecutionExport;
 use App\Exports\FondoMovimientosExport;
+use App\Exports\ConciliacionBancariaExport;
 use App\Exports\RecaudacionesDiariasExport;
 use App\Exports\ProductStockExport;
 use App\Exports\ProfitLossExport;
@@ -3813,6 +3815,69 @@ class ReportController extends Controller
         return $data;
     }
 
+    public function conciliacionBancaria(Request $request)
+    {
+        if (!\Auth::user()->can('tesoreria_conciliacion_manage')) {
+            return redirect()->back()->with('error', __('Permission Denied.'));
+        }
+
+        $startDate = $request->get('start_date', now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->get('end_date', now()->endOfMonth()->format('Y-m-d'));
+        $selectedEstado = $request->get('estado');
+
+        $movimientosQuery = MovimientoBancario::with(['cuentaRecaudadora', 'conciliable'])
+            ->whereDate('fecha', '>=', $startDate)
+            ->whereDate('fecha', '<=', $endDate)
+            ->orderBy('fecha', 'desc');
+
+        if (!empty($selectedEstado)) {
+            $movimientosQuery->where('estado_conciliacion', $selectedEstado);
+        }
+
+        $movimientos = $movimientosQuery->get();
+        $totalsByStatus = $this->buildConciliacionTotals($movimientos);
+
+        return view('report.conciliacion_bancaria', compact(
+            'movimientos',
+            'startDate',
+            'endDate',
+            'selectedEstado',
+            'totalsByStatus'
+        ));
+    }
+
+    public function conciliacionBancariaExport(Request $request)
+    {
+        if (!\Auth::user()->can('tesoreria_conciliacion_manage')) {
+            return redirect()->back()->with('error', __('Permission Denied.'));
+        }
+
+        $startDate = $request->get('start_date', now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->get('end_date', now()->endOfMonth()->format('Y-m-d'));
+        $selectedEstado = $request->get('estado');
+
+        $movimientosQuery = MovimientoBancario::with(['cuentaRecaudadora', 'conciliable'])
+            ->whereDate('fecha', '>=', $startDate)
+            ->whereDate('fecha', '<=', $endDate)
+            ->orderBy('fecha', 'desc');
+
+        if (!empty($selectedEstado)) {
+            $movimientosQuery->where('estado_conciliacion', $selectedEstado);
+        }
+
+        $movimientos = $movimientosQuery->get();
+        $totalsByStatus = $this->buildConciliacionTotals($movimientos);
+
+        $name = 'bank_reconciliation_' . date('Y-m-d_H-i-s');
+        $data = Excel::download(
+            new ConciliacionBancariaExport($movimientos, $startDate, $endDate, $totalsByStatus),
+            $name . '.xlsx'
+        );
+        ob_end_clean();
+
+        return $data;
+    }
+
     private function recaudacionesServicioOptions(): array
     {
         return [
@@ -3855,6 +3920,16 @@ class ReportController extends Controller
         }
 
         return [$totalsByService, $totalsByMethod, $totalsByAccount];
+    }
+
+    private function buildConciliacionTotals($movimientos): array
+    {
+        $totals = [];
+        foreach ($movimientos->groupBy('estado_conciliacion') as $estado => $items) {
+            $totals[ucfirst($estado)] = $items->count();
+        }
+
+        return $totals;
     }
 
     protected function buildBudgetExecutionExportRows(array $rows, array $totals, string $budgetLabel, string $classifierLabel): array
