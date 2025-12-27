@@ -15,6 +15,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceProduct;
 use App\Models\JournalItem;
 use App\Models\NominaPeriodo;
+use App\Models\NotaEstadoFinanciero;
 use App\Models\Payment;
 use App\Models\ProductService;
 use App\Models\ProductServiceCategory;
@@ -1416,10 +1417,11 @@ class ReportController extends Controller
 
             $filter['startDateRange'] = $start;
             $filter['endDateRange'] = $end;
+            $notes = $this->financialNotesForPeriod($start, $end);
             if ($request->view == 'horizontal' || $view == 'horizontal') {
-                return view('report.profit_loss_horizontal', compact('filter', 'totalAccounts', 'collapseView'));
+                return view('report.profit_loss_horizontal', compact('filter', 'totalAccounts', 'collapseView', 'notes'));
             } elseif ($view == '' || $view == 'vertical') {
-                return view('report.profit_loss', compact('filter', 'totalAccounts', 'collapseView'));
+                return view('report.profit_loss', compact('filter', 'totalAccounts', 'collapseView', 'notes'));
             } else {
                 return redirect()->back();
             }
@@ -2219,9 +2221,16 @@ class ReportController extends Controller
             }
             $companyName = User::where('id', \Auth::user()->creatorId())->first();
             $companyName = $companyName->name;
+            $notes = $this->financialNotesForPeriod($start, $end)->map(function (NotaEstadoFinanciero $nota) {
+                return [
+                    'codigo_nota' => $nota->codigo_nota,
+                    'titulo' => $nota->titulo,
+                    'contenido' => $nota->contenido,
+                ];
+            })->all();
 
             $name = 'profit & loss_' . date('Y-m-d i:h:s');
-            $data = Excel::download(new ProfitLossExport($totalAccounts, $start, $end, $companyName), $name . '.xlsx');
+            $data = Excel::download(new ProfitLossExport($totalAccounts, $start, $end, $companyName, $notes), $name . '.xlsx');
             ob_end_clean();
 
             return $data;
@@ -2844,11 +2853,12 @@ class ReportController extends Controller
 
             $filter['startDateRange'] = $start;
             $filter['endDateRange'] = $end;
+            $notes = $this->financialNotesForPeriod($start, $end);
 
             if ($request->view == 'horizontal' || $view == 'horizontal') {
-                return view('report.balance_sheet_horizontal', compact('filter', 'totalAccounts', 'collapseview'));
+                return view('report.balance_sheet_horizontal', compact('filter', 'totalAccounts', 'collapseview', 'notes'));
             } elseif ($view == '' || $view == 'vertical') {
-                return view('report.balance_sheet', compact('filter', 'totalAccounts', 'collapseview'));
+                return view('report.balance_sheet', compact('filter', 'totalAccounts', 'collapseview', 'notes'));
             } else {
                 return redirect()->back();
             }
@@ -3094,9 +3104,16 @@ class ReportController extends Controller
 
         $companyName = User::where('id', \Auth::user()->creatorId())->first();
         $companyName = $companyName->name;
+        $notes = $this->financialNotesForPeriod($start, $end)->map(function (NotaEstadoFinanciero $nota) {
+            return [
+                'codigo_nota' => $nota->codigo_nota,
+                'titulo' => $nota->titulo,
+                'contenido' => $nota->contenido,
+            ];
+        })->all();
 
         $name = 'balance_sheet_' . date('Y-m-d i:h:s');
-        $data = Excel::download(new BalanceSheetExport($totalAccounts, $start, $end, $companyName), $name . '.xlsx');
+        $data = Excel::download(new BalanceSheetExport($totalAccounts, $start, $end, $companyName, $notes), $name . '.xlsx');
 
         ob_end_clean();
 
@@ -3707,8 +3724,9 @@ class ReportController extends Controller
         $cutoffDate = $request->get('cutoff_date', date('Y-m-d'));
         $creatorId = \Auth::user()->creatorId();
         $report = $service->buildReport($creatorId, $cutoffDate);
+        $notes = $this->financialNotesForPeriod($cutoffDate);
 
-        return view('report.public_financial_position', compact('cutoffDate', 'report'));
+        return view('report.public_financial_position', compact('cutoffDate', 'report', 'notes'));
     }
 
     public function publicFinancialPositionExport(Request $request, PublicFinancialPositionService $service)
@@ -3724,9 +3742,16 @@ class ReportController extends Controller
         $creatorId = \Auth::user()->creatorId();
         $companyName = User::where('id', $creatorId)->value('name') ?? '';
         $report = $service->buildReport($creatorId, $request->cutoff_date);
+        $notes = $this->financialNotesForPeriod($request->cutoff_date)->map(function (NotaEstadoFinanciero $nota) {
+            return [
+                'codigo_nota' => $nota->codigo_nota,
+                'titulo' => $nota->titulo,
+                'contenido' => $nota->contenido,
+            ];
+        })->all();
 
         return Excel::download(
-            new PublicFinancialPositionExport($report, $request->cutoff_date, $companyName),
+            new PublicFinancialPositionExport($report, $request->cutoff_date, $companyName, $notes),
             'estado-situacion-financiera.xlsx'
         );
     }
@@ -3744,11 +3769,13 @@ class ReportController extends Controller
         $creatorId = \Auth::user()->creatorId();
         $companyName = User::where('id', $creatorId)->value('name') ?? '';
         $report = $service->buildReport($creatorId, $request->cutoff_date);
+        $notes = $this->financialNotesForPeriod($request->cutoff_date);
 
         $pdf = Pdf::loadView('report.public_financial_position_pdf', [
             'cutoffDate' => $request->cutoff_date,
             'report' => $report,
             'companyName' => $companyName,
+            'notes' => $notes,
         ]);
 
         return $pdf->download('estado-situacion-financiera.pdf');
@@ -3860,6 +3887,24 @@ class ReportController extends Controller
         ]);
 
         return $pdf->download('estado-flujo-efectivo.pdf');
+    }
+
+    private function financialNotesForPeriod(string $startDate, ?string $endDate = null)
+    {
+        $query = NotaEstadoFinanciero::query()->where('estado', true);
+
+        if (\Auth::user()->type !== 'super admin') {
+            $query->where('created_by', \Auth::user()->creatorId());
+        }
+
+        if ($endDate) {
+            $query->whereDate('periodo', '>=', $startDate)
+                ->whereDate('periodo', '<=', $endDate);
+        } else {
+            $query->whereDate('periodo', $startDate);
+        }
+
+        return $query->orderBy('periodo')->orderBy('codigo_nota')->get();
     }
 
     public function complementaryStatementMappings()

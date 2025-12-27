@@ -318,6 +318,7 @@
                     </div>
                 </div>
             </div>
+            @include('report.partials.financial_notes', ['notes' => $notes])
         </div>
     </div>
 @endsection

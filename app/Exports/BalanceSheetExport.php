@@ -19,7 +19,7 @@ class BalanceSheetExport implements FromArray, WithEvents, WithHeadings, WithSty
      * @return \Illuminate\Support\Collection
      */
 
-    public function __construct($data, $startDate, $endDate, $companyName)
+    public function __construct($data, $startDate, $endDate, $companyName, array $notes = [])
     {
 
         $formattedData = [];
@@ -152,6 +152,26 @@ class BalanceSheetExport implements FromArray, WithEvents, WithHeadings, WithSty
             ];
             $liabilitiesOrEquityEncountered1 = true;
 
+        }
+
+        if (!empty($notes)) {
+            $formattedData[] = [
+                'Account Name' => '',
+                'Account No' => '',
+                'Total' => '',
+            ];
+            $formattedData[] = [
+                'Account Name' => __('Notes to Financial Statements'),
+                'Account No' => '',
+                'Total' => '',
+            ];
+            foreach ($notes as $note) {
+                $formattedData[] = [
+                    'Account Name' => trim(($note['codigo_nota'] ?? '') . ' ' . ($note['titulo'] ?? '')),
+                    'Account No' => '',
+                    'Total' => $note['contenido'] ?? '',
+                ];
+            }
         }
         $this->data = $formattedData;
         $this->companyName = $companyName;

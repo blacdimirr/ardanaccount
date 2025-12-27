@@ -8,7 +8,12 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 
 class PublicFinancialPositionExport implements FromArray, WithHeadings, WithColumnWidths
 {
-    public function __construct(private array $report, private string $cutoffDate, private string $companyName)
+    public function __construct(
+        private array $report,
+        private string $cutoffDate,
+        private string $companyName,
+        private array $notes = []
+    )
     {
     }
 
@@ -48,6 +53,18 @@ class PublicFinancialPositionExport implements FromArray, WithHeadings, WithColu
             '',
             $this->report['totals']['liabilities_equity'] ?? 0,
         ];
+
+        if (!empty($this->notes)) {
+            $rows[] = ['', '', ''];
+            $rows[] = [__('Notes to Financial Statements'), '', ''];
+            foreach ($this->notes as $note) {
+                $rows[] = [
+                    '',
+                    trim(($note['codigo_nota'] ?? '') . ' ' . ($note['titulo'] ?? '')),
+                    $note['contenido'] ?? '',
+                ];
+            }
+        }
 
         return $rows;
     }
