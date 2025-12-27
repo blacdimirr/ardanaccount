@@ -4,7 +4,7 @@
 
 @endphp
 <!DOCTYPE html>
-<html lang="en" dir="{{ $settings_data['SITE_RTL'] == 'on' ? 'rtl' : '' }}">
+<html lang="{{ app()->getLocale() }}" dir="{{ $settings_data['SITE_RTL'] == 'on' ? 'rtl' : '' }}">
 
 <head>
     <meta charset="utf-8">

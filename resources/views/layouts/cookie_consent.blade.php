@@ -9,36 +9,37 @@
 ?>
 var data={!! json_encode($data) !!};
 var parsed = JSON.parse(data);
+const appLang = "{{ app()->getLocale() }}";
 
     let language_code = document.documentElement.getAttribute('lang');
     let languages = {};
     languages[language_code] = {
         consent_modal: {
-            title: 'hello',
-            description: 'description',
+            title: '{{ __('Hola') }}',
+            description: '{{ __('Descripción') }}',
             primary_btn: {
-                text: 'primary_btn text',
+                text: '{{ __('Texto del botón principal') }}',
                 role: 'accept_all'
             },
             secondary_btn: {
-                        text: 'secondary_btn text',
+                        text: '{{ __('Texto del botón secundario') }}',
                         role: 'accept_necessary'
                     }
                 },
                 settings_modal: {
-                    title: 'settings_modal',
-                    save_settings_btn: 'save_settings_btn',
-                    accept_all_btn: 'accept_all_btn',
-                    reject_all_btn: 'reject_all_btn',
-                    close_btn_label: 'close_btn_label',
+                    title: '{{ __('Modal de configuración') }}',
+                    save_settings_btn: '{{ __('Guardar configuración') }}',
+                    accept_all_btn: '{{ __('Aceptar todo') }}',
+                    reject_all_btn: '{{ __('Rechazar todo') }}',
+                    close_btn_label: '{{ __('Cerrar') }}',
                     blocks: [{
-                            title: 'block title',
-                            description: 'block description'
+                            title: '{{ __('Título del bloque') }}',
+                            description: '{{ __('Descripción del bloque') }}'
                         },
 
                         {
-                            title: 'title',
-                            description: 'description',
+                            title: '{{ __('Título') }}',
+                            description: '{{ __('Descripción') }}',
                             toggle: {
                                 value: 'necessary',
                                 enabled: true,
@@ -78,7 +79,7 @@ var parsed = JSON.parse(data);
             var cc = initCookieConsent();
             // run plugin with your configuration
             cc.run({
-                current_lang: 'en',
+                current_lang: appLang,
                 autoclear_cookies: true, // default: false
                 page_scripts: true,
                 // ...
@@ -112,36 +113,36 @@ var parsed = JSON.parse(data);
                 },
                 
                 languages: {
-                    'en': {
+                    [appLang]: {
                         consent_modal: {
                             title: parsed.cookie_title,
-                            description: parsed.cookie_description + ' <button type="button" data-cc="c-settings" class="cc-link">Let me choose</button>',
+                            description: parsed.cookie_description + ' <button type="button" data-cc="c-settings" class="cc-link">{{ __('Déjame elegir') }}</button>',
                             primary_btn: {
-                                text: 'Accept all',
+                                text: '{{ __('Aceptar todo') }}',
                                 role: 'accept_all' // 'accept_selected' or 'accept_all'
                             },
                             secondary_btn: {
-                                text: 'Reject all',
+                                text: '{{ __('Rechazar todo') }}',
                                 role: 'accept_necessary' // 'settings' or 'accept_necessary'
                             },
                         },
                         settings_modal: {
-                            title: 'Cookie preferences',
-                            save_settings_btn: 'Save settings',
-                            accept_all_btn: 'Accept all',
-                            reject_all_btn: 'Reject all',
-                            close_btn_label: 'Close',
+                            title: '{{ __('Preferencias de cookies') }}',
+                            save_settings_btn: '{{ __('Guardar configuración') }}',
+                            accept_all_btn: '{{ __('Aceptar todo') }}',
+                            reject_all_btn: '{{ __('Rechazar todo') }}',
+                            close_btn_label: '{{ __('Cerrar') }}',
                             cookie_table_headers: [{
-                                col1: 'Name'
+                                col1: '{{ __('Nombre') }}'
                             },
                             {
-                                col2: 'Domain'
+                                col2: '{{ __('Dominio') }}'
                                 },
                                 {
-                                    col3: 'Expiration'
+                                    col3: '{{ __('Expiración') }}'
                                 },
                                 {
-                                    col4: 'Description'
+                                    col4: '{{ __('Descripción') }}'
                                 }
                             ],
                             blocks: [{
@@ -156,8 +157,8 @@ var parsed = JSON.parse(data);
                                     readonly: true // cookie categories with readonly=true are all treated as "necessary cookies"
                                 }
                             }, {
-                                title: 'More information',
-                                description: '{{$setting['more_information_description']}} <a class="cc-link" href="{{$setting['contactus_url']}}">contact us</a>.',
+                                title: '{{ __('Más información') }}',
+                                description: '{{$setting['more_information_description']}} <a class="cc-link" href="{{$setting['contactus_url']}}">{{ __('contáctenos') }}</a>.',
                             }]
                         }
                     }

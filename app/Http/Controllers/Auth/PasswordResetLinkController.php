@@ -34,7 +34,7 @@ class PasswordResetLinkController extends Controller
     public function create($lang = '')
     {
         $langList = Utility::langList();
-        $lang = array_key_exists($lang, $langList) ? $lang : 'en';
+        $lang = array_key_exists($lang, $langList) ? $lang : 'es';
 
         if ($lang == '') {
             $lang = Utility::getValByName('default_language');

@@ -73,9 +73,9 @@
                                     });
 
                                     if (data.status) {
-                                        show_toastr('success', data.message);
+                                        show_toastr('{{ __('Success') }}', data.message);
                                     } else {
-                                        show_toastr('error', data.message);
+                                        show_toastr('{{ __('Error') }}', data.message);
                                     }
                                 },
                             });

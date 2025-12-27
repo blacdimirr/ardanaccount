@@ -162,7 +162,7 @@
                         href="#" role="button" aria-haspopup="false" aria-expanded="false">
 
                         <i class="ti ti-world nocolor"></i>
-                        <span class="drp-text hide-mob">{{ ucFirst($languages->fullName ?? 'English') }}</span>
+                        <span class="drp-text hide-mob">{{ ucFirst($languages->fullName ?? 'Español') }}</span>
                         <i class="ti ti-chevron-down drp-arrow nocolor"></i>
                     </a>
 

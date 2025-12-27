@@ -124,7 +124,7 @@ class CustomerController extends Controller
             $customer->shipping_address = $request->shipping_address;
             $customer->is_enable_login =  $enableLogin;
 
-            $customer->lang = !empty($default_language) ? $default_language->value : 'en';
+            $customer->lang = !empty($default_language) ? $default_language->value : 'es';
 
             $customer->save();
             CustomField::saveData($customer, $request->customField);
@@ -588,7 +588,7 @@ class CustomerController extends Controller
             $customerData->shipping_phone   = $customer[15] ?? "";
             $customerData->shipping_zip     = $customer[16] ?? "";
             $customerData->shipping_address = $customer[17] ?? "";
-            $customerData->lang             = 'en';
+            $customerData->lang             = Utility::getValByName('default_language') ?: 'es';
             $customerData->is_active        = 1;
             $customerData->created_by       = \Auth::user()->creatorId();
 

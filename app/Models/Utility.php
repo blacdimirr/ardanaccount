@@ -110,7 +110,7 @@ class Utility extends Model
             "registration_number" => "",
             "tax_number" => "on",
             "vat_number" => "",
-            "default_language" => "en",
+            "default_language" => "es",
             "enable_stripe" => "",
             "enable_paypal" => "",
             "paypal_mode" => "",
@@ -172,11 +172,11 @@ class Utility extends Model
             'enable_cookie' => 'on',
             'necessary_cookies' => 'on',
             'cookie_logging' => 'on',
-            'cookie_title' => 'We use cookies!',
-            'cookie_description' => 'Hi, this website uses essential cookies to ensure its proper operation and tracking cookies to understand how you interact with it',
-            'strictly_cookie_title' => 'Strictly necessary cookies',
-            'strictly_cookie_description' => 'These cookies are essential for the proper functioning of my website. Without these cookies, the website would not work properly',
-            'more_information_description' => 'For any queries in relation to our policy on cookies and your choices, please',
+            'cookie_title' => '¡Usamos cookies!',
+            'cookie_description' => 'Este sitio utiliza cookies esenciales para garantizar su funcionamiento y cookies de seguimiento para entender cómo interactúas con él',
+            'strictly_cookie_title' => 'Cookies estrictamente necesarias',
+            'strictly_cookie_description' => 'Estas cookies son esenciales para el correcto funcionamiento del sitio. Sin ellas, el sitio no funcionaría correctamente',
+            'more_information_description' => 'Para cualquier consulta sobre nuestra política de cookies y sus opciones, por favor',
             "more_information_title" => "",
             'contactus_url' => '#',
 
@@ -254,7 +254,7 @@ class Utility extends Model
             "contract_template" => 'template1',
             "registration_number" => "",
             "vat_number" => "",
-            "default_language" => "en",
+            "default_language" => "es",
             "enable_stripe" => "",
             "enable_paypal" => "",
             "paypal_mode" => "",
@@ -412,22 +412,22 @@ class Utility extends Model
     public static function langList()
     {
         $languages = [
-            "ar" => "Arabic",
-            "zh" => "Chinese",
-            "da" => "Danish",
-            "de" => "German",
-            "en" => "English",
-            "es" => "Spanish",
-            "fr" => "French",
-            "he" => "Hebrew",
-            "it" => "Italian",
-            "ja" => "Japanese",
-            "nl" => "Dutch",
-            "pl" => "Polish",
-            "pt" => "Portuguese",
-            "ru" => "Russian",
-            "tr" => "Turkish",
-            "pt-br" => "Portuguese(Brazil)"
+            "ar" => "Árabe",
+            "zh" => "Chino",
+            "da" => "Danés",
+            "de" => "Alemán",
+            "en" => "Inglés",
+            "es" => "Español",
+            "fr" => "Francés",
+            "he" => "Hebreo",
+            "it" => "Italiano",
+            "ja" => "Japonés",
+            "nl" => "Neerlandés",
+            "pl" => "Polaco",
+            "pt" => "Portugués",
+            "ru" => "Ruso",
+            "tr" => "Turco",
+            "pt-br" => "Portugués (Brasil)"
         ];
         return $languages;
     }
@@ -807,8 +807,12 @@ class Utility extends Model
     public static function newLangEmailTemp($lang)
     {
         $template = EmailTemplate::all();
+        $defaultLang = Utility::getValByName('default_language') ?: 'es';
         foreach ($template as $t) {
-            $default_lang                 = EmailTemplateLang::where('parent_id', '=', $t->id)->where('lang', 'LIKE', 'en')->first();
+            $default_lang                 = EmailTemplateLang::where('parent_id', '=', $t->id)->where('lang', 'LIKE', $defaultLang)->first();
+            if (empty($default_lang)) {
+                $default_lang = EmailTemplateLang::where('parent_id', '=', $t->id)->where('lang', 'LIKE', 'en')->first();
+            }
             $emailTemplateLang            = new EmailTemplateLang();
             $emailTemplateLang->parent_id = $t->id;
             $emailTemplateLang->lang      = $lang;
@@ -1259,7 +1263,7 @@ class Utility extends Model
             "retainer_template" => "template1",
             "registration_number" => "",
             "vat_number" => "",
-            "default_language" => "en",
+            "default_language" => "es",
             "enable_stripe" => "",
             "enable_paypal" => "",
             "paypal_mode" => "",
@@ -1303,7 +1307,15 @@ class Utility extends Model
                 $curr_noti_tempLang = NotificationTemplateLangs::where('parent_id', '=', $notification_template->id)->where('lang', $user->lang)->first();
             }
             if (empty($curr_noti_tempLang)) {
-                $curr_noti_tempLang       = NotificationTemplateLangs::where('parent_id', '=', $notification_template->id)->where('lang', 'en')->first();
+                $defaultLang = Utility::getValByName('default_language') ?: 'es';
+                $curr_noti_tempLang = NotificationTemplateLangs::where('parent_id', '=', $notification_template->id)
+                    ->where('lang', $defaultLang)
+                    ->first();
+                if (empty($curr_noti_tempLang)) {
+                    $curr_noti_tempLang = NotificationTemplateLangs::where('parent_id', '=', $notification_template->id)
+                        ->where('lang', 'en')
+                        ->first();
+                }
             }
             if (!empty($curr_noti_tempLang) && !empty($curr_noti_tempLang->content)) {
                 $msg = self::replaceVariable($curr_noti_tempLang->content, $obj);
@@ -1568,7 +1580,7 @@ class Utility extends Model
     {
 
         $usr = \Auth::user();
-        $usr->lang = !empty($usr->lang) ? $usr->lang : 'en';
+        $usr->lang = !empty($usr->lang) ? $usr->lang : (Utility::getValByName('default_language') ?: 'es');
         //Remove Current Login user Email don't send mail to them
         // unset($mailTo[$usr->id]);
 
@@ -1650,7 +1662,7 @@ class Utility extends Model
     public static function sendEmailTemplateWithDocument($emailTemplate, $mailTo, $obj)
     {
         $usr = Auth::user();
-        $usr->lang = !empty($usr->lang) ? $usr->lang : 'en';
+        $usr->lang = !empty($usr->lang) ? $usr->lang : (Utility::getValByName('default_language') ?: 'es');
 
         $template = EmailTemplate::where('slug', $emailTemplate)->first();
 
@@ -1713,7 +1725,7 @@ class Utility extends Model
     public static function sendEmailTemplateWithDocumentAuthorizationTransfer($emailTemplate, $mailTo, $obj)
     {
         $usr = Auth::user();
-        $usr->lang = !empty($usr->lang) ? $usr->lang : 'en';
+        $usr->lang = !empty($usr->lang) ? $usr->lang : (Utility::getValByName('default_language') ?: 'es');
 
         $template = EmailTemplate::where('slug', $emailTemplate)->first();
 
@@ -1778,8 +1790,12 @@ class Utility extends Model
     public static function makeEmailLang($lang)
     {
         $template = EmailTemplate::all();
+        $defaultLang = Utility::getValByName('default_language') ?: 'es';
         foreach ($template as $t) {
-            $default_lang                 = EmailTemplateLang::where('parent_id', '=', $t->id)->where('lang', 'LIKE', 'en')->first();
+            $default_lang                 = EmailTemplateLang::where('parent_id', '=', $t->id)->where('lang', 'LIKE', $defaultLang)->first();
+            if (empty($default_lang)) {
+                $default_lang = EmailTemplateLang::where('parent_id', '=', $t->id)->where('lang', 'LIKE', 'en')->first();
+            }
             $emailTemplateLang            = new EmailTemplateLang();
             $emailTemplateLang->parent_id = $t->id;
             $emailTemplateLang->lang      = $lang;

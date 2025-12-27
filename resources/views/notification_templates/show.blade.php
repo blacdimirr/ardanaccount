@@ -11,9 +11,9 @@
 @php
     $chatgpt = App\Models\Utility::getValByName('enable_chatgpt');
     $languages = \App\Models\Utility::languages();
-    $lang = isset($curr_noti_tempLang->lang) ? $curr_noti_tempLang->lang : 'en';
+    $lang = isset($curr_noti_tempLang->lang) ? $curr_noti_tempLang->lang : (App\Models\Utility::getValByName('default_language') ?: 'es');
     if ($lang == null) {
-        $lang = 'en';
+        $lang = App\Models\Utility::getValByName('default_language') ?: 'es';
     }
 @endphp
 @section('content')

@@ -12,9 +12,9 @@
 @php
 use \App\Models\Utility;
 $settings = Utility::settings();
-$lang = isset($currEmailTempLang->lang) ? $currEmailTempLang->lang : 'en';
+$lang = isset($currEmailTempLang->lang) ? $currEmailTempLang->lang : (Utility::getValByName('default_language') ?: 'es');
 if ($lang == null) {
-$lang = 'en';
+$lang = Utility::getValByName('default_language') ?: 'es';
 }
 $LangName = \App\Models\Language::where('code', $lang)->first();
 
