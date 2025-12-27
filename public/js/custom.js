@@ -16,6 +16,7 @@ $(function() {
 
     loadConfirm();
     bindFormSubmitGuard();
+    initGlobalLoader();
     daterange();
 
 });
@@ -368,6 +369,7 @@ function bindFormSubmitGuard() {
 
             const action = (form.getAttribute("action") || "").toLowerCase();
             const formLoadingText = $form.data("loading-text");
+            const formLoadingMessage = $form.data("loading-message");
             const formLoadingFlag = $form.data("loading") === true || $form.data("loading") === "true";
             const isLongRunning =
                 formLoadingFlag ||
@@ -407,7 +409,185 @@ function bindFormSubmitGuard() {
                     }
                 }
             });
+
+            if (isLongRunning) {
+                showGlobalLoader(formLoadingMessage);
+            }
         });
+}
+
+function initGlobalLoader() {
+    $(document)
+        .off("click.global-loader", "[data-loading='true']")
+        .on("click.global-loader", "[data-loading='true']", function () {
+            const $trigger = $(this);
+            const tagName = this.tagName.toLowerCase();
+            const isSubmitButton = tagName === "button" && ($trigger.attr("type") || "submit") === "submit";
+
+            if (isSubmitButton && $trigger.closest("form").length) {
+                return;
+            }
+
+            if ($trigger.data("loading-active")) {
+                return;
+            }
+
+            $trigger.data("loading-active", true);
+
+            if ($trigger.data("original-content") === undefined) {
+                $trigger.data("original-content", $trigger.is("input") ? $trigger.val() : $trigger.html());
+            }
+
+            if ($trigger.is("button") || $trigger.is("a")) {
+                $trigger.addClass("disabled").attr("aria-disabled", "true");
+            }
+
+            const buttonLoadingText = $trigger.data("loading-text");
+            if (buttonLoadingText) {
+                if ($trigger.is("input")) {
+                    $trigger.val(buttonLoadingText);
+                } else {
+                    $trigger.html(
+                        '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' +
+                            buttonLoadingText
+                    );
+                }
+            }
+
+            showGlobalLoader($trigger.data("loading-message"));
+        });
+
+    if (window.axios && window.axios.interceptors) {
+        window.axios.interceptors.request.use(function (config) {
+            const url = (config.url || "").toLowerCase();
+            const explicit = config.headers && (config.headers["X-Long-Request"] || config.headers["X-Loading"]);
+            const isLongRunning =
+                explicit ||
+                url.includes("report") ||
+                url.includes("nomina") ||
+                url.includes("extracto") ||
+                url.includes("conciliacion") ||
+                url.includes("dgii") ||
+                url.includes("export") ||
+                url.includes("pdf");
+
+            if (isLongRunning) {
+                config.metadata = config.metadata || {};
+                config.metadata.loaderTimer = setTimeout(function () {
+                    config.metadata.loaderShown = true;
+                    showGlobalLoader();
+                }, 500);
+            }
+
+            return config;
+        });
+
+        window.axios.interceptors.response.use(
+            function (response) {
+                finalizeAxiosLoader(response.config);
+                return response;
+            },
+            function (error) {
+                if (error && error.config) {
+                    finalizeAxiosLoader(error.config);
+                }
+                showGlobalErrorMessage();
+                return Promise.reject(error);
+            }
+        );
+    }
+
+    setupHtml2PdfLoader();
+}
+
+function finalizeAxiosLoader(config) {
+    if (!config || !config.metadata) {
+        return;
+    }
+
+    if (config.metadata.loaderTimer) {
+        clearTimeout(config.metadata.loaderTimer);
+    }
+
+    if (config.metadata.loaderShown) {
+        hideGlobalLoader();
+    }
+}
+
+function showGlobalLoader(message) {
+    const $overlay = $("#global-loading-overlay");
+    if (!$overlay.length) {
+        return;
+    }
+
+    const $message = $("#global-loading-message");
+    const defaultMessage =
+        "Estamos procesando su solicitud. Este proceso puede tardar unos segundos. Por favor, no cierre la página ni presione atrás.";
+
+    if (message) {
+        $message.text(message);
+    } else {
+        $message.text(defaultMessage);
+    }
+
+    const currentCount = $overlay.data("loading-count") || 0;
+    $overlay.data("loading-count", currentCount + 1);
+    $overlay.removeClass("d-none");
+}
+
+function hideGlobalLoader() {
+    const $overlay = $("#global-loading-overlay");
+    if (!$overlay.length) {
+        return;
+    }
+
+    const currentCount = $overlay.data("loading-count") || 0;
+    const nextCount = Math.max(currentCount - 1, 0);
+    $overlay.data("loading-count", nextCount);
+
+    if (nextCount === 0) {
+        $overlay.addClass("d-none");
+    }
+}
+
+function showGlobalErrorMessage() {
+    if (typeof show_toastr === "function") {
+        show_toastr("error", "Ocurrió un error al procesar la solicitud. Intente de nuevo.");
+    }
+}
+
+function setupHtml2PdfLoader() {
+    const maxAttempts = 20;
+    let attempts = 0;
+    const interval = setInterval(function () {
+        attempts += 1;
+        if (window.html2pdf && !window.html2pdf.__loaderWrapped) {
+            const originalHtml2Pdf = window.html2pdf;
+            window.html2pdf = function () {
+                const instance = originalHtml2Pdf.apply(this, arguments);
+                if (instance && typeof instance.save === "function") {
+                    const originalSave = instance.save;
+                    instance.save = function () {
+                        showGlobalLoader();
+                        const result = originalSave.apply(this, arguments);
+                        if (result && typeof result.finally === "function") {
+                            return result.finally(hideGlobalLoader);
+                        }
+                        hideGlobalLoader();
+                        return result;
+                    };
+                }
+                return instance;
+            };
+            window.html2pdf.__loaderWrapped = true;
+            clearInterval(interval);
+            return;
+        }
+
+        if (attempts >= maxAttempts) {
+            clearInterval(interval);
+        }
+    }, 500);
 }
 
 

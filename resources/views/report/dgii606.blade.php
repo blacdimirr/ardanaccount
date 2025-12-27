@@ -16,7 +16,7 @@
                 <h5 class="mb-0">{{ __('Generar archivo 606 (DGII)') }}</h5>
             </div>
             <div class="card-body">
-                {{ Form::open(['route' => 'report.dgii606', 'method' => 'GET', 'class' => 'row gy-3 align-items-end']) }}
+                {{ Form::open(['route' => 'report.dgii606', 'method' => 'GET', 'class' => 'row gy-3 align-items-end', 'data-loading' => true, 'data-loading-text' => __('Generando 606...')]) }}
                     <div class="col-md-4">
                         {{ Form::label('month', __('Mes'), ['class' => 'form-label']) }}
                         {{ Form::select('month', $months, $selectedMonth, ['class' => 'form-control select']) }}

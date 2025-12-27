@@ -1,26 +1,26 @@
 @extends('layouts.admin')
 @section('page-title')
-    {{ __('Public Financial Position Statement') }}
+    {{ __('Estado de situación financiera pública') }}
 @endsection
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ __('Dashboard') }}</a></li>
-    <li class="breadcrumb-item">{{ __('Report') }}</li>
-    <li class="breadcrumb-item">{{ __('Public Financial Position Statement') }}</li>
+    <li class="breadcrumb-item">{{ __('Reporte') }}</li>
+    <li class="breadcrumb-item">{{ __('Estado de situación financiera pública') }}</li>
 @endsection
 
 @section('action-btn')
     <div class="d-flex">
-        {{ Form::open(['route' => ['report.public.financial.position.export'], 'method' => 'POST', 'class' => 'me-2']) }}
+        {{ Form::open(['route' => ['report.public.financial.position.export'], 'method' => 'POST', 'class' => 'me-2', 'data-loading' => true, 'data-loading-text' => __('Generando exportación...')]) }}
         {{ Form::hidden('cutoff_date', $cutoffDate) }}
-        <button type="submit" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" title="{{ __('Export') }}">
+        <button type="submit" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" title="{{ __('Exportar') }}">
             <i class="ti ti-file-export"></i>
         </button>
         {{ Form::close() }}
 
-        {{ Form::open(['route' => ['report.public.financial.position.pdf'], 'method' => 'POST']) }}
+        {{ Form::open(['route' => ['report.public.financial.position.pdf'], 'method' => 'POST', 'data-loading' => true, 'data-loading-text' => __('Generando PDF...')]) }}
         {{ Form::hidden('cutoff_date', $cutoffDate) }}
-        <button type="submit" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" title="{{ __('Download') }}">
+        <button type="submit" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" title="{{ __('Descargar') }}">
             <i class="ti ti-download"></i>
         </button>
         {{ Form::close() }}
@@ -32,22 +32,22 @@
         <div class="col-sm-12">
             <div class="card">
                 <div class="card-body">
-                    {{ Form::open(['route' => ['report.public.financial.position'], 'method' => 'GET', 'id' => 'report_public_financial_position']) }}
+                    {{ Form::open(['route' => ['report.public.financial.position'], 'method' => 'GET', 'id' => 'report_public_financial_position', 'data-loading' => true, 'data-loading-text' => __('Generando estado...')]) }}
                     <div class="row align-items-end">
                         <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
                             <div class="btn-box">
-                                {{ Form::label('cutoff_date', __('Cutoff Date'), ['class' => 'form-label']) }}
+                                {{ Form::label('cutoff_date', __('Fecha de corte'), ['class' => 'form-label']) }}
                                 {{ Form::date('cutoff_date', $cutoffDate, ['class' => 'form-control']) }}
                             </div>
                         </div>
                         <div class="col-auto">
                             <a href="#" class="btn btn-sm btn-primary"
                                 onclick="document.getElementById('report_public_financial_position').submit(); return false;"
-                                data-bs-toggle="tooltip" title="{{ __('Apply') }}">
+                                data-bs-toggle="tooltip" title="{{ __('Aplicar') }}">
                                 <span class="btn-inner--icon"><i class="ti ti-search"></i></span>
                             </a>
                             <a href="{{ route('report.public.financial.position') }}" class="btn btn-sm btn-danger"
-                                data-bs-toggle="tooltip" title="{{ __('Reset') }}">
+                                data-bs-toggle="tooltip" title="{{ __('Restablecer') }}">
                                 <span class="btn-inner--icon"><i class="ti ti-refresh text-white-off"></i></span>
                             </a>
                         </div>
@@ -69,9 +69,9 @@
             <div class="card">
                 <div class="card-body">
                     <div class="mb-4">
-                        <h5 class="mb-1">{{ __('Public Financial Position Statement') }}</h5>
+                        <h5 class="mb-1">{{ __('Estado de situación financiera pública') }}</h5>
                         <p class="text-muted mb-0">{{ $companyName }}</p>
-                        <p class="text-muted mb-0">{{ __('Cutoff Date') }}: {{ $cutoffDate }}</p>
+                        <p class="text-muted mb-0">{{ __('Fecha de corte') }}: {{ $cutoffDate }}</p>
                     </div>
 
                     @if (!$hasLines)
@@ -81,7 +81,7 @@
                             <table class="table">
                                 <thead>
                                     <tr>
-                                        <th>{{ __('Line') }}</th>
+                                        <th>{{ __('Línea') }}</th>
                                         <th class="text-end">{{ __('Total') }}</th>
                                     </tr>
                                 </thead>
@@ -100,7 +100,7 @@
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="2" class="text-center">{{ __('No data available') }}</td>
+                                                <td colspan="2" class="text-center">{{ __('No hay datos disponibles') }}</td>
                                             </tr>
                                         @endforelse
                                         <tr class="fw-bold">
@@ -109,7 +109,7 @@
                                         </tr>
                                     @endforeach
                                     <tr class="fw-bold table-primary">
-                                        <td>{{ __('Total Liabilities & Equity') }}</td>
+                                        <td>{{ __('Total pasivos y patrimonio') }}</td>
                                         <td class="text-end">
                                             {{ \Auth::user()->priceFormat($report['totals']['liabilities_equity']) }}
                                         </td>
