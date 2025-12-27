@@ -13,8 +13,15 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5>{{ __('Import Bank Statement') }}</h5>
-                    <small class="text-muted">{{ __('Upload CSV or OFX files to import bank movements.') }}</small>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5>{{ __('Import Bank Statement') }}</h5>
+                            <small class="text-muted">{{ __('Upload CSV or OFX files to import bank movements.') }}</small>
+                        </div>
+                        <a href="{{ route('tesoreria.extractos.template') }}" class="btn btn-sm btn-secondary">
+                            <i class="ti ti-download me-1"></i>{{ __('Download CSV Template') }}
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
                     {{ Form::open(['route' => 'tesoreria.extractos.preview', 'method' => 'post', 'enctype' => 'multipart/form-data', 'class' => 'needs-validation', 'novalidate']) }}

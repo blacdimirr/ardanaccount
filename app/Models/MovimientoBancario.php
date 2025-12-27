@@ -15,6 +15,9 @@ class MovimientoBancario extends Model
         'descripcion',
         'referencia',
         'origen_archivo',
+        'estado_conciliacion',
+        'conciliable_id',
+        'conciliable_type',
     ];
 
     protected $casts = [
@@ -25,5 +28,10 @@ class MovimientoBancario extends Model
     public function cuentaRecaudadora()
     {
         return $this->belongsTo(CuentaRecaudadora::class, 'cuenta_recaudadora_id');
+    }
+
+    public function conciliable()
+    {
+        return $this->morphTo();
     }
 }
