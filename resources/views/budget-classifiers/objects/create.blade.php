@@ -1,4 +1,4 @@
-{{ Form::open(['route' => 'budget-classifiers.objects.store']) }}
+{{ Form::open(['route' => 'budget-classifiers.objects.store', 'data-loading' => true, 'data-loading-text' => __('Guardando clasificador...')]) }}
 <div class="modal-body">
     @include('budget-classifiers.objects._form')
 </div>

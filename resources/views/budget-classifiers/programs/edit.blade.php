@@ -1,4 +1,4 @@
-{{ Form::model($program, ['route' => ['budget-classifiers.programs.update', $program->id], 'method' => 'PUT']) }}
+{{ Form::model($program, ['route' => ['budget-classifiers.programs.update', $program->id], 'method' => 'PUT', 'data-loading' => true, 'data-loading-text' => __('Actualizando programa...')]) }}
 <div class="modal-body">
     @include('budget-classifiers.programs._form')
 </div>

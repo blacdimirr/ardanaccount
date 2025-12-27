@@ -105,7 +105,7 @@
 
     <div class="card bg-none card-box mt-3">
         <div class="card-body">
-            {{ Form::open(array('url' => 'budget','class'=>'w-100 needs-validation','novalidate')) }}
+            {{ Form::open(array('url' => 'budget','class'=>'w-100 needs-validation','novalidate','data-loading' => true,'data-loading-text' => __('Guardando presupuesto...'))) }}
             <div class="row">
 
                 <div class="form-group col-md-4">

@@ -1,4 +1,4 @@
-{{ Form::model($classifier, ['route' => ['budget-classifiers.objects.update', $classifier->id], 'method' => 'PUT']) }}
+{{ Form::model($classifier, ['route' => ['budget-classifiers.objects.update', $classifier->id], 'method' => 'PUT', 'data-loading' => true, 'data-loading-text' => __('Actualizando clasificador...')]) }}
 <div class="modal-body">
     @include('budget-classifiers.objects._form')
 </div>

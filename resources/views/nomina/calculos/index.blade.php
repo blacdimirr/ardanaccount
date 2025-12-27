@@ -52,7 +52,7 @@
                                 {{ __('Conceptos TSS') }}: {{ number_format($conceptosTss ?? 0, 2) }}
                             </div>
                         </div>
-                        {{ Form::open(['method' => 'POST', 'route' => ['nomina.calculos.calcular']]) }}
+                        {{ Form::open(['method' => 'POST', 'route' => ['nomina.calculos.calcular'], 'data-loading' => true, 'data-loading-text' => __('Calculando nómina...')]) }}
                         {{ Form::hidden('nomina_periodo_id', $periodoSeleccionado->id) }}
                         <button type="submit" class="btn btn-primary">
                             {{ __('Calcular aportes e ISR') }}
