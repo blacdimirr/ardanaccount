@@ -2224,6 +2224,7 @@ progress {
 }
 
 .form-label {
+    display: block;
     margin-bottom: 0.5rem;
 }
 
@@ -2258,10 +2259,11 @@ progress {
 .dataTable-input {
     display: block;
     width: 100%;
-    padding: 0.575rem 1rem;
-    font-size: 0.875rem;
+    min-height: 42px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
     font-weight: 400;
-    line-height: 1.5;
+    line-height: 1.4;
     color: #293240;
     background-color: #ffffff;
     background-clip: padding-box;
@@ -22138,7 +22140,21 @@ body .table thead th {
 }
 
 .form-group label {
+    display: block;
+    margin-bottom: 0.35rem;
     font-weight: 600;
+}
+
+textarea.form-control, textarea.custom-select,
+textarea.dataTable-selector,
+textarea.dataTable-input {
+    min-height: 120px;
+    height: auto;
+}
+
+form .btn:not(.btn-sm):not(.btn-lg) {
+    min-height: 42px;
+    padding: 0.5rem 1rem;
 }
 
 .form-control.flatpickr-input[readonly], .flatpickr-input.custom-select[readonly],
