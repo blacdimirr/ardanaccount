@@ -10,6 +10,7 @@ use App\Models\ChartOfAccount;
 use App\Models\ChartOfAccountSubType;
 use App\Models\ChartOfAccountType;
 use App\Models\Customer;
+use App\Models\CuentaRecaudadora;
 use App\Models\Invoice;
 use App\Models\InvoiceProduct;
 use App\Models\JournalItem;
@@ -18,6 +19,7 @@ use App\Models\Payment;
 use App\Models\ProductService;
 use App\Models\ProductServiceCategory;
 use App\Models\Revenue;
+use App\Models\Recaudacion;
 use App\Models\StockReport;
 use App\Models\Tax;
 use App\Models\Vender;
@@ -28,6 +30,7 @@ use App\Exports\AccountStatementExport;
 use App\Exports\BalanceSheetExport;
 use App\Exports\BudgetExecutionExport;
 use App\Exports\FondoMovimientosExport;
+use App\Exports\RecaudacionesDiariasExport;
 use App\Exports\ProductStockExport;
 use App\Exports\ProfitLossExport;
 use App\Exports\TrialBalancExport;
@@ -3678,6 +3681,180 @@ class ReportController extends Controller
         ob_end_clean();
 
         return $data;
+    }
+
+    public function recaudacionesDiarias(Request $request)
+    {
+        if (!\Auth::user()->can('tesoreria_recaudaciones_manage')) {
+            return redirect()->back()->with('error', __('Permission Denied.'));
+        }
+
+        $creatorId = \Auth::user()->creatorId();
+        $startDate = $request->get('start_date', now()->format('Y-m-d'));
+        $endDate = $request->get('end_date', now()->format('Y-m-d'));
+        $selectedServicio = $request->get('servicio');
+        $selectedMetodo = $request->get('metodo_pago');
+        $selectedCuenta = $request->get('cuenta_recaudadora_id');
+
+        $recaudacionesQuery = Recaudacion::with('cuentaRecaudadora')
+            ->whereDate('fecha', '>=', $startDate)
+            ->whereDate('fecha', '<=', $endDate)
+            ->orderBy('fecha', 'desc');
+
+        $cuentasQuery = CuentaRecaudadora::query()->orderBy('banco')->orderBy('numero_cuenta');
+
+        if (!\Auth::user()->type || \Auth::user()->type !== 'super admin') {
+            $recaudacionesQuery->where('created_by', $creatorId);
+            $cuentasQuery->where('created_by', $creatorId);
+        }
+
+        if (!empty($selectedServicio)) {
+            $recaudacionesQuery->where('servicio', $selectedServicio);
+        }
+
+        if (!empty($selectedMetodo)) {
+            $recaudacionesQuery->where('metodo_pago', $selectedMetodo);
+        }
+
+        if (!empty($selectedCuenta)) {
+            $recaudacionesQuery->where('cuenta_recaudadora_id', $selectedCuenta);
+        }
+
+        $recaudaciones = $recaudacionesQuery->get();
+        $cuentas = $cuentasQuery->get();
+        $cuentaOptions = $cuentas->mapWithKeys(function ($cuenta) {
+            return [$cuenta->id => $cuenta->banco . ' - ' . $cuenta->numero_cuenta];
+        });
+
+        $servicioOptions = $this->recaudacionesServicioOptions();
+        $metodoPagoOptions = $this->recaudacionesMetodoPagoOptions();
+
+        [$totalsByService, $totalsByMethod, $totalsByAccount] = $this->buildRecaudacionesTotals(
+            $recaudaciones,
+            $servicioOptions,
+            $metodoPagoOptions
+        );
+
+        return view('report.recaudaciones_diarias', compact(
+            'recaudaciones',
+            'cuentas',
+            'startDate',
+            'endDate',
+            'selectedServicio',
+            'selectedMetodo',
+            'selectedCuenta',
+            'servicioOptions',
+            'metodoPagoOptions',
+            'cuentaOptions',
+            'totalsByService',
+            'totalsByMethod',
+            'totalsByAccount'
+        ));
+    }
+
+    public function recaudacionesDiariasExport(Request $request)
+    {
+        if (!\Auth::user()->can('tesoreria_recaudaciones_manage')) {
+            return redirect()->back()->with('error', __('Permission Denied.'));
+        }
+
+        $creatorId = \Auth::user()->creatorId();
+        $startDate = $request->get('start_date', now()->format('Y-m-d'));
+        $endDate = $request->get('end_date', now()->format('Y-m-d'));
+        $selectedServicio = $request->get('servicio');
+        $selectedMetodo = $request->get('metodo_pago');
+        $selectedCuenta = $request->get('cuenta_recaudadora_id');
+
+        $recaudacionesQuery = Recaudacion::with('cuentaRecaudadora')
+            ->whereDate('fecha', '>=', $startDate)
+            ->whereDate('fecha', '<=', $endDate)
+            ->orderBy('fecha', 'desc');
+
+        if (!\Auth::user()->type || \Auth::user()->type !== 'super admin') {
+            $recaudacionesQuery->where('created_by', $creatorId);
+        }
+
+        if (!empty($selectedServicio)) {
+            $recaudacionesQuery->where('servicio', $selectedServicio);
+        }
+
+        if (!empty($selectedMetodo)) {
+            $recaudacionesQuery->where('metodo_pago', $selectedMetodo);
+        }
+
+        if (!empty($selectedCuenta)) {
+            $recaudacionesQuery->where('cuenta_recaudadora_id', $selectedCuenta);
+        }
+
+        $recaudaciones = $recaudacionesQuery->get();
+
+        $servicioOptions = $this->recaudacionesServicioOptions();
+        $metodoPagoOptions = $this->recaudacionesMetodoPagoOptions();
+        [$totalsByService, $totalsByMethod, $totalsByAccount] = $this->buildRecaudacionesTotals(
+            $recaudaciones,
+            $servicioOptions,
+            $metodoPagoOptions
+        );
+
+        $name = 'daily_collections_' . date('Y-m-d_H-i-s');
+        $data = Excel::download(
+            new RecaudacionesDiariasExport(
+                $recaudaciones,
+                $startDate,
+                $endDate,
+                $totalsByService,
+                $totalsByMethod,
+                $totalsByAccount
+            ),
+            $name . '.xlsx'
+        );
+        ob_end_clean();
+
+        return $data;
+    }
+
+    private function recaudacionesServicioOptions(): array
+    {
+        return [
+            'consulta' => __('Consultation'),
+            'copago' => __('Copay'),
+            'privado' => __('Private Service'),
+        ];
+    }
+
+    private function recaudacionesMetodoPagoOptions(): array
+    {
+        return [
+            'efectivo' => __('Cash'),
+            'tarjeta' => __('Card'),
+            'transferencia' => __('Transfer'),
+            'cheque' => __('Check'),
+            'otro' => __('Other'),
+        ];
+    }
+
+    private function buildRecaudacionesTotals($recaudaciones, array $servicioOptions, array $metodoPagoOptions): array
+    {
+        $totalsByService = [];
+        foreach ($recaudaciones->groupBy('servicio') as $servicio => $items) {
+            $label = $servicioOptions[$servicio] ?? $servicio;
+            $totalsByService[$label] = $items->sum('monto');
+        }
+
+        $totalsByMethod = [];
+        foreach ($recaudaciones->groupBy('metodo_pago') as $metodo => $items) {
+            $label = $metodoPagoOptions[$metodo] ?? $metodo;
+            $totalsByMethod[$label] = $items->sum('monto');
+        }
+
+        $totalsByAccount = [];
+        foreach ($recaudaciones->groupBy('cuenta_recaudadora_id') as $accountId => $items) {
+            $account = $items->first()?->cuentaRecaudadora;
+            $label = $account ? $account->banco . ' - ' . $account->numero_cuenta : __('Unknown');
+            $totalsByAccount[$label] = $items->sum('monto');
+        }
+
+        return [$totalsByService, $totalsByMethod, $totalsByAccount];
     }
 
     protected function buildBudgetExecutionExportRows(array $rows, array $totals, string $budgetLabel, string $classifierLabel): array
