@@ -42,12 +42,14 @@ class MovimientoBancarioImportService
             return [];
         }
 
+        $delimiter = $this->detectDelimiter($lines);
         $rows = [];
-        foreach ($lines as $line) {
+        foreach ($lines as $index => $line) {
+            $line = $this->normalizeLine($line, $index === 0);
             if (trim($line) === '') {
                 continue;
             }
-            $rows[] = str_getcsv($line);
+            $rows[] = str_getcsv($line, $delimiter);
         }
 
         if (empty($rows)) {
@@ -74,6 +76,38 @@ class MovimientoBancarioImportService
         }
 
         return $mapped;
+    }
+
+    private function detectDelimiter(array $lines): string
+    {
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            }
+
+            $candidates = [
+                ',' => substr_count($line, ','),
+                ';' => substr_count($line, ';'),
+                "\t" => substr_count($line, "\t"),
+            ];
+
+            arsort($candidates);
+            $delimiter = array_key_first($candidates);
+
+            return $candidates[$delimiter] > 0 ? $delimiter : ',';
+        }
+
+        return ',';
+    }
+
+    private function normalizeLine(string $line, bool $isFirstLine): string
+    {
+        if ($isFirstLine) {
+            $line = preg_replace('/^\xEF\xBB\xBF/', '', $line);
+        }
+
+        return $line;
     }
 
     private function normalizeHeaders(array $headers): array
