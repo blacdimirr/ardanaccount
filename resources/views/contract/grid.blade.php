@@ -44,7 +44,7 @@
                                 <div class="text-right">
                                     <div class="actions">
                                         <div class="dropdown action-item">
-                                            <a href="#" class="action-item" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-h"></i></a>
+                                            <a href="#" class="action-item" data-bs-toggle="dropdown"><i class="ti ti-dots"></i></a>
                                             <div class="dropdown-menu dropdown-menu-right">
                                                 <a href="#" class="mx-3 btn btn-sm d-inline-flex align-items-center" data-bs-toggle="modal"
                                                 data-bs-target="#exampleModal" data-url="{{ route('contract.edit',$contract->id) }}" class="dropdown-item"

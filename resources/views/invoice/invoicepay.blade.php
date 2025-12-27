@@ -441,7 +441,7 @@
                                         @if ($invoice->status == 0)
                                             <div class="Action">
                                                 @can('send invoice')
-                                                    <a href="{{ route('invoice.sent',$invoice->id) }}" class="send-icon float-right" data-bs-toggle="tooltip" data-original-title="{{__('Mark Sent')}}"><i class="fa fa-paper-plane"></i></a>
+                                                    <a href="{{ route('invoice.sent',$invoice->id) }}" class="send-icon float-right" data-bs-toggle="tooltip" data-original-title="{{__('Mark Sent')}}"><i class="ti ti-send"></i></a>
                                                 @endcan
                                             </div>
                                         @endif
@@ -456,12 +456,12 @@
                                     </div>
                                 </div>
                                 <div class="timeline-block">
-                                    <span class="timeline-step timeline-step-sm bg-info border-info text-white"><i class="far fa-money-bill-alt"></i></span>
+                                    <span class="timeline-step timeline-step-sm bg-info border-info text-white"><i class="ti ti-cash"></i></span>
                                     <div class="timeline-content">
                                         <div class="text-sm h6 ">{{__('Get Paid')}}</div>
                                         @if ($invoice->status != 0)
                                             @can('create payment invoice')
-                                                <a href="#" data-url="{{ route('invoice.payment',$invoice->id) }}" data-ajax-popup="true" data-title="{{__('Add Receipt')}}" class="mx-3 btn btn-sm align-items-center float-right" data-bs-toggle="tooltip" data-original-title="{{__('Add Receipt')}}"><i class="far fa-file"></i></a>
+                                                <a href="#" data-url="{{ route('invoice.payment',$invoice->id) }}" data-ajax-popup="true" data-title="{{__('Add Receipt')}}" class="mx-3 btn btn-sm align-items-center float-right" data-bs-toggle="tooltip" data-original-title="{{__('Add Receipt')}}"><i class="ti ti-file"></i></a>
                                             @endcan
                                         @endif
                                         <small>{{__('Awaiting payment')}}</small>
@@ -503,7 +503,7 @@
 
                         {{-- <a href="#" data-toggle="modal" data-target="#paymentModal"
                                 class="btn btn-primary">
-                                <span class="btn-inner--icon text-white"><i class="fa fa-credit-card"></i></span>
+                                <span class="btn-inner--icon text-white"><i class="ti ti-credit-card"></i></span>
                                 <span class="btn-inner--text text-white">{{ __('Pay Now') }}</span>
                             </a> --}}
 

@@ -5,7 +5,7 @@
 @endsection
 
 @section('title')
-    <i class="fa fa-magic fa-fw" aria-hidden="true"></i>
+    <i class="ti ti-wand" aria-hidden="true"></i>
     {!! trans('installer_messages.environment.wizard.title') !!}
 @endsection
 
@@ -21,7 +21,7 @@
 
         <form method="post" action="{{ route('LaravelInstaller::environmentSaveWizard') }}">
             <label for="tab1" class="tab-label">
-                <i class="fa fa-cog fa-2x fa-fw" aria-hidden="true"></i>
+                <i class="ti ti-settings" style="font-size: 2em;" aria-hidden="true"></i>
                 <br />
                 {{ trans('installer_messages.environment.wizard.tabs.environment') }}
             </label>
@@ -35,7 +35,7 @@
                     <input type="text" name="app_name" id="app_name" value="" placeholder="{{ trans('installer_messages.environment.wizard.form.app_name_placeholder') }}" />
                     @if ($errors->has('app_name'))
                         <span class="error-block">
-                            <i class="fa fa-fw fa-exclamation-triangle" aria-hidden="true"></i>
+                            <i class="ti ti-alert-triangle" aria-hidden="true"></i>
                             {{ $errors->first('app_name') }}
                         </span>
                     @endif
@@ -115,7 +115,7 @@
                     <input type="url" name="app_url" id="app_url" value="http://localhost" placeholder="{{ trans('installer_messages.environment.wizard.form.app_url_placeholder') }}" />
                     @if ($errors->has('app_url'))
                         <span class="error-block">
-                            <i class="fa fa-fw fa-exclamation-triangle" aria-hidden="true"></i>
+                            <i class="ti ti-alert-triangle" aria-hidden="true"></i>
                             {{ $errors->first('app_url') }}
                         </span>
                     @endif
@@ -130,7 +130,7 @@
             </div>
 
             <label for="tab2" class="tab-label">
-                <i class="fa fa-database fa-2x fa-fw" aria-hidden="true"></i>
+                <i class="ti ti-database" style="font-size: 2em;" aria-hidden="true"></i>
                 <br />
                 {{ trans('installer_messages.environment.wizard.tabs.database') }}
             </label>
@@ -164,7 +164,7 @@
                     <input type="text" name="database_hostname" id="database_hostname" value="127.0.0.1" placeholder="{{ trans('installer_messages.environment.wizard.form.db_host_placeholder') }}" />
                     @if ($errors->has('database_hostname'))
                         <span class="error-block">
-                            <i class="fa fa-fw fa-exclamation-triangle" aria-hidden="true"></i>
+                            <i class="ti ti-alert-triangle" aria-hidden="true"></i>
                             {{ $errors->first('database_hostname') }}
                         </span>
                     @endif
@@ -177,7 +177,7 @@
                     <input type="number" name="database_port" id="database_port" value="3306" placeholder="{{ trans('installer_messages.environment.wizard.form.db_port_placeholder') }}" />
                     @if ($errors->has('database_port'))
                         <span class="error-block">
-                            <i class="fa fa-fw fa-exclamation-triangle" aria-hidden="true"></i>
+                            <i class="ti ti-alert-triangle" aria-hidden="true"></i>
                             {{ $errors->first('database_port') }}
                         </span>
                     @endif
@@ -190,7 +190,7 @@
                     <input type="text" name="database_name" id="database_name" value="" placeholder="{{ trans('installer_messages.environment.wizard.form.db_name_placeholder') }}" />
                     @if ($errors->has('database_name'))
                         <span class="error-block">
-                            <i class="fa fa-fw fa-exclamation-triangle" aria-hidden="true"></i>
+                            <i class="ti ti-alert-triangle" aria-hidden="true"></i>
                             {{ $errors->first('database_name') }}
                         </span>
                     @endif
@@ -203,7 +203,7 @@
                     <input type="text" name="database_username" id="database_username" value="" placeholder="{{ trans('installer_messages.environment.wizard.form.db_username_placeholder') }}" />
                     @if ($errors->has('database_username'))
                         <span class="error-block">
-                            <i class="fa fa-fw fa-exclamation-triangle" aria-hidden="true"></i>
+                            <i class="ti ti-alert-triangle" aria-hidden="true"></i>
                             {{ $errors->first('database_username') }}
                         </span>
                     @endif
@@ -216,7 +216,7 @@
                     <input type="password" name="database_password" id="database_password" value="" placeholder="{{ trans('installer_messages.environment.wizard.form.db_password_placeholder') }}" />
                     @if ($errors->has('database_password'))
                         <span class="error-block">
-                            <i class="fa fa-fw fa-exclamation-triangle" aria-hidden="true"></i>
+                            <i class="ti ti-alert-triangle" aria-hidden="true"></i>
                             {{ $errors->first('database_password') }}
                         </span>
                     @endif
@@ -503,7 +503,7 @@
                 <div class="buttons">
                     <button class="button" type="submit">
                         {{ trans('installer_messages.environment.wizard.form.buttons.install') }}
-                        <i class="fa fa-angle-right fa-fw" aria-hidden="true"></i>
+                        <i class="ti ti-chevron-right" aria-hidden="true"></i>
                     </button>
                 </div>
             </div>

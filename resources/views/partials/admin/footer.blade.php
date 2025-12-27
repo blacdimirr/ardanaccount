@@ -41,7 +41,6 @@ $setting_arr = Utility::file_validate();
 <script src="{{ asset('assets/js/plugins/popper.min.js') }}"></script>
 <script src="{{ asset('assets/js/plugins/perfect-scrollbar.min.js') }}"></script>
 <script src="{{ asset('assets/js/plugins/bootstrap.min.js') }}"></script>
-<script src="{{ asset('assets/js/plugins/feather.min.js') }}"></script>
 <script src="{{ asset('assets/js/dash.js') }}"></script>
 
 <script src="{{asset('assets/js/plugins/datepicker-full.min.js')}}"></script>
@@ -91,9 +90,6 @@ $setting_arr = Utility::file_validate();
 
 
 <script>
-
-    feather.replace();
-
     function removeClassByPrefix(node, prefix) {
         for (let i = 0; i < node.classList.length; i++) {
             let value = node.classList[i];

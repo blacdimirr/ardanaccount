@@ -562,7 +562,7 @@
                                 <div class="row">
                                     <div class="col-lg-4 col-xl-4 col-md-4">
                                         <h6 class="mt-2">
-                                            <i data-feather="credit-card" class="me-2"></i>{{ __('Primary color settings') }}
+                                            <i class="ti ti-credit-card me-2"></i>{{ __('Primary color settings') }}
                                         </h6>
 
                                         <hr class="my-2" />
@@ -599,7 +599,7 @@
                                     </div>
                                     <div class="col-lg-4 col-xl-4 col-md-4">
                                         <h6 class="mt-2">
-                                            <i data-feather="layout" class="me-2"></i>{{__('Sidebar settings')}}
+                                            <i class="ti ti-layout me-2"></i>{{__('Sidebar settings')}}
                                         </h6>
                                         <hr class="my-2" />
                                         <div class="form-check form-switch">
@@ -609,7 +609,7 @@
                                     </div>
                                     <div class="col-lg-4 col-xl-4 col-md-4">
                                         <h6 class="mt-2">
-                                            <i data-feather="sun" class="me-2"></i>{{__('Layout settings')}}
+                                            <i class="ti ti-sun me-2"></i>{{__('Layout settings')}}
                                         </h6>
                                         <hr class="my-2" />
                                         <div class="form-check form-switch mt-2">
@@ -3553,7 +3553,7 @@
                             @if ($enable_chatgpt)
                             <div>
                                 <a href="javascript:void(0)" data-size="md" data-ajax-popup-over="true" data-url="{{ route('generate', ['seo settings']) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ __('Generate') }}" data-title="{{ __('Generate content with AI') }}" class="btn btn-primary btn-sm float-end">
-                                    <i class="fas fa-robot"></i>
+                                    <i class="ti ti-robot"></i>
                                     {{ __('Generate with AI') }}
                                 </a>
                             </div>
@@ -3680,7 +3680,7 @@
                             @if ($enable_chatgpt)
                             <div>
                                 <a href="javascript:void(0)" data-size="md" data-ajax-popup-over="true" data-url="{{ route('generate', ['cookie']) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ __('Generate') }}" data-title="{{ __('Generate content with AI') }}" class="btn btn-primary btn-sm float-end">
-                                    <i class="fas fa-robot"></i>
+                                    <i class="ti ti-robot"></i>
                                     {{ __('Generate with AI') }}
                                 </a>
                             </div>

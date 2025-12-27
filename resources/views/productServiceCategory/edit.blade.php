@@ -10,7 +10,7 @@
             <a href="#" data-size="md" data-ajax-popup-over="true" data-url="{{ route('generate', ['category']) }}"
                 data-bs-toggle="tooltip" data-bs-placement="top" title="{{ __('Generate') }}"
                 data-title="{{ __('Generate content with AI') }}" class="btn btn-primary btn-sm float-end">
-                <i class="fas fa-robot"></i>
+                <i class="ti ti-robot"></i>
                 {{__('Generate with AI')}}
             </a>
         </div>

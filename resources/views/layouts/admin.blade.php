@@ -86,8 +86,6 @@
 
     <!-- font css -->
     <link rel="stylesheet" href="{{ asset('assets/fonts/tabler-icons.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/fonts/feather.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/fonts/fontawesome.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/fonts/material.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/plugins/main.css') }}">
     <!-- vendor css -->
@@ -174,7 +172,7 @@
                     <button type="button" class="btn-close float-end" data-bs-dismiss="modal"
                         aria-label="Close"></button>
                     <h6 class="mt-2">
-                        <i data-feather="monitor" class="me-2"></i>Desktop settings
+                        <i class="ti ti-device-desktop me-2"></i>Desktop settings
                     </h6>
                     <hr />
                     <div class="form-check form-switch">
@@ -190,7 +188,7 @@
                         <label class="form-check-label f-w-600 pl-1" for="pcsetting2">Store Cookie</label>
                     </div>
                     <h6 class="mb-0 mt-5">
-                        <i data-feather="save" class="me-2"></i>Application settings
+                        <i class="ti ti-device-floppy me-2"></i>Application settings
                     </h6>
                     <hr />
                     <div class="form-check form-switch">
@@ -206,7 +204,7 @@
                             file</label>
                     </div>
                     <h6 class="mb-0 mt-5">
-                        <i data-feather="cpu" class="me-2"></i>System settings
+                        <i class="ti ti-cpu me-2"></i>System settings
                     </h6>
                     <hr />
                     <div class="form-check form-switch">
