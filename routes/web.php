@@ -631,6 +631,12 @@ Route::group(
         Route::resource('recaudaciones', \App\Http\Controllers\RecaudacionController::class)->except(['show', 'destroy', 'create']);
         Route::resource('cuentas-recaudadoras', \App\Http\Controllers\CuentaRecaudadoraController::class)->except(['show', 'destroy']);
         Route::resource('fondos', \App\Http\Controllers\FondoRotatorioController::class)->except(['show', 'destroy']);
+        Route::get('conciliacion', [\App\Http\Controllers\ConciliacionBancariaController::class, 'index'])
+            ->name('conciliacion.index');
+        Route::post('conciliacion/auto', [\App\Http\Controllers\ConciliacionBancariaController::class, 'conciliarAutomaticamente'])
+            ->name('conciliacion.auto');
+        Route::post('conciliacion/manual', [\App\Http\Controllers\ConciliacionBancariaController::class, 'conciliarManual'])
+            ->name('conciliacion.manual');
         Route::get('extractos', [\App\Http\Controllers\MovimientoBancarioController::class, 'index'])
             ->name('extractos.index');
         Route::post('extractos/preview', [\App\Http\Controllers\MovimientoBancarioController::class, 'preview'])
@@ -887,8 +893,10 @@ Route::group(
         Route::get('report/invoice-report', [ReportController::class, 'invoiceReport'])->name('report.invoice');
         Route::get('report/fondos-movimientos', [ReportController::class, 'fondosMovimientos'])->name('report.fondos.movimientos');
         Route::post('report/fondos-movimientos/export', [ReportController::class, 'fondosMovimientosExport'])->name('report.fondos.movimientos.export');
-        Route::get('report/recaudaciones-diarias', [ReportController::class, 'recaudacionesDiarias'])->name('report.recaudaciones.diarias');
-        Route::post('report/recaudaciones-diarias/export', [ReportController::class, 'recaudacionesDiariasExport'])->name('report.recaudaciones.diarias.export');
+Route::get('report/recaudaciones-diarias', [ReportController::class, 'recaudacionesDiarias'])->name('report.recaudaciones.diarias');
+Route::post('report/recaudaciones-diarias/export', [ReportController::class, 'recaudacionesDiariasExport'])->name('report.recaudaciones.diarias.export');
+Route::get('report/conciliacion-bancaria', [ReportController::class, 'conciliacionBancaria'])->name('report.conciliacion.bancaria');
+Route::post('report/conciliacion-bancaria/export', [ReportController::class, 'conciliacionBancariaExport'])->name('report.conciliacion.bancaria.export');
 
 
         Route::get('report/account-statement-report', [ReportController::class, 'accountStatement'])->name('report.account.statement');

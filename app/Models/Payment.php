@@ -17,6 +17,7 @@ class Payment extends Model
         'reference',
         'created_by',
         'ncf',
+        'estado_conciliacion',
     ];
 
     public function category()
@@ -33,6 +34,11 @@ class Payment extends Model
     public function bankAccount()
     {
         return $this->hasOne('App\Models\BankAccount', 'id', 'account_id');
+    }
+
+    public function movimientoBancario()
+    {
+        return $this->morphOne(MovimientoBancario::class, 'conciliable');
     }
 
     public static function accounts($account)
