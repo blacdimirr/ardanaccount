@@ -50,6 +50,10 @@ class NominaAsientoService
                 $resumen[$key]['gastos'] += (float) $detalle->monto;
             } elseif ($concepto->tipo === 'descuento') {
                 $resumen[$key]['descuentos'] += (float) $detalle->monto;
+            } elseif ($concepto->tipo === 'aporte') {
+                $monto = (float) $detalle->monto;
+                $resumen[$key]['gastos'] += $monto;
+                $resumen[$key]['descuentos'] += $monto;
             }
         }
 
@@ -177,6 +181,17 @@ class NominaAsientoService
                 ->where('chart_account_id', $bankAccountId)
                 ->orderBy('id')
                 ->first();
+
+            if (!$bankAccount) {
+                $bankAccount = BankAccount::where('created_by', $creatorId)
+                    ->orderBy('id')
+                    ->first();
+
+                if ($bankAccount && !$bankAccount->chart_account_id) {
+                    $bankAccount->chart_account_id = $bankAccountId;
+                    $bankAccount->save();
+                }
+            }
 
             if ($bankAccount) {
                 Utility::bankAccountBalance($bankAccount->id, $resumen['totales']['neto'], 'debit');
