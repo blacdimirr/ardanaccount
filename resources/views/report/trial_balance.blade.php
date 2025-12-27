@@ -123,6 +123,7 @@
     @endphp
 
     <div class="row justify-content-center" id="printableArea">
+        @include('pdf.partials.header')
         <div class="col-md-8">
             <div class="card">
                 <div class="card-body {{ $view == 'collapse' ? 'collapse-view' : '' }}">

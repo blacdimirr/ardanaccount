@@ -16,6 +16,7 @@
     </style>
 </head>
 <body>
+    @include('pdf.partials.header')
     <div class="header">
         <h2>{{ $companyName }}</h2>
         <p>{{ __('Plan Anual de Compras') }} - {{ $pac->anio }}</p>

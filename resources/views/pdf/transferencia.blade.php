@@ -8,6 +8,7 @@
     </style>
 </head>
 <body>
+    @include('pdf.partials.header')
     <h3>Hospital San Lorenzo de Los Mina</h3>
     <p><strong>HSLM-2025</strong></p>
     <p><strong>A:</strong> {{$obj['dirigidoA']}}<br>

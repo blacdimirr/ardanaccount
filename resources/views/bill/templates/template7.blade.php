@@ -179,6 +179,7 @@
 </head>
 
 <body>
+    @include('pdf.partials.header')
     <div class="bill-preview-main" id="boxes">
         <div class="bill-header" style="border-top: 15px solid var(--theme-color); background: #f8f8f8;">
             <table>

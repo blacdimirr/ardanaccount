@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Exports\Concerns\WithCompanyHeader;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use App\Models\Revenue;
@@ -16,10 +17,15 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithCustomStartCell;
 use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Concerns\WithDrawings;
 use Maatwebsite\Excel\Events\AfterSheet;
 
-class TrialBalancExport implements FromArray , WithHeadings , WithStyles, WithCustomStartCell, WithColumnWidths, WithEvents
+class TrialBalancExport implements FromArray , WithHeadings , WithStyles, WithCustomStartCell, WithColumnWidths, WithEvents, WithDrawings
 {
+    use WithCompanyHeader {
+        registerEvents as registerCompanyHeaderEvents;
+    }
+
     /**
     * @return \Illuminate\Support\Collection
     */
@@ -95,7 +101,7 @@ class TrialBalancExport implements FromArray , WithHeadings , WithStyles, WithCu
 
     public function startCell(): string
     {
-        return 'A6';
+        return 'A9';
     }
 
     public function columnWidths(): array
@@ -110,10 +116,10 @@ class TrialBalancExport implements FromArray , WithHeadings , WithStyles, WithCu
 
     public function styles(Worksheet $sheet)
     {
-        $sheet->getStyle('A6')->getFont()->setBold(true);
-        $sheet->getStyle('B6')->getFont()->setBold(true);
-        $sheet->getStyle('C6')->getFont()->setBold(true);
-        $sheet->getStyle('D6')->getFont()->setBold(true);
+        $sheet->getStyle('A9')->getFont()->setBold(true);
+        $sheet->getStyle('B9')->getFont()->setBold(true);
+        $sheet->getStyle('C9')->getFont()->setBold(true);
+        $sheet->getStyle('D9')->getFont()->setBold(true);
 
     }
 
@@ -138,13 +144,15 @@ class TrialBalancExport implements FromArray , WithHeadings , WithStyles, WithCu
         return [
             AfterSheet::class => function (AfterSheet $event) {
 
-                $event->sheet->getDelegate()->mergeCells('A2:D2');
-                $event->sheet->getDelegate()->mergeCells('A3:D3');
-                $event->sheet->getDelegate()->mergeCells('A4:D4');
+                $this->registerCompanyHeaderEvents()[AfterSheet::class]($event);
 
-                $event->sheet->getDelegate()->setCellValue('A2', 'Trial Balance - ' . $this->companyName)->getStyle('A2')->getFont()->setBold(true);
-                $event->sheet->getDelegate()->setCellValue('A3', 'Print Out Date : ' . date('Y-m-d H:i'));
-                $event->sheet->getDelegate()->setCellValue('A4', 'Date : ' . $this->startDate . ' - ' . $this->endDate);
+                $event->sheet->getDelegate()->mergeCells('A5:D5');
+                $event->sheet->getDelegate()->mergeCells('A6:D6');
+                $event->sheet->getDelegate()->mergeCells('A7:D7');
+
+                $event->sheet->getDelegate()->setCellValue('A5', 'Balance de comprobación - ' . $this->companyName)->getStyle('A5')->getFont()->setBold(true);
+                $event->sheet->getDelegate()->setCellValue('A6', 'Fecha de impresión: ' . date('d/m/Y H:i'));
+                $event->sheet->getDelegate()->setCellValue('A7', 'Periodo: ' . $this->startDate . ' - ' . $this->endDate);
 
                 $startRow = 2;
                 $lastRow = $event->sheet->getHighestRow();
@@ -158,7 +166,7 @@ class TrialBalancExport implements FromArray , WithHeadings , WithStyles, WithCu
                 foreach ($data as $index => $row) {
                     if (isset($row['Account Name']) && ($row['Account Name'] == 'Assets' || $row['Account Name'] == 'Income' || $row['Account Name'] == 'Costs of Goods Sold' || $row['Account Name'] == 'Expenses' ||
                      $row['Account Name'] ==  'Liabilities' || $row['Account Name'] ==  'Equity')) {
-                        $rowIndex = $index + 7; // Adjust for 1-based indexing and header row
+                        $rowIndex = $index + 10; // Adjust for 1-based indexing and header row
                         $event->sheet->getStyle('A' . $rowIndex . ':D' . $rowIndex)
                             ->applyFromArray([
                                 'font' => [

@@ -2,13 +2,19 @@
 
 namespace App\Exports;
 
+use App\Exports\Concerns\WithCompanyHeader;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
+use Maatwebsite\Excel\Concerns\WithCustomStartCell;
+use Maatwebsite\Excel\Concerns\WithDrawings;
+use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class PublicBudgetExecutionExport implements FromArray, WithColumnWidths, WithStyles
+class PublicBudgetExecutionExport implements FromArray, WithColumnWidths, WithStyles, WithEvents, WithCustomStartCell, WithDrawings
 {
+    use WithCompanyHeader;
+
     protected array $rows;
 
     public function __construct(array $rows)
@@ -36,9 +42,11 @@ class PublicBudgetExecutionExport implements FromArray, WithColumnWidths, WithSt
 
     public function styles(Worksheet $sheet): array
     {
+        $startRow = $this->companyHeaderStartRow();
+
         return [
-            1 => ['font' => ['bold' => true]],
-            6 => ['font' => ['bold' => true]],
+            $startRow => ['font' => ['bold' => true]],
+            $startRow + 5 => ['font' => ['bold' => true]],
         ];
     }
 }

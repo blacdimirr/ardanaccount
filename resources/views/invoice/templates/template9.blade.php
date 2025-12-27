@@ -187,6 +187,7 @@
 </head>
 
 <body>
+    @include('pdf.partials.header')
 
     <div class="invoice-preview-main" id="boxes" style="border-right:40px solid var(--theme-color);">
         <div class="invoice-header">

@@ -2,12 +2,18 @@
 
 namespace App\Exports;
 
+use App\Exports\Concerns\WithCompanyHeader;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithCustomStartCell;
+use Maatwebsite\Excel\Concerns\WithDrawings;
+use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class NominaIr4Export implements FromCollection, WithHeadings
+class NominaIr4Export implements FromCollection, WithHeadings, WithEvents, WithCustomStartCell, WithDrawings
 {
+    use WithCompanyHeader;
+
     private Collection $rows;
 
     public function __construct(Collection $rows)

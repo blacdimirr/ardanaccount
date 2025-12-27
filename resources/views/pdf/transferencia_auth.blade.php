@@ -38,6 +38,7 @@
     </style>
 </head>
 <body>
+    @include('pdf.partials.header')
 
     <div class="logo">SAN LORENZO DE LOS MINA</div>
     <p><strong>{{$obj['fecha_venta']}}</strong></p>

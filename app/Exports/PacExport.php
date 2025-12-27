@@ -3,12 +3,18 @@
 namespace App\Exports;
 
 use App\Models\Pac;
+use App\Exports\Concerns\WithCompanyHeader;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithCustomStartCell;
+use Maatwebsite\Excel\Concerns\WithDrawings;
+use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class PacExport implements FromCollection, WithHeadings
+class PacExport implements FromCollection, WithHeadings, WithEvents, WithCustomStartCell, WithDrawings
 {
+    use WithCompanyHeader;
+
     protected Pac $pac;
 
     public function __construct(Pac $pac)

@@ -98,6 +98,7 @@
     <div class="row">
         <div class="col-12">
             <div class="card" id="printableArea">
+        @include('pdf.partials.header')
                 <div class="card-body table-border-style">
                     <div class="table-responsive">
                         <table class="table datatable">

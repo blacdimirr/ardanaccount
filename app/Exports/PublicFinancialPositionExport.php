@@ -2,12 +2,18 @@
 
 namespace App\Exports;
 
+use App\Exports\Concerns\WithCompanyHeader;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
+use Maatwebsite\Excel\Concerns\WithCustomStartCell;
+use Maatwebsite\Excel\Concerns\WithDrawings;
+use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class PublicFinancialPositionExport implements FromArray, WithHeadings, WithColumnWidths
+class PublicFinancialPositionExport implements FromArray, WithHeadings, WithColumnWidths, WithEvents, WithCustomStartCell, WithDrawings
 {
+    use WithCompanyHeader;
+
     public function __construct(
         private array $report,
         private string $cutoffDate,

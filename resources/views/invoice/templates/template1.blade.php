@@ -179,6 +179,7 @@
 </head>
 
 <body class="">
+    @include('pdf.partials.header')
     <div class="invoice-preview-main" id="boxes">
         <div class="invoice-header" style="background: {{ $color }};color:{{ $font_color }}">
             <table>

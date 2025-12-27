@@ -4,12 +4,18 @@ namespace App\Exports;
 
 use App\Services\NominaAportesSsService;
 use App\Services\NominaIsrService;
+use App\Exports\Concerns\WithCompanyHeader;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithCustomStartCell;
+use Maatwebsite\Excel\Concerns\WithDrawings;
+use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class NominaAportesExport implements FromCollection, WithHeadings
+class NominaAportesExport implements FromCollection, WithHeadings, WithEvents, WithCustomStartCell, WithDrawings
 {
+    use WithCompanyHeader;
+
     private int $periodoId;
     private int $creatorId;
     private NominaAportesSsService $service;

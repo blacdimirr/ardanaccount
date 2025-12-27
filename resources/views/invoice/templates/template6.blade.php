@@ -175,6 +175,7 @@
 </head>
 
 <body>
+    @include('pdf.partials.header')
     <div class="invoice-preview-main" id="boxes">
         <div class="invoice-header" style="border-top: 15px solid {{ $color }};">
             <table>

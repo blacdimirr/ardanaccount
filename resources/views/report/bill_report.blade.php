@@ -202,6 +202,7 @@
         </div>
     </div>
     <div id="printableArea">
+        @include('pdf.partials.header')
         <div class="row mt-3">
             <div class="col">
                 <input type="hidden" value="{{$filter['status'].' '.__('Bill').' '.'Report of'.' '.$filter['startDateRange'].' to '.$filter['endDateRange'].' '.__('of').' '.$filter['vender']}}" id="filename">
