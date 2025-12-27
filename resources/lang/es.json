@@ -1716,5 +1716,10 @@
   "No movements were detected in the file.": "No se detectaron movimientos en el archivo.",
   "Select an account": "Seleccione una cuenta",
   "Showing first 20 movements for preview.": "Mostrando los primeros 20 movimientos para la vista previa.",
-  "Source File": "Archivo de origen"
+  "Source File": "Archivo de origen",
+  "Public Budget Execution": "Estado de Ejecución Presupuestaria",
+  "Public Budget Execution Report": "Estado de Ejecución Presupuestaria",
+  "Execution Balance": "Saldo de ejecución",
+  "Generated at": "Generado el",
+  "Institutional Report": "Informe institucional"
 }

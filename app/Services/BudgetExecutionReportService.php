@@ -104,6 +104,103 @@ class BudgetExecutionReportService
         ];
     }
 
+    public function publicClassifierOptions(): array
+    {
+        return [
+            self::CLASSIFIER_OBJECT => __('Object of expenditure'),
+            self::CLASSIFIER_PROGRAM => __('Program'),
+            self::CLASSIFIER_SOURCE => __('Funding Source'),
+        ];
+    }
+
+    public function estadoEjecucion(int $creatorId, array $filters = []): array
+    {
+        $classifier = $filters['classifier'] ?? self::CLASSIFIER_OBJECT;
+        $budget = $this->resolveBudget($creatorId, $filters);
+
+        $rows = [];
+        $totals = [
+            'pia' => 0,
+            'pim' => 0,
+            'compromiso' => 0,
+            'devengado' => 0,
+            'pagado' => 0,
+            'saldo' => 0,
+        ];
+
+        if (!$budget) {
+            return [
+                'budget' => null,
+                'classifier' => $classifier,
+                'rows' => [],
+                'totals' => $totals,
+                'budgetLabel' => __('No budget selected'),
+            ];
+        }
+
+        $categories = ProductServiceCategory::where('created_by', $creatorId)
+            ->where('type', 'expense')
+            ->with(['objetoGasto', 'programa', 'fuenteFinanciamiento'])
+            ->get();
+
+        $piaTotals = $this->normalizeTotals($budget->monto_pia);
+        $pimTotals = $this->normalizeTotals($budget->monto_pim);
+        $committedTotals = $this->normalizeTotals($budget->monto_comprometido);
+        $accruedTotals = $this->normalizeTotals($budget->monto_devengado);
+        $paidTotals = $this->normalizeTotals($budget->monto_pagado);
+
+        foreach ($categories as $category) {
+            $group = $this->classifierData($classifier, $category);
+            $key = $group['key'];
+            $label = $group['label'];
+
+            if (!isset($rows[$key])) {
+                $rows[$key] = [
+                    'label' => $label,
+                    'pia' => 0,
+                    'pim' => 0,
+                    'compromiso' => 0,
+                    'devengado' => 0,
+                    'pagado' => 0,
+                    'saldo' => 0,
+                ];
+            }
+
+            $categoryId = $category->id;
+            $rows[$key]['pia'] += (float) data_get($piaTotals, 'expense.' . $categoryId, 0);
+            $rows[$key]['pim'] += (float) data_get($pimTotals, 'expense.' . $categoryId, 0);
+            $rows[$key]['compromiso'] += (float) data_get($committedTotals, 'expense.' . $categoryId, 0);
+            $rows[$key]['devengado'] += (float) data_get($accruedTotals, 'expense.' . $categoryId, 0);
+            $rows[$key]['pagado'] += (float) data_get($paidTotals, 'expense.' . $categoryId, 0);
+        }
+
+        $rows = collect($rows)
+            ->map(function (array $row) {
+                $row['saldo'] = $row['pim'] - $row['pagado'];
+                return $row;
+            })
+            ->sortBy('label')
+            ->values()
+            ->all();
+
+        foreach ($rows as $row) {
+            $totals['pia'] += $row['pia'];
+            $totals['pim'] += $row['pim'];
+            $totals['compromiso'] += $row['compromiso'];
+            $totals['devengado'] += $row['devengado'];
+            $totals['pagado'] += $row['pagado'];
+            $totals['saldo'] += $row['saldo'];
+        }
+
+        return [
+            'budget' => $budget,
+            'classifier' => $classifier,
+            'rows' => $rows,
+            'totals' => $totals,
+            'budgetLabel' => $this->formatBudgetLabel($budget),
+        ];
+    }
+
     public function formatBudgetLabel(?Budget $budget): string
     {
         if (!$budget) {

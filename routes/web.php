@@ -878,6 +878,8 @@ Route::group(
         Route::get('report/income-vs-expense-summary', [ReportController::class, 'incomeVsExpenseSummary'])->name('report.income.vs.expense.summary');
         Route::get('report/budget-execution', [ReportController::class, 'budgetExecution'])->name('report.budget.execution');
         Route::post('report/budget-execution/export', [ReportController::class, 'budgetExecutionExport'])->name('report.budget.execution.export');
+        Route::get('report/public-budget-execution', [ReportController::class, 'publicBudgetExecution'])->name('report.public.budget.execution');
+        Route::post('report/public-budget-execution/export', [ReportController::class, 'publicBudgetExecutionExport'])->name('report.public.budget.execution.export');
 
 
         Route::get('report/tax-summary', [ReportController::class, 'taxSummary'])->name('report.tax.summary');

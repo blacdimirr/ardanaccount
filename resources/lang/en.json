@@ -1658,5 +1658,10 @@
     "No movements were detected in the file.": "No movements were detected in the file.",
     "Select an account": "Select an account",
     "Showing first 20 movements for preview.": "Showing first 20 movements for preview.",
-    "Source File": "Source File"
+    "Source File": "Source File",
+    "Public Budget Execution": "Public Budget Execution",
+    "Public Budget Execution Report": "Public Budget Execution Report",
+    "Execution Balance": "Execution Balance",
+    "Generated at": "Generated at",
+    "Institutional Report": "Institutional Report"
 }

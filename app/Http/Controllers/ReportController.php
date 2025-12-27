@@ -34,6 +34,7 @@ use App\Exports\FondoMovimientosExport;
 use App\Exports\ConciliacionBancariaExport;
 use App\Exports\EstadosCuentaConciliacionExport;
 use App\Exports\RecaudacionesDiariasExport;
+use App\Exports\PublicBudgetExecutionExport;
 use App\Exports\ProductStockExport;
 use App\Exports\ProfitLossExport;
 use App\Exports\TrialBalancExport;
@@ -3623,6 +3624,72 @@ class ReportController extends Controller
         return $data;
     }
 
+    public function publicBudgetExecution(Request $request, BudgetExecutionReportService $reportService)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission Denied.'));
+        }
+
+        $creatorId = \Auth::user()->creatorId();
+        $budgets = Budget::where('created_by', $creatorId)
+            ->orderByDesc('from')
+            ->orderByDesc('id')
+            ->get();
+
+        $classifier = $request->get('classifier', BudgetExecutionReportService::CLASSIFIER_OBJECT);
+        $report = $reportService->estadoEjecucion($creatorId, [
+            'budget_id' => $request->get('budget_id'),
+            'classifier' => $classifier,
+        ]);
+
+        $selectedBudgetId = $request->get('budget_id') ?: ($report['budget']?->id);
+        $classifierOptions = $reportService->publicClassifierOptions();
+        $companyName = User::where('id', $creatorId)->value('name') ?? '';
+
+        return view('report.public_budget_execution', [
+            'budgets' => $budgets,
+            'selectedBudgetId' => $selectedBudgetId,
+            'classifier' => $classifier,
+            'classifierOptions' => $classifierOptions,
+            'rows' => $report['rows'],
+            'totals' => $report['totals'],
+            'budget' => $report['budget'],
+            'budgetLabel' => $report['budgetLabel'],
+            'companyName' => $companyName,
+        ]);
+    }
+
+    public function publicBudgetExecutionExport(Request $request, BudgetExecutionReportService $reportService)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission Denied.'));
+        }
+
+        $creatorId = \Auth::user()->creatorId();
+        $report = $reportService->estadoEjecucion($creatorId, [
+            'budget_id' => $request->get('budget_id'),
+            'classifier' => $request->get('classifier', BudgetExecutionReportService::CLASSIFIER_OBJECT),
+        ]);
+
+        $classifierOptions = $reportService->publicClassifierOptions();
+        $classifierLabel = $classifierOptions[$report['classifier']] ?? $report['classifier'];
+        $companyName = User::where('id', $creatorId)->value('name') ?? '';
+
+        $rows = $this->buildPublicBudgetExecutionExportRows(
+            $report['rows'],
+            $report['totals'],
+            $report['budgetLabel'],
+            $classifierLabel,
+            $companyName
+        );
+
+        $name = 'public_budget_execution_' . date('Y-m-d_H-i-s');
+        $data = Excel::download(new PublicBudgetExecutionExport($rows), $name . '.xlsx');
+        ob_end_clean();
+
+        return $data;
+    }
+
     public function fondosMovimientos(Request $request)
     {
         if (!\Auth::user()->can('tesoreria_fondos_manage')) {
@@ -4045,6 +4112,55 @@ class ReportController extends Controller
             $totals['compromiso'],
             $totals['devengado'],
             $totals['pagado'],
+        ];
+
+        return $exportRows;
+    }
+
+    protected function buildPublicBudgetExecutionExportRows(
+        array $rows,
+        array $totals,
+        string $budgetLabel,
+        string $classifierLabel,
+        string $companyName
+    ): array {
+        $exportRows = [];
+        $exportRows[] = [$companyName !== '' ? $companyName : __('Institutional Report')];
+        $exportRows[] = [__('Public Budget Execution Report')];
+        $exportRows[] = [__('Period'), $budgetLabel];
+        $exportRows[] = [__('Classifier'), $classifierLabel];
+        $exportRows[] = [__('Generated at'), now()->format('Y-m-d H:i')];
+        $exportRows[] = [''];
+        $exportRows[] = [
+            __('Classifier'),
+            __('PIA'),
+            __('PIM'),
+            __('Commitment'),
+            __('Accrued'),
+            __('Paid'),
+            __('Execution Balance'),
+        ];
+
+        foreach ($rows as $row) {
+            $exportRows[] = [
+                $row['label'],
+                $row['pia'],
+                $row['pim'],
+                $row['compromiso'],
+                $row['devengado'],
+                $row['pagado'],
+                $row['saldo'],
+            ];
+        }
+
+        $exportRows[] = [
+            __('Total'),
+            $totals['pia'],
+            $totals['pim'],
+            $totals['compromiso'],
+            $totals['devengado'],
+            $totals['pagado'],
+            $totals['saldo'],
         ];
 
         return $exportRows;
