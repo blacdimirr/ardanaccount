@@ -631,6 +631,12 @@ Route::group(
         Route::resource('recaudaciones', \App\Http\Controllers\RecaudacionController::class)->except(['show', 'destroy', 'create']);
         Route::resource('cuentas-recaudadoras', \App\Http\Controllers\CuentaRecaudadoraController::class)->except(['show', 'destroy']);
         Route::resource('fondos', \App\Http\Controllers\FondoRotatorioController::class)->except(['show', 'destroy']);
+        Route::get('extractos', [\App\Http\Controllers\MovimientoBancarioController::class, 'index'])
+            ->name('extractos.index');
+        Route::post('extractos/preview', [\App\Http\Controllers\MovimientoBancarioController::class, 'preview'])
+            ->name('extractos.preview');
+        Route::post('extractos/confirm', [\App\Http\Controllers\MovimientoBancarioController::class, 'confirm'])
+            ->name('extractos.confirm');
         Route::get('fondos/{fondo}/movimientos/create', [\App\Http\Controllers\FondoRotatorioController::class, 'createMovimiento'])
             ->name('fondos.movimientos.create');
         Route::post('fondos/{fondo}/movimientos', [\App\Http\Controllers\FondoRotatorioController::class, 'storeMovimiento'])
