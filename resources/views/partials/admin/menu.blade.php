@@ -292,7 +292,7 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                 @endif
 
                 {{-- -------  Treasury ---------- --}}
-                @if (Gate::check('tesoreria_fondos_manage'))
+                @if (Gate::check('tesoreria_fondos_manage') || Gate::check('tesoreria_recaudaciones_manage'))
                 <li
                     class="dash-item dash-hasmenu {{ Request::segment(1) == 'tesoreria' ? ' active dash-trigger' : '' }}">
                     <a href="#!" class="dash-link "><span class="dash-micon"><i
@@ -301,11 +301,25 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                         <span class="dash-arrow"><i data-feather="chevron-right"></i></span>
                     </a>
                     <ul class="dash-submenu {{ Request::segment(1) == 'tesoreria' ? 'show' : '' }}">
+                        @can('tesoreria_recaudaciones_manage')
+                        <li
+                            class="dash-item {{ Request::route()->getName() == 'tesoreria.recaudaciones.index' ? ' active' : '' }}">
+                            <a class="dash-link"
+                                href="{{ route('tesoreria.recaudaciones.index') }}">{{ __('Collections') }}</a>
+                        </li>
+                        <li
+                            class="dash-item {{ Request::route()->getName() == 'tesoreria.cuentas-recaudadoras.index' ? ' active' : '' }}">
+                            <a class="dash-link"
+                                href="{{ route('tesoreria.cuentas-recaudadoras.index') }}">{{ __('Collection Accounts') }}</a>
+                        </li>
+                        @endcan
+                        @can('tesoreria_fondos_manage')
                         <li
                             class="dash-item {{ Request::route()->getName() == 'tesoreria.fondos.index' ? ' active' : '' }}">
                             <a class="dash-link"
                                 href="{{ route('tesoreria.fondos.index') }}">{{ __('Rotary Funds / Petty Cash') }}</a>
                         </li>
+                        @endcan
                     </ul>
                 </li>
                 @endif
@@ -640,6 +654,7 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                 Gate::check('manage transaction') ||
                 Gate::check('statement report') ||
                 Gate::check('reportes_presupuesto_view') ||
+                Gate::check('tesoreria_recaudaciones_manage') ||
                 Gate::check('nomina_periodos_manage'))
                 <li
                     class="dash-item dash-hasmenu {{ (Request::segment(1) == 'report' || Request::segment(1) == 'transaction') && Request::segment(2) != 'ledger' && Request::segment(2) != 'balance-sheet' && Request::segment(2) != 'trial-balance' ? ' active dash-trigger' : '' }}">
@@ -690,6 +705,13 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                             class="dash-item {{ Request::route()->getName() == 'report.budget.execution' ? ' active' : '' }}">
                             <a class="dash-link"
                                 href="{{ route('report.budget.execution') }}">{{ __('Budget Execution') }}</a>
+                        </li>
+                        @endcan
+                        @can('tesoreria_recaudaciones_manage')
+                        <li
+                            class="dash-item {{ Request::route()->getName() == 'report.recaudaciones.diarias' ? ' active' : '' }}">
+                            <a class="dash-link"
+                                href="{{ route('report.recaudaciones.diarias') }}">{{ __('Daily Collections') }}</a>
                         </li>
                         @endcan
                         @can('tax report')

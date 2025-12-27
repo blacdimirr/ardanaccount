@@ -80,6 +80,12 @@ class UsersTableSeeder extends Seeder
                 'updated_at' => date('Y - m - d H:i:s'),
             ],
             [
+                'name' => 'tesoreria_recaudaciones_manage',
+                'guard_name' => 'web',
+                'created_at' => date('Y - m - d H:i:s'),
+                'updated_at' => date('Y - m - d H:i:s'),
+            ],
+            [
                 'name' => 'manage role',
                 'guard_name' => 'web',
                 'created_at' => date('Y - m - d H:i:s'),
@@ -1541,6 +1547,7 @@ class UsersTableSeeder extends Seeder
             'reportes_dgii_607_generate',
             'reportes_dgii_608_generate',
             'tesoreria_fondos_manage',
+            'tesoreria_recaudaciones_manage',
 
 
 
@@ -1717,6 +1724,7 @@ class UsersTableSeeder extends Seeder
             'reportes_dgii_607_generate',
             'reportes_dgii_608_generate',
             'tesoreria_fondos_manage',
+            'tesoreria_recaudaciones_manage',
 
         ];
 
