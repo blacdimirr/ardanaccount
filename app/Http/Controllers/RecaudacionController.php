@@ -6,6 +6,7 @@ use App\Models\CuentaRecaudadora;
 use App\Models\Recaudacion;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Exists;
 
 class RecaudacionController extends Controller
 {
@@ -171,7 +172,7 @@ class RecaudacionController extends Controller
         return $recaudacion->created_by == \Auth::user()->creatorId() || \Auth::user()->type === 'super admin';
     }
 
-    private function cuentaRecaudadoraRule(): Rule
+    private function cuentaRecaudadoraRule(): Exists
     {
         $rule = Rule::exists('cuentas_recaudadoras', 'id')->where('activo', true);
 
