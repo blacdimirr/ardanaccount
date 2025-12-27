@@ -102,7 +102,7 @@
             download.setAttribute('class', "action-btn btn-primary mx-1 mt-1 btn btn-sm d-inline-flex align-items-center");
             download.setAttribute('data-toggle', "tooltip");
             download.setAttribute('data-original-title', "{{ __('Download') }}");
-            download.innerHTML = "<i class='fas fa-download'></i>";
+            download.innerHTML = "<i class='ti ti-download'></i>";
 
             var del = document.createElement('a');
             del.setAttribute('href', response.delete);
@@ -555,7 +555,7 @@
                                         data-bs-placement="top" title="{{ __('Generate') }}"
                                         data-title="{{ __('Generate content with AI') }}"
                                         class="btn btn-primary btn-sm float-end">
-                                        <i class="fas fa-robot"></i>
+                                        <i class="ti ti-robot"></i>
                                         {{ __('Generate with AI') }}
                                     </a>
                                 </div>
@@ -864,7 +864,7 @@
                                                     title="{{ __('Generate') }}"
                                                     data-title="{{ __('Generate content with AI') }}"
                                                     class="btn btn-primary btn-sm float-end">
-                                                    <i class="fas fa-robot"></i>
+                                                    <i class="ti ti-robot"></i>
                                                     {{ __('Generate with AI') }}
                                                 </a>
 

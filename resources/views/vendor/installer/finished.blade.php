@@ -5,7 +5,7 @@
 @endsection
 
 @section('title')
-    <i class="fa fa-flag-checkered fa-fw" aria-hidden="true"></i>
+    <i class="ti ti-flag" aria-hidden="true"></i>
     {{ trans('installer_messages.final.title') }}
 @endsection
 

@@ -65,8 +65,6 @@
     <!-- font css -->
     <link rel="stylesheet" href="{{ asset('assets/css/plugins/bootstrap-switch-button.min.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/fonts/tabler-icons.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/fonts/feather.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/fonts/fontawesome.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/fonts/material.css') }}">
 
     @if ($SITE_RTL == 'on')
@@ -133,7 +131,6 @@
     <script src="{{ asset('assets/js/plugins/popper.min.js') }}"></script>
     <script src="{{ asset('assets/js/plugins/perfect-scrollbar.min.js') }}"></script>
     <script src="{{ asset('assets/js/plugins/bootstrap.min.js') }}"></script>
-    <script src="{{ asset('assets/js/plugins/feather.min.js') }}"></script>
     <script src="{{ asset('assets/js/plugins/bootstrap-switch-button.min.js') }}"></script>
     <script src="{{ asset('assets/js/dash.js') }}"></script>
     <script src="{{ asset('assets/js/plugins/sweetalert2.all.min.js') }}"></script>
