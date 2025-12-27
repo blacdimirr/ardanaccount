@@ -40,7 +40,7 @@
 
             },
             hide: function (deleteElement) {
-                if (confirm('Are you sure you want to delete this element?')) {
+                if (confirm('¿Estás seguro de que deseas eliminar este elemento?')) {
                     $(this).slideUp(deleteElement);
                     $(this).remove();
 

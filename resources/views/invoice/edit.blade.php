@@ -49,7 +49,7 @@
                     // }
                     // $('.subTotal').html(subTotal.toFixed(2));
                     // $('.totalAmount').html(subTotal.toFixed(2));
-                    if (confirm('Are you sure you want to delete this element?')) {
+                    if (confirm('¿Estás seguro de que deseas eliminar este elemento?')) {
                         var el = $(this);
                         var id = $(el.find('.id')).val();
                         var amount = $(el.find('.amount')).html();
@@ -499,7 +499,7 @@
 
         // $(document).on('click', '[data-repeater-delete]', function() {
         //     // $('.delete_item').click(function () {
-        //     if (confirm('Are you sure you want to delete this element?')) {
+        //     if (confirm('¿Estás seguro de que deseas eliminar este elemento?')) {
         //         var el = $(this).parent().parent();
         //         var id = $(el.find('.id')).val();
         //         var amount = $(el.find('.amount')).html();
