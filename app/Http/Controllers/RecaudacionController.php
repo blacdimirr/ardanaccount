@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CuentaRecaudadora;
 use App\Models\Recaudacion;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class RecaudacionController extends Controller
 {
@@ -45,7 +46,12 @@ class RecaudacionController extends Controller
                 'servicio' => 'required|in:consulta,copago,privado',
                 'monto' => 'required|numeric|min:0.01',
                 'metodo_pago' => 'required|string|max:191',
-                'cuenta_recaudadora_id' => 'required|integer|min:1',
+                'cuenta_recaudadora_id' => [
+                    'required',
+                    'integer',
+                    'min:1',
+                    $this->cuentaRecaudadoraRule(),
+                ],
                 'paciente_id' => 'nullable|integer|min:1',
             ]
         );
@@ -108,7 +114,12 @@ class RecaudacionController extends Controller
                 'servicio' => 'required|in:consulta,copago,privado',
                 'monto' => 'required|numeric|min:0.01',
                 'metodo_pago' => 'required|string|max:191',
-                'cuenta_recaudadora_id' => 'required|integer|min:1',
+                'cuenta_recaudadora_id' => [
+                    'required',
+                    'integer',
+                    'min:1',
+                    $this->cuentaRecaudadoraRule(),
+                ],
                 'paciente_id' => 'nullable|integer|min:1',
             ]
         );
@@ -158,5 +169,16 @@ class RecaudacionController extends Controller
     private function canAccessRecaudacion(Recaudacion $recaudacion): bool
     {
         return $recaudacion->created_by == \Auth::user()->creatorId() || \Auth::user()->type === 'super admin';
+    }
+
+    private function cuentaRecaudadoraRule(): Rule
+    {
+        $rule = Rule::exists('cuentas_recaudadoras', 'id')->where('activo', true);
+
+        if (!\Auth::user()->type || \Auth::user()->type !== 'super admin') {
+            $rule->where('created_by', \Auth::user()->creatorId());
+        }
+
+        return $rule;
     }
 }
