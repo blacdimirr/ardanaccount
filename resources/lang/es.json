@@ -1699,5 +1699,22 @@
   "Classifier": "Clasificador",
   "Period": "Período",
   "Program": "Programa",
-  "Project": "Proyecto"
+  "Project": "Proyecto",
+  "Bank Statement Import": "Importación de extracto bancario",
+  "Import Bank Statement": "Importar extracto bancario",
+  "Upload CSV or OFX files to import bank movements.": "Cargue archivos CSV u OFX para importar movimientos bancarios.",
+  "Statement File (CSV/OFX)": "Archivo de extracto (CSV/OFX)",
+  "Preview Statement": "Previsualizar extracto",
+  "Statement Preview": "Vista previa del extracto",
+  "Movements detected": "Movimientos detectados",
+  "Confirm Import": "Confirmar importación",
+  "Imported Bank Movements": "Movimientos bancarios importados",
+  "No bank movements imported yet.": "Aún no hay movimientos bancarios importados.",
+  "Bank statement preview generated.": "Vista previa del extracto generada.",
+  "Bank statement movements imported successfully.": "Movimientos del extracto importados correctamente.",
+  "No statement import is pending.": "No hay una importación de extracto pendiente.",
+  "No movements were detected in the file.": "No se detectaron movimientos en el archivo.",
+  "Select an account": "Seleccione una cuenta",
+  "Showing first 20 movements for preview.": "Mostrando los primeros 20 movimientos para la vista previa.",
+  "Source File": "Archivo de origen"
 }

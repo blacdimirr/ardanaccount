@@ -655,6 +655,7 @@ class Utility extends Model
             'nomina_ir4_generate',
             'tesoreria_fondos_manage',
             'tesoreria_recaudaciones_manage',
+            'tesoreria_extractos_import',
 
         ];
         foreach ($arrPermissions as $ap) {
@@ -700,6 +701,7 @@ class Utility extends Model
             'nomina_ir4_generate',
             'tesoreria_fondos_manage',
             'tesoreria_recaudaciones_manage',
+            'tesoreria_extractos_import',
         ];
         foreach ($companyNewPermission as $op) {
             // check if permission is not assign to owner then assign.

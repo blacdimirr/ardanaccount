@@ -20,4 +20,9 @@ class CuentaRecaudadora extends Model
     {
         return $this->hasMany(Recaudacion::class, 'cuenta_recaudadora_id');
     }
+
+    public function movimientosBancarios()
+    {
+        return $this->hasMany(MovimientoBancario::class, 'cuenta_recaudadora_id');
+    }
 }

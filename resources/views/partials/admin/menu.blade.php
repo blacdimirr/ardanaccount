@@ -292,7 +292,7 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                 @endif
 
                 {{-- -------  Treasury ---------- --}}
-                @if (Gate::check('tesoreria_fondos_manage') || Gate::check('tesoreria_recaudaciones_manage'))
+                @if (Gate::check('tesoreria_fondos_manage') || Gate::check('tesoreria_recaudaciones_manage') || Gate::check('tesoreria_extractos_import'))
                 <li
                     class="dash-item dash-hasmenu {{ Request::segment(1) == 'tesoreria' ? ' active dash-trigger' : '' }}">
                     <a href="#!" class="dash-link "><span class="dash-micon"><i
@@ -318,6 +318,13 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                             class="dash-item {{ Request::route()->getName() == 'tesoreria.fondos.index' ? ' active' : '' }}">
                             <a class="dash-link"
                                 href="{{ route('tesoreria.fondos.index') }}">{{ __('Rotary Funds / Petty Cash') }}</a>
+                        </li>
+                        @endcan
+                        @can('tesoreria_extractos_import')
+                        <li
+                            class="dash-item {{ Request::route()->getName() == 'tesoreria.extractos.index' ? ' active' : '' }}">
+                            <a class="dash-link"
+                                href="{{ route('tesoreria.extractos.index') }}">{{ __('Bank Statement Import') }}</a>
                         </li>
                         @endcan
                     </ul>
