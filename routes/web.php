@@ -899,6 +899,8 @@ Route::get('report/recaudaciones-diarias', [ReportController::class, 'recaudacio
 Route::post('report/recaudaciones-diarias/export', [ReportController::class, 'recaudacionesDiariasExport'])->name('report.recaudaciones.diarias.export');
 Route::get('report/conciliacion-bancaria', [ReportController::class, 'conciliacionBancaria'])->name('report.conciliacion.bancaria');
 Route::post('report/conciliacion-bancaria/export', [ReportController::class, 'conciliacionBancariaExport'])->name('report.conciliacion.bancaria.export');
+Route::get('report/estados-cuenta-conciliacion', [ReportController::class, 'estadosCuentaConciliacion'])->name('report.estados.cuenta.conciliacion');
+Route::post('report/estados-cuenta-conciliacion/export', [ReportController::class, 'estadosCuentaConciliacionExport'])->name('report.estados.cuenta.conciliacion.export');
 
 
         Route::get('report/account-statement-report', [ReportController::class, 'accountStatement'])->name('report.account.statement');
