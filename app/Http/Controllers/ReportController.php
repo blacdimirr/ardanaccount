@@ -43,17 +43,23 @@ use App\Exports\Dgii606Export;
 use App\Exports\Dgii607Export;
 use App\Exports\Dgii608Export;
 use App\Exports\NominaCostosServicioExport;
+use App\Exports\PublicCashFlowExport;
+use App\Exports\PublicEquityVariationExport;
 use App\Services\Dgii606Service;
 use App\Services\Dgii607Service;
 use App\Services\Dgii608Service;
 use App\Services\EstadoCuentaConciliacionService;
 use App\Services\NominaAsientoService;
 use App\Services\BudgetExecutionReportService;
+use App\Services\PublicCashFlowService;
+use App\Services\PublicEquityVariationService;
 use App\Services\PublicFinancialPositionService;
 use App\Models\ChartOfAccountParent;
 use App\Models\Status;
 use App\Models\TransactionLines;
 use App\Models\User;
+use App\Models\PublicCashFlowMapping;
+use App\Models\PublicEquityVariationMapping;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
@@ -3746,6 +3752,216 @@ class ReportController extends Controller
         ]);
 
         return $pdf->download('estado-situacion-financiera.pdf');
+    }
+
+    public function complementaryStatements(Request $request, PublicEquityVariationService $equityService, PublicCashFlowService $cashFlowService)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $startDate = $request->get('start_date', now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->get('end_date', now()->format('Y-m-d'));
+        $creatorId = \Auth::user()->creatorId();
+
+        $equityReport = $equityService->buildReport($creatorId, $startDate, $endDate);
+        $cashFlowReport = $cashFlowService->buildReport($creatorId, $startDate, $endDate);
+
+        return view('report.complementary_statements', compact('startDate', 'endDate', 'equityReport', 'cashFlowReport'));
+    }
+
+    public function equityVariationExport(Request $request, PublicEquityVariationService $equityService)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        $creatorId = \Auth::user()->creatorId();
+        $companyName = User::where('id', $creatorId)->value('name') ?? '';
+        $report = $equityService->buildReport($creatorId, $request->start_date, $request->end_date);
+
+        return Excel::download(
+            new PublicEquityVariationExport($report, $request->start_date, $request->end_date, $companyName),
+            'estado-variacion-patrimonio.xlsx'
+        );
+    }
+
+    public function equityVariationPdf(Request $request, PublicEquityVariationService $equityService)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        $creatorId = \Auth::user()->creatorId();
+        $companyName = User::where('id', $creatorId)->value('name') ?? '';
+        $report = $equityService->buildReport($creatorId, $request->start_date, $request->end_date);
+
+        $pdf = Pdf::loadView('report.equity_variation_pdf', [
+            'startDate' => $request->start_date,
+            'endDate' => $request->end_date,
+            'report' => $report,
+            'companyName' => $companyName,
+        ]);
+
+        return $pdf->download('estado-variacion-patrimonio.pdf');
+    }
+
+    public function cashFlowExport(Request $request, PublicCashFlowService $cashFlowService)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        $creatorId = \Auth::user()->creatorId();
+        $companyName = User::where('id', $creatorId)->value('name') ?? '';
+        $report = $cashFlowService->buildReport($creatorId, $request->start_date, $request->end_date);
+
+        return Excel::download(
+            new PublicCashFlowExport($report, $request->start_date, $request->end_date, $companyName),
+            'estado-flujo-efectivo.xlsx'
+        );
+    }
+
+    public function cashFlowPdf(Request $request, PublicCashFlowService $cashFlowService)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        $creatorId = \Auth::user()->creatorId();
+        $companyName = User::where('id', $creatorId)->value('name') ?? '';
+        $report = $cashFlowService->buildReport($creatorId, $request->start_date, $request->end_date);
+
+        $pdf = Pdf::loadView('report.cash_flow_pdf', [
+            'startDate' => $request->start_date,
+            'endDate' => $request->end_date,
+            'report' => $report,
+            'companyName' => $companyName,
+        ]);
+
+        return $pdf->download('estado-flujo-efectivo.pdf');
+    }
+
+    public function complementaryStatementMappings()
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $creatorId = \Auth::user()->creatorId();
+        $accounts = ChartOfAccount::where('created_by', $creatorId)->orderBy('code')->get();
+        $equityMappings = PublicEquityVariationMapping::where('created_by', $creatorId)
+            ->with('account')
+            ->orderBy('section')
+            ->orderBy('sort_order')
+            ->orderBy('line_name')
+            ->get();
+        $cashFlowMappings = PublicCashFlowMapping::where('created_by', $creatorId)
+            ->with('account')
+            ->orderBy('section')
+            ->orderBy('sort_order')
+            ->orderBy('line_name')
+            ->get();
+
+        return view('report.complementary_statement_mappings', compact('accounts', 'equityMappings', 'cashFlowMappings'));
+    }
+
+    public function storeEquityMapping(Request $request)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $request->validate([
+            'line_name' => 'required|string|max:255',
+            'section' => 'required|in:increase,decrease',
+            'chart_of_account_id' => 'nullable|exists:chart_of_accounts,id',
+            'sort_order' => 'nullable|integer|min:0',
+        ]);
+
+        PublicEquityVariationMapping::create([
+            'line_name' => $request->line_name,
+            'section' => $request->section,
+            'chart_of_account_id' => $request->chart_of_account_id,
+            'sort_order' => $request->sort_order ?? 0,
+            'created_by' => \Auth::user()->creatorId(),
+        ]);
+
+        return redirect()->route('report.complementary.mappings')->with('success', __('Mapping created successfully.'));
+    }
+
+    public function storeCashFlowMapping(Request $request)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $request->validate([
+            'line_name' => 'required|string|max:255',
+            'section' => 'required|in:operating,investing,financing',
+            'chart_of_account_id' => 'nullable|exists:chart_of_accounts,id',
+            'sort_order' => 'nullable|integer|min:0',
+        ]);
+
+        PublicCashFlowMapping::create([
+            'line_name' => $request->line_name,
+            'section' => $request->section,
+            'chart_of_account_id' => $request->chart_of_account_id,
+            'sort_order' => $request->sort_order ?? 0,
+            'created_by' => \Auth::user()->creatorId(),
+        ]);
+
+        return redirect()->route('report.complementary.mappings')->with('success', __('Mapping created successfully.'));
+    }
+
+    public function destroyEquityMapping(PublicEquityVariationMapping $mapping)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        if ($mapping->created_by !== \Auth::user()->creatorId()) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $mapping->delete();
+
+        return redirect()->route('report.complementary.mappings')->with('success', __('Mapping deleted successfully.'));
+    }
+
+    public function destroyCashFlowMapping(PublicCashFlowMapping $mapping)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        if ($mapping->created_by !== \Auth::user()->creatorId()) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $mapping->delete();
+
+        return redirect()->route('report.complementary.mappings')->with('success', __('Mapping deleted successfully.'));
     }
 
     public function fondosMovimientos(Request $request)

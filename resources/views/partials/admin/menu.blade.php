@@ -741,6 +741,11 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                             <a class="dash-link"
                                 href="{{ route('report.public.financial.position') }}">{{ __('Public Financial Position Statement') }}</a>
                         </li>
+                        <li
+                            class="dash-item {{ Request::route()->getName() == 'report.complementary.statements' ? ' active' : '' }}">
+                            <a class="dash-link"
+                                href="{{ route('report.complementary.statements') }}">{{ __('Complementary Statements') }}</a>
+                        </li>
                         @endcan
                         @can('tesoreria_recaudaciones_manage')
                         <li
