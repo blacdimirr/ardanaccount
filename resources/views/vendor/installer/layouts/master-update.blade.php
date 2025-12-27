@@ -8,7 +8,8 @@
         <link rel="icon" type="image/png" href="{{ asset('installer/img/favicon/favicon-16x16.png') }}" sizes="16x16"/>
         <link rel="icon" type="image/png" href="{{ asset('installer/img/favicon/favicon-32x32.png') }}" sizes="32x32"/>
         <link rel="icon" type="image/png" href="{{ asset('installer/img/favicon/favicon-96x96.png') }}" sizes="96x96"/>
-        <link href="{{ asset('installer/css/style.min.css') }}" rel="stylesheet"/>
+    <link href="{{ asset('installer/css/style.min.css') }}" rel="stylesheet"/>
+    <link rel="stylesheet" href="{{ asset('assets/fonts/tabler-icons.min.css') }}">
         @yield('style')
         <script>
             window.Laravel = <?php echo json_encode([
@@ -25,15 +26,15 @@
                 <ul class="step">
                     <li class="step__divider"></li>
                     <li class="step__item {{ isActive('LaravelUpdater::final') }}">
-                        <i class="step__icon fa fa-database" aria-hidden="true"></i>
+                        <i class="step__icon ti ti-database" aria-hidden="true"></i>
                     </li>
                     <li class="step__divider"></li>
                     <li class="step__item {{ isActive('LaravelUpdater::overview') }}">
-                        <i class="step__icon fa fa-reorder" aria-hidden="true"></i>
+                        <i class="step__icon ti ti-list" aria-hidden="true"></i>
                     </li>
                     <li class="step__divider"></li>
                     <li class="step__item {{ isActive('LaravelUpdater::welcome') }}">
-                        <i class="step__icon fa fa-refresh" aria-hidden="true"></i>
+                        <i class="step__icon ti ti-refresh" aria-hidden="true"></i>
                     </li>
                     <li class="step__divider"></li>
                 </ul>

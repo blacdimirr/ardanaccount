@@ -50,7 +50,7 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                     <a href="#!" class="dash-link "><span class="dash-micon"><i
                                 class="ti ti-building-bank"></i></span><span
                             class="dash-mtext">{{ __('Presale') }}</span>
-                        <span class="dash-arrow"><i data-feather="chevron-right"></i></span>
+                        <span class="dash-arrow"><i class="ti ti-chevron-right"></i></span>
                     </a>
                     <ul
                         class="dash-submenu {{ Request::segment(1) == 'customer.proposal' || Request::segment(1) == 'customer.retainer' ? 'show' : '' }}">
@@ -162,7 +162,7 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                     class="dash-item dash-hasmenu {{ Request::segment(1) == 'users' || Request::segment(1) == 'roles' || Request::segment(1) == 'permissions' ? ' active dash-trigger' : '' }}">
                     <a href="#!" class="dash-link "><span class="dash-micon"><i
                                 class="ti ti-users"></i></span><span class="dash-mtext">{{ __('Staff') }}</span>
-                        <span class="dash-arrow"><i data-feather="chevron-right"></i></span>
+                        <span class="dash-arrow"><i class="ti ti-chevron-right"></i></span>
                     </a>
                     <ul
                         class="dash-submenu {{ Request::segment(1) == 'users' || Request::segment(1) == 'roles' || Request::segment(1) == 'permissions' ? 'show' : '' }}">
@@ -241,7 +241,7 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                     <a href="#!" class="dash-link "><span class="dash-micon"><i
                                 class="ti ti-file-certificate"></i></span><span
                             class="dash-mtext">{{ __('Presale') }}</span>
-                        <span class="dash-arrow"><i data-feather="chevron-right"></i></span>
+                        <span class="dash-arrow"><i class="ti ti-chevron-right"></i></span>
                     </a>
                     <ul
                         class="dash-submenu {{ Request::segment(1) == 'proposal' || Request::segment(1) == 'retainer' ? 'show' : '' }}">
@@ -270,7 +270,7 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                     <a href="#!" class="dash-link "><span class="dash-micon"><i
                                 class="ti ti-building-bank"></i></span><span
                             class="dash-mtext">{{ __('Banking') }}</span>
-                        <span class="dash-arrow"><i data-feather="chevron-right"></i></span>
+                        <span class="dash-arrow"><i class="ti ti-chevron-right"></i></span>
                     </a>
                     <ul
                         class="dash-submenu {{ Request::segment(1) == 'bank-account' || Request::segment(1) == 'transfer' ? 'show' : '' }}">
@@ -298,7 +298,7 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                     <a href="#!" class="dash-link "><span class="dash-micon"><i
                                 class="ti ti-cash-banknote"></i></span><span
                             class="dash-mtext">{{ __('Treasury') }}</span>
-                        <span class="dash-arrow"><i data-feather="chevron-right"></i></span>
+                        <span class="dash-arrow"><i class="ti ti-chevron-right"></i></span>
                     </a>
                     <ul class="dash-submenu {{ Request::segment(1) == 'tesoreria' ? 'show' : '' }}">
                         @can('tesoreria_recaudaciones_manage')
@@ -345,7 +345,7 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                     <a href="#!" class="dash-link "><span class="dash-micon"><i
                                 class="ti ti-file-invoice"></i></span><span
                             class="dash-mtext">{{ __('Income') }}</span>
-                        <span class="dash-arrow"><i data-feather="chevron-right"></i></span>
+                        <span class="dash-arrow"><i class="ti ti-chevron-right"></i></span>
                     </a>
                     <ul
                         class="dash-submenu {{ Request::segment(1) == 'invoice' || Request::segment(1) == 'revenue' || Request::segment(1) == 'credit-note' ? 'show' : '' }}">
@@ -377,7 +377,7 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                     <a href="#!" class="dash-link "><span class="dash-micon"><i
                                 class="ti ti-report-money"></i></span><span
                             class="dash-mtext">{{ __('Expense') }}</span>
-                        <span class="dash-arrow"><i data-feather="chevron-right"></i></span>
+                        <span class="dash-arrow"><i class="ti ti-chevron-right"></i></span>
                     </a>
                     <ul
                         class="dash-submenu  {{ Request::segment(1) == 'bill' || Request::segment(1) == 'payment' || Request::segment(1) == 'debit-note' ? 'show' : '' }}">
@@ -409,7 +409,7 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                     <a href="#!" class="dash-link "><span class="dash-micon"><i
                                 class="ti ti-shopping-cart"></i></span><span
                             class="dash-mtext">{{ __('Compras') }}</span>
-                        <span class="dash-arrow"><i data-feather="chevron-right"></i></span>
+                        <span class="dash-arrow"><i class="ti ti-chevron-right"></i></span>
                     </a>
                     <ul class="dash-submenu {{ in_array(Request::segment(1), ['pac', 'compras']) ? 'show' : '' }}">
                         @can('compras_pac_manage')
@@ -467,7 +467,7 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                     <a href="#!" class="dash-link"><span class="dash-micon"><i
                                 class="ti ti-scale"></i></span><span
                             class="dash-mtext">{{ __('Double Entry') }}</span>
-                        <span class="dash-arrow"><i data-feather="chevron-right"></i></span>
+                        <span class="dash-arrow"><i class="ti ti-chevron-right"></i></span>
                     </a>
                     <ul
                         class="dash-submenu {{ Request::segment(1) == 'chart-of-account' || Request::segment(1) == 'journal-entry' || Request::segment(2) == 'ledger' || Request::segment(2) == 'balance-sheet' || Request::segment(2) == 'trial-balance' ? 'show' : '' }}">
@@ -526,7 +526,7 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                     <a href="#!" class="dash-link"><span class="dash-micon"><i
                                 class="ti ti-briefcase"></i></span><span
                             class="dash-mtext">{{ __('Nómina') }}</span><span class="dash-arrow"><i
-                                data-feather="chevron-right"></i></span></a>
+                                class="ti ti-chevron-right"></i></span></a>
                     <ul class="dash-submenu {{ in_array(Request::segment(1), ['nomina-empleados', 'nomina-conceptos', 'nomina-periodos', 'nomina-comprobantes', 'nomina-calculos', 'nomina-config-ss', 'nomina-config-isr', 'nomina-reportes-fiscales']) ? 'show' : '' }}">
                         @can('nomina_empleados_manage')
                         <li class="dash-item {{ Request::segment(1) == 'nomina-empleados' ? ' active' : '' }}">
@@ -637,7 +637,7 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                     <a href="#" class="dash-link"><span class="dash-micon"><i
                                 class="ti ti-template"></i></span><span
                             class="dash-mtext">{{ __('Templates') }}</span><span class="dash-arrow"><i
-                                data-feather="chevron-right"></i></span></a>
+                                class="ti ti-chevron-right"></i></span></a>
                     <ul class="dash-submenu">
                         @if (\Auth::user()->type == 'company')
                         <li class="dash-item {{ Request::segment(1) == 'email_template_lang' ? 'active' : '' }}">
@@ -678,7 +678,7 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                     <a href="#!" class="dash-link "><span class="dash-micon"><i
                                 class="ti ti-chart-line"></i></span><span
                             class="dash-mtext">{{ __('Report') }}</span>
-                        <span class="dash-arrow"><i data-feather="chevron-right"></i></span>
+                        <span class="dash-arrow"><i class="ti ti-chevron-right"></i></span>
                     </a>
                     <ul
                         class="dash-submenu {{ (Request::segment(1) == 'report' || Request::segment(1) == 'transaction') && Request::segment(2) != 'ledger' && Request::segment(2) != 'balance-sheet' && Request::segment(2) != 'trial-balance' ? 'show' : '' }}">
@@ -842,7 +842,7 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                     <a href="#!" class="dash-link"><span class="dash-micon"><i
                                 class="ti ti-chart-arcs"></i></span><span
                             class="dash-mtext">{{ __('Constant') }}</span>
-                        <span class="dash-arrow"><i data-feather="chevron-right"></i></span>
+                        <span class="dash-arrow"><i class="ti ti-chevron-right"></i></span>
                     </a>
                     <ul
                         class="dash-submenu {{ Request::segment(1) == 'taxes' || Request::segment(1) == 'product-category' || Request::segment(1) == 'product-unit' || Request::segment(1) == 'payment-method' || Request::segment(1) == 'custom-field' || Request::segment(1) == 'chart-of-account-type' ? 'show' : '' }}">
@@ -906,7 +906,7 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                     <a href="#!" class="dash-link"><span class="dash-micon"><i
                                 class="ti ti-settings"></i></span><span
                             class="dash-mtext">{{ __('NCF') }}</span>
-                        <span class="dash-arrow"><i data-feather="chevron-right"></i></span>
+                        <span class="dash-arrow"><i class="ti ti-chevron-right"></i></span>
                     </a>
                     <ul class="dash-submenu {{ Request::is('ncf-types*') || Request::is('ncf-series*') ? 'show' : '' }}">
                         @can('config_ncf_tipos_manage')

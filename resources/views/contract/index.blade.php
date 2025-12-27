@@ -44,7 +44,7 @@
                             <h3 class="text-primary">{{  $cnt_contract['total'] }}</h3>
                         </div>
                         <div class="theme-avtar bg-success">
-                            <i class="fas fa-handshake text-white"></i>
+                            <i class="ti ti-handshake text-white"></i>
                         </div>
                     </div>
                 </div>
@@ -60,7 +60,7 @@
                             <h3 class="text-info">{{ $cnt_contract['this_month'] }}</h3>
                         </div>
                         <div class="theme-avtar bg-info">
-                            <i class="fas fa-handshake  text-white"></i>
+                            <i class="ti ti-handshake text-white"></i>
                         </div>
                     </div>
                 </div>
@@ -76,7 +76,7 @@
                             <h3 class="text-warning">{{ $cnt_contract['this_week'] }}</h3>
                         </div>
                         <div class="theme-avtar bg-warning">
-                            <i class="fas fa-handshake  text-white"></i>
+                            <i class="ti ti-handshake text-white"></i>
                         </div>
                     </div>
                 </div> 
@@ -92,7 +92,7 @@
                             <h3 class="text-danger">{{ $cnt_contract['last_30days'] }}</h3>
                         </div>
                         <div class="theme-avtar bg-danger">
-                            <i class="fas fa-handshake  text-white"></i>
+                            <i class="ti ti-handshake text-white"></i>
                         </div>
                     </div>
                 </div>
@@ -164,7 +164,7 @@
                                     <div class="action-btn bg-warning me-2">
                                         <a href="#" class="mx-3 btn btn-sm d-inline-flex align-items-center" data-bs-toggle="modal"
                                         data-bs-target="#exampleModal" data-url="{{ route('contract.description',$contract->id) }}"
-                                         data-bs-whatever="{{__('Description')}}"><i class="fa fa-comment text-white" data-bs-toggle="tooltip" data-bs-original-title="{{ __('Description') }}"></i></a>
+                                         data-bs-whatever="{{__('Description')}}"><i class="ti ti-message text-white" data-bs-toggle="tooltip" data-bs-original-title="{{ __('Description') }}"></i></a>
                                     </div>
                                 </td> --}}
 
@@ -227,4 +227,3 @@
     </div>
 </div>
 @endsection
-

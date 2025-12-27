@@ -22,7 +22,7 @@
             <a href="#" class="btn btn-sm btn-primary" data-size="md" data-ajax-popup-over="true"
                 data-url="{{ route('generate', ['notification template']) }}" 
                  data-title="{{ __('Generate Content With AI') }}">
-                <i class="fas fa-robot"></i>{{ __(' Generate With AI') }}
+                <i class="ti ti-robot"></i>{{ __(' Generate With AI') }}
             </a>
         </div>
     @endif

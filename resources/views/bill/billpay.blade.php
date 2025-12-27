@@ -38,7 +38,7 @@
                     </div>
                     {{-- @if($bill->getDue() > 0)
                     <a href="#" data-toggle="modal" data-target="#paymentModal" class="btn btn-xs btn-white btn-icon-only width-auto">
-                        <span class="btn-inner--icon text-white"><i class="fa fa-credit-card"></i></span>
+                        <span class="btn-inner--icon text-white"><i class="ti ti-credit-card"></i></span>
                         <span class="btn-inner--text text-white">{{__(' Pay Now')}}</span>
                     </a>
                     @endif --}}

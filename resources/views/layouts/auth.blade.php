@@ -173,13 +173,7 @@
     <script src="{{ asset('js/custom.js') }}"></script>
     <script src="{{ asset('assets/js/vendor-all.js') }}"></script>
     <script src="{{ asset('assets/js/plugins/bootstrap.min.js') }}"></script>
-    <script src="{{ asset('assets/js/plugins/feather.min.js') }}"></script>
-
     <script>
-        feather.replace();
-    </script>
-    <script>
-        feather.replace();
         var pctoggle = document.querySelector("#pct-toggler");
         if (pctoggle) {
             pctoggle.addEventListener("click", function() {
