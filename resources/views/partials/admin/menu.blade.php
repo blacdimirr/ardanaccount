@@ -668,6 +668,7 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                 Gate::check('manage transaction') ||
                 Gate::check('statement report') ||
                 Gate::check('reportes_presupuesto_view') ||
+                Gate::check('tesoreria_conciliacion_manage') ||
                 Gate::check('tesoreria_recaudaciones_manage') ||
                 Gate::check('nomina_periodos_manage'))
                 <li
@@ -691,6 +692,13 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                             class="dash-item {{ Request::route()->getName() == 'report.account.statement' ? ' active' : '' }}">
                             <a class="dash-link"
                                 href="{{ route('report.account.statement') }}">{{ __('Account Statement') }}</a>
+                        </li>
+                        @endcan
+                        @can('tesoreria_conciliacion_manage')
+                        <li
+                            class="dash-item {{ Request::route()->getName() == 'report.estados.cuenta.conciliacion' ? ' active' : '' }}">
+                            <a class="dash-link"
+                                href="{{ route('report.estados.cuenta.conciliacion') }}">{{ __('Account Statement & Reconciliation') }}</a>
                         </li>
                         @endcan
                         @can('income report')

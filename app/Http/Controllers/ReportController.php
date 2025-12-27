@@ -32,6 +32,7 @@ use App\Exports\BalanceSheetExport;
 use App\Exports\BudgetExecutionExport;
 use App\Exports\FondoMovimientosExport;
 use App\Exports\ConciliacionBancariaExport;
+use App\Exports\EstadosCuentaConciliacionExport;
 use App\Exports\RecaudacionesDiariasExport;
 use App\Exports\ProductStockExport;
 use App\Exports\ProfitLossExport;
@@ -43,6 +44,7 @@ use App\Exports\NominaCostosServicioExport;
 use App\Services\Dgii606Service;
 use App\Services\Dgii607Service;
 use App\Services\Dgii608Service;
+use App\Services\EstadoCuentaConciliacionService;
 use App\Services\NominaAsientoService;
 use App\Services\BudgetExecutionReportService;
 use App\Models\ChartOfAccountParent;
@@ -3871,6 +3873,83 @@ class ReportController extends Controller
         $name = 'bank_reconciliation_' . date('Y-m-d_H-i-s');
         $data = Excel::download(
             new ConciliacionBancariaExport($movimientos, $startDate, $endDate, $totalsByStatus),
+            $name . '.xlsx'
+        );
+        ob_end_clean();
+
+        return $data;
+    }
+
+    public function estadosCuentaConciliacion(Request $request, EstadoCuentaConciliacionService $service)
+    {
+        if (!\Auth::user()->can('tesoreria_conciliacion_manage')) {
+            return redirect()->back()->with('error', __('Permission Denied.'));
+        }
+
+        $creatorId = \Auth::user()->creatorId();
+        $startDate = $request->get('start_date', now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->get('end_date', now()->endOfMonth()->format('Y-m-d'));
+        $selectedCuenta = $request->get('cuenta_recaudadora_id');
+
+        $cuentasQuery = CuentaRecaudadora::query()->orderBy('banco')->orderBy('numero_cuenta');
+        if (!\Auth::user()->type || \Auth::user()->type !== 'super admin') {
+            $cuentasQuery->where('created_by', $creatorId);
+        }
+
+        $cuentas = $cuentasQuery->get();
+        $cuentaOptions = $cuentas->mapWithKeys(function ($cuenta) {
+            return [$cuenta->id => $cuenta->banco . ' - ' . $cuenta->numero_cuenta];
+        })->toArray();
+
+        $selectedCuenta = !empty($selectedCuenta) && in_array((int) $selectedCuenta, $cuentas->pluck('id')->all(), true)
+            ? (int) $selectedCuenta
+            : null;
+
+        $allowedAccountIds = $cuentas->pluck('id')->all();
+        $statementData = $service->buildStatement($selectedCuenta, $allowedAccountIds, $startDate, $endDate);
+        $differenceRows = $service->buildDifferences($selectedCuenta, $allowedAccountIds, $startDate, $endDate);
+        $differenceTotal = $differenceRows->sum('difference');
+
+        return view('report.estados_cuenta_conciliacion', compact(
+            'startDate',
+            'endDate',
+            'selectedCuenta',
+            'cuentaOptions',
+            'statementData',
+            'differenceRows',
+            'differenceTotal'
+        ));
+    }
+
+    public function estadosCuentaConciliacionExport(Request $request, EstadoCuentaConciliacionService $service)
+    {
+        if (!\Auth::user()->can('tesoreria_conciliacion_manage')) {
+            return redirect()->back()->with('error', __('Permission Denied.'));
+        }
+
+        $creatorId = \Auth::user()->creatorId();
+        $startDate = $request->get('start_date', now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->get('end_date', now()->endOfMonth()->format('Y-m-d'));
+        $selectedCuenta = $request->get('cuenta_recaudadora_id');
+
+        $cuentasQuery = CuentaRecaudadora::query()->orderBy('banco')->orderBy('numero_cuenta');
+        if (!\Auth::user()->type || \Auth::user()->type !== 'super admin') {
+            $cuentasQuery->where('created_by', $creatorId);
+        }
+
+        $cuentas = $cuentasQuery->get();
+        $selectedCuenta = !empty($selectedCuenta) && in_array((int) $selectedCuenta, $cuentas->pluck('id')->all(), true)
+            ? (int) $selectedCuenta
+            : null;
+
+        $cuenta = $selectedCuenta ? $cuentas->firstWhere('id', $selectedCuenta) : null;
+        $allowedAccountIds = $cuentas->pluck('id')->all();
+        $statementData = $service->buildStatement($selectedCuenta, $allowedAccountIds, $startDate, $endDate);
+        $differenceRows = $service->buildDifferences($selectedCuenta, $allowedAccountIds, $startDate, $endDate);
+
+        $name = 'account_statement_reconciliation_' . date('Y-m-d_H-i-s');
+        $data = Excel::download(
+            new EstadosCuentaConciliacionExport($startDate, $endDate, $cuenta, $statementData, $differenceRows),
             $name . '.xlsx'
         );
         ob_end_clean();
