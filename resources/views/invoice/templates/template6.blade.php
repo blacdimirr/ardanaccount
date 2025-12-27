@@ -3,7 +3,7 @@
     $settings_data = \App\Models\Utility::settingsById($invoice->created_by);
 @endphp
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ app()->getLocale() }}">
 
 <head>
     <meta charset="utf-8">

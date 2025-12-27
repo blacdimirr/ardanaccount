@@ -27,7 +27,7 @@
             $temp.val(value).select();
             document.execCommand("copy");
             $temp.remove();
-            show_toastr('success', '{{ __('Link Copy on Clipboard') }}')
+            show_toastr('{{ __('Success') }}', '{{ __('Link Copy on Clipboard') }}')
         });
     </script>
 @endpush

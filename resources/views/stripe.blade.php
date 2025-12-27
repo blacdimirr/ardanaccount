@@ -35,7 +35,7 @@
             stripe.createToken(card).then(function (result) {
                 if (result.error) {
                     $("#card-errors").html(result.error.message);
-                    show_toastr('Error', result.error.message, 'error');
+                    show_toastr('{{ __('Error') }}', result.error.message, 'error');
                 } else {
                     // Send the token to your server.
                     stripeTokenHandler(result.token);
@@ -77,13 +77,13 @@
                         $('#stripe_coupon, #paypal_coupon').val(coupon);
                         if (data != '') {
                             if (data.is_success == true) {
-                                show_toastr('success', data.message, 'success');
+                                show_toastr('{{ __('Success') }}', data.message, 'success');
                             } else {
-                                show_toastr('Error', data.message, 'error');
+                                show_toastr('{{ __('Error') }}', data.message, 'error');
                             }
 
                         } else {
-                            show_toastr('Error', "{{ __('Coupon code required.') }}", 'error');
+                            show_toastr('{{ __('Error') }}', "{{ __('Coupon code required.') }}", 'error');
                         }
                     }
                 })
@@ -125,7 +125,7 @@
                 } else if (res.flag == 2) {
 
                 } else {
-                    show_toastr('Error', data.message, 'msg');
+                    show_toastr('{{ __('Error') }}', data.message, 'msg');
                 }
 
             }).submit();
@@ -169,7 +169,7 @@
                 } else if (res.flag == 2) {
 
                 } else {
-                    show_toastr('Error', data.message, 'msg');
+                    show_toastr('{{ __('Error') }}', data.message, 'msg');
                 }
 
             }).submit();
@@ -203,7 +203,7 @@
                 } else if (res.flag == 2) {
 
                 } else {
-                    show_toastr('Error', data.message, 'msg');
+                    show_toastr('{{ __('Error') }}', data.message, 'msg');
                 }
 
             }).submit();

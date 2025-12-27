@@ -76,13 +76,13 @@ class PaytabController extends Controller
                 $paypage = new paypage();
                 $pay = $paypage->sendPaymentCode('all')
                     ->sendTransaction('sale')
-                    ->sendCart(1, $get_amount, 'invoice payment')
+                    ->sendCart(1, $get_amount, __('Invoice payment'))
                     ->sendCustomerDetails(isset($user->name) ? $user->name : "", isset($user->email) ? $user->email : '', '', '', '', '', '', '', '')
                     ->sendURLs(
                         route('invoice.paytab', ['success' => 1, 'data' => $request->all(), $invoice->id, 'amount' => $get_amount]),
                         route('invoice.paytab', ['success' => 0, 'data' => $request->all(), $invoice->id, 'amount' => $get_amount])
                     )
-                    ->sendLanguage('en')
+                    ->sendLanguage(app()->getLocale() ?: 'es')
                     ->sendFramed($on = false)
                     ->create_pay_page();
                 return $pay;
@@ -259,7 +259,7 @@ class PaytabController extends Controller
                         route('retainer.paytab', ['success' => 1, 'data' => $request->all(), $retainer->id, 'amount' => $get_amount]),
                         route('retainer.paytab', ['success' => 0, 'data' => $request->all(), $retainer->id, 'amount' => $get_amount])
                     )
-                    ->sendLanguage('en')
+                    ->sendLanguage(app()->getLocale() ?: 'es')
                     ->sendFramed($on = false)
                     ->create_pay_page();
 

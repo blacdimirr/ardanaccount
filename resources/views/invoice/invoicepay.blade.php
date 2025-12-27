@@ -57,7 +57,7 @@
                 stripe.createToken(card).then(function(result) {
                     if (result.error) {
                         $("#card-errors").html(result.error.message);
-                        show_toastr('error', result.error.message, 'error');
+                        show_toastr('{{ __('Error') }}', result.error.message, 'error');
                     } else {
                         // Send the token to your server.
                         stripeTokenHandler(result.token);
@@ -244,7 +244,7 @@
                                         $('#get-payfast-inputs').append(data.inputs);
 
                                     } else {
-                                        show_toastr('Error', data.inputs, 'error')
+                                        show_toastr('{{ __('Error') }}', data.inputs, 'error')
                                     }
                                 }
                             });
@@ -281,7 +281,7 @@
                             $('#get-payfast-inputs').append(data.inputs);
 
                         } else {
-                            show_toastr('Error', data.inputs, 'error')
+                            show_toastr('{{ __('Error') }}', data.inputs, 'error')
                         }
                     }
                 });
@@ -340,22 +340,22 @@
                             success: function(data) {
                                 $(".loader-wrapper").addClass('d-none');
                                 if (data.status_code === 200) {
-                                    show_toastr('Success', 'Payment Done Successfully', 'success');
+                                    show_toastr('{{ __('Success') }}', '{{ __('Payment Done Successfully') }}', 'success');
                                     setTimeout(() => {
                                         window.location.href = "{{ route('pay.invoice', \Illuminate\Support\Facades\Crypt::encrypt($invoice->id)) }}";
                                     }, 1000);
                                 } else {
-                                    show_toastr('Error', 'Payment Failed', 'msg');
+                                    show_toastr('{{ __('Error') }}', '{{ __('Payment Failed') }}', 'msg');
                                 }
                             },
                             error: function(err) {
-                                show_toastr('Error', err.response, 'msg');
+                                show_toastr('{{ __('Error') }}', err.response, 'msg');
                             },
                         });
                     }
                 },
                 onError(error) {
-                    show_toastr('Error', error, 'msg')
+                    show_toastr('{{ __('Error') }}', error, 'msg')
                 },
                 onClose() {}
             }
@@ -390,7 +390,7 @@
                 success : function(data) {
                     $(".loader-wrapper").addClass('d-none');
                     if (data == 0) {
-                        show_toastr('Error', 'Enter valid amount', 'danger');
+                        show_toastr('{{ __('Error') }}', '{{ __('Enter valid amount') }}', 'danger');
                         setTimeout(() => {
                             window.location.href = '{{ route("pay.invoice", \Illuminate\Support\Facades\Crypt::encrypt($invoice->id)) }}';
                         }, 1000);

@@ -56,7 +56,7 @@
                 stripe.createToken(card).then(function(result) {
                     if (result.error) {
                         $("#card-errors").html(result.error.message);
-                        show_toastr('Error', result.error.message, 'error');
+                        show_toastr('{{ __('Error') }}', result.error.message, 'error');
                     } else {
                         // Send the token to your server.
                         stripeTokenHandler(result.token);
@@ -225,7 +225,7 @@
             $temp.val(value).select();
             document.execCommand("copy");
             $temp.remove();
-            show_toastr('success', '{{ __('Link Copy on Clipboard') }}', 'success')
+            show_toastr('{{ __('Success') }}', '{{ __('Link Copy on Clipboard') }}', 'success')
         });
     </script>
 @endpush

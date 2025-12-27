@@ -20,7 +20,7 @@
                     "lang": "{{ $currantLang }}"
                 },
                 success: function(data) {
-                    show_toastr('success', data.message, 'success')
+                    show_toastr('{{ __('Success') }}', data.message, 'success')
                 }
             });
         });
@@ -45,7 +45,7 @@
             <i class="ti ti-plus text-white"></i>
         </a> --}}
 
-        @if ($currantLang != (!empty(env('default_language')) ? env('default_language') : 'en'))
+        @if ($currantLang != (!empty(env('default_language')) ? env('default_language') : 'es'))
             <div class="action-btn bg-danger ms-2">
                 {!! Form::open(['method' => 'DELETE', 'route' => ['lang.destroy', $currantLang]]) !!}
                 <a href="#!" class="btn btn-sm btn-danger btn-icon bs-pass-para" data-bs-toggle="tooltip"
@@ -56,7 +56,7 @@
             </div>
         @endif
 
-        @if ($currantLang != (!empty($settings['default_language']) ? $settings['default_language'] : 'en'))
+        @if ($currantLang != (!empty($settings['default_language']) ? $settings['default_language'] : 'es'))
             <div class="form-check form-switch custom-switch-v1 btn btn-sm btn-icon ms-1">
                 <input type="hidden" name="disable_lang" value="off">
                 <input type="checkbox" class="form-check-input input-primary" name="disable_lang" data-bs-placement="top"

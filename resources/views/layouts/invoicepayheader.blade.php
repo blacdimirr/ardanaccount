@@ -22,7 +22,7 @@
     $setting_arr = App\Models\Utility::file_validate();
 @endphp
 <!DOCTYPE html>
-<html lang="en" dir="{{ $SITE_RTL == 'on' ? 'rtl' : '' }}">
+<html lang="{{ app()->getLocale() }}" dir="{{ $SITE_RTL == 'on' ? 'rtl' : '' }}">
 <meta name="csrf-token" id="csrf-token" content="{{ csrf_token() }}">
 
 <head>
@@ -221,12 +221,12 @@
 
     @if ($message = Session::get('success'))
         <script>
-            show_toastr('Success', '{!! $message !!}', 'success');
+            show_toastr('{{ __('Success') }}', '{!! $message !!}', 'success');
         </script>
     @endif
     @if ($message = Session::get('error'))
         <script>
-            show_toastr('Error', '{!! $message !!}', 'error');
+            show_toastr('{{ __('Error') }}', '{!! $message !!}', 'error');
         </script>
     @endif
     @stack('script-page')

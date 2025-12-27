@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 
 class NotificationTemplatesController extends Controller
 {
-    public function index($id = null, $lang = 'en')
+    public function index($id = null, $lang = 'es')
     {
         $usr = \Auth::user();
 
@@ -67,7 +67,7 @@ class NotificationTemplatesController extends Controller
         )->with('success', __('Notification Template successfully updated.'));
     }
 
-    public function manageNotificationLang($id = null, $lang = 'en')
+    public function manageNotificationLang($id = null, $lang = 'es')
     {
         if (\Auth::user()->type == 'company') {
             if ($id != null) {
@@ -79,9 +79,13 @@ class NotificationTemplatesController extends Controller
                 return redirect()->back()->with('error', __('Not exists in notification template.'));
             }
             $languages         = Utility::languages();
+            $defaultLang = Utility::getValByName('default_language') ?: 'es';
             $curr_noti_tempLang = NotificationTemplateLangs::where('parent_id', '=', $notification_template->id)->where('lang', $lang)->where('created_by', '=', \Auth::user()->creatorId())->first();
             if (!isset($curr_noti_tempLang) || empty($curr_noti_tempLang)) {
                 $curr_noti_tempLang       = NotificationTemplateLangs::where('parent_id', '=', $notification_template->id)->where('lang', $lang)->first();
+            }
+            if (!isset($curr_noti_tempLang) || empty($curr_noti_tempLang)) {
+                $curr_noti_tempLang       = NotificationTemplateLangs::where('parent_id', '=', $notification_template->id)->where('lang', $defaultLang)->first();
             }
             if (!isset($curr_noti_tempLang) || empty($curr_noti_tempLang)) {
                 $curr_noti_tempLang       = NotificationTemplateLangs::where('parent_id', '=', $notification_template->id)->where('lang', 'en')->first();

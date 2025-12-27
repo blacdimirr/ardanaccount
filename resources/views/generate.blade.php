@@ -121,7 +121,7 @@
                 $('textarea[name=' + selected + ']').val(copied)
             }
         }
-        show_toastr('success', 'Result text has been copied successfully', 'success');
+        show_toastr('{{ __('Success') }}', '{{ __('Result text has been copied successfully') }}', 'success');
         $('#commonModalOver').modal('hide');
     }
 
@@ -139,7 +139,7 @@
                 $('textarea[name=' + selected + ']').val(selectedText)
             }
         }
-        show_toastr('success', 'Result text has been copied successfully', 'success');
+        show_toastr('{{ __('Success') }}', '{{ __('Result text has been copied successfully') }}', 'success');
         $('#commonModalOver').modal('hide');
 
     }
@@ -201,7 +201,7 @@
                 $('.response').removeClass('d-none');
                 $('#generate').text('Re-Generate');
                 if (data.message) {
-                    show_toastr('error', data.message, 'error');
+                    show_toastr('{{ __('Error') }}', data.message, 'error');
                     $('#commonModalOver').modal('hide');
                 } else {
                     $('#ai-description').val(data)

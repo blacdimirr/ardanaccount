@@ -4,7 +4,7 @@
     $company_favicon=App\Models\Utility::getValByName('company_favicon');
     $seo_setting = App\Models\Utility::getSeoSetting();
 @endphp
-<html lang="en"  dir="{{env('SITE_RTL') == 'on'?'rtl':''}}">
+<html lang="{{ app()->getLocale() }}"  dir="{{env('SITE_RTL') == 'on'?'rtl':''}}">
 <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no" name="viewport">

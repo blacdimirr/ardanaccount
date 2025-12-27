@@ -189,7 +189,7 @@ class LanguageController extends Controller
     public function destroyLang($lang)
     {
 
-        $default_lang = env('default_language') ?? 'en';
+        $default_lang = env('default_language') ?? 'es';
         $langDir      = base_path() . '/resources/lang/';
         if (is_dir($langDir)) {
             // remove directory and file

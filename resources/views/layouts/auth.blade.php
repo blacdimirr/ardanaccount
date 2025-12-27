@@ -33,7 +33,7 @@
     $set_cookie = Utility::cookies();
 
 @endphp
-<html lang="en" dir="{{ $SITE_RTL == 'on' ? 'rtl' : '' }}">
+<html lang="{{ app()->getLocale() }}" dir="{{ $SITE_RTL == 'on' ? 'rtl' : '' }}">
 
 <head>
     <title>

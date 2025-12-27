@@ -62,7 +62,7 @@ else
                     type: 'POST',
                     data: $("form").serialize(),
                     success: function (data) {
-                        show_toastr('success', data.message);
+                        show_toastr('{{ __('Success') }}', data.message);
                         $('#commonModal').modal('hide');
                     },
                     error: function (data) {
@@ -70,9 +70,9 @@ else
                
                         // data = data.responseJSON;
                         // if (data.message) {
-                        //     show_toastr('error', data.message);
+                        //     show_toastr('{{ __('Error') }}', data.message);
                         // } else {
-                        //     show_toastr('error', 'Some Thing Is Wrong!');
+                        //     show_toastr('{{ __('Error') }}', 'Some Thing Is Wrong!');
                         // }
                     }
                 });

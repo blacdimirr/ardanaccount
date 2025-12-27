@@ -236,7 +236,7 @@ class CashfreeController extends Controller
                     return redirect()->back()->with('error', __('Your Transaction is fail please try again'));
                 }
             } else {
-                return redirect()->route('invoice.show')->with('error', 'Payment Failed.');
+                return redirect()->route('invoice.show')->with('error', __('Payment Failed'));
             }
         } catch (\Exception $e) {
             return redirect()->back()->with('error', __($e));
@@ -444,7 +444,7 @@ class CashfreeController extends Controller
                     return redirect()->back()->with('error', __('Your Transaction is fail please try again'));
                 }
             } else {
-                return redirect()->route('invoice.show')->with('error', 'Payment Failed.');
+                return redirect()->route('invoice.show')->with('error', __('Payment Failed'));
             }
         } catch (\Exception $e) {
             return redirect()->back()->with('error', __($e));

@@ -15,7 +15,7 @@ use App\Models\Utility;
             $temp.val(value).select();
             document.execCommand("copy");
             $temp.remove();
-            show_toastr('success', '{{ __('Link Copy on Clipboard') }}', 'success')
+            show_toastr('{{ __('Success') }}', '{{ __('Link Copy on Clipboard') }}', 'success')
         });
 
         $('.cp_link_document_auth').on('click', function() {
@@ -34,13 +34,13 @@ use App\Models\Utility;
                 },
                 success: function(data) {
                     if (data.success) {
-                        show_toastr('success', '{{ __('The authorization document was sent') }}', 'success');
+                        show_toastr('{{ __('Success') }}', '{{ __('The authorization document was sent') }}', 'success');
                     } else {
-                        show_toastr('error', data.error, 'error');
+                        show_toastr('{{ __('Error') }}', data.error, 'error');
                     }
                 },
                 error: function() {
-                    show_toastr('error', '{{ __('Something went wrong') }}', 'error');
+                    show_toastr('{{ __('Error') }}', '{{ __('Something went wrong') }}', 'error');
                 }
             });
             
@@ -62,13 +62,13 @@ $('.cp_link_document_auth_approved').on('click', function() {
                 },
                 success: function(data) {
                     if (data.success) {
-                        show_toastr('success', '{{ __('The authorization document was sent') }}', 'success');
+                        show_toastr('{{ __('Success') }}', '{{ __('The authorization document was sent') }}', 'success');
                     } else {
-                        show_toastr('error', data.error, 'error');
+                        show_toastr('{{ __('Error') }}', data.error, 'error');
                     }
                 },
                 error: function() {
-                    show_toastr('error', '{{ __('Something went wrong') }}', 'error');
+                    show_toastr('{{ __('Error') }}', '{{ __('Something went wrong') }}', 'error');
                 }
             });
             
