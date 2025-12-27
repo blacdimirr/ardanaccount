@@ -888,6 +888,11 @@ Route::group(
         Route::post('report/estados-complementarios/variacion-patrimonio/pdf', [ReportController::class, 'equityVariationPdf'])->name('report.equity.variation.pdf');
         Route::post('report/estados-complementarios/flujo-efectivo/export', [ReportController::class, 'cashFlowExport'])->name('report.cash.flow.export');
         Route::post('report/estados-complementarios/flujo-efectivo/pdf', [ReportController::class, 'cashFlowPdf'])->name('report.cash.flow.pdf');
+        Route::get('report/estados-complementarios/mapeos', [ReportController::class, 'complementaryStatementMappings'])->name('report.complementary.mappings');
+        Route::post('report/estados-complementarios/mapeos/variacion-patrimonio', [ReportController::class, 'storeEquityMapping'])->name('report.equity.mappings.store');
+        Route::delete('report/estados-complementarios/mapeos/variacion-patrimonio/{mapping}', [ReportController::class, 'destroyEquityMapping'])->name('report.equity.mappings.destroy');
+        Route::post('report/estados-complementarios/mapeos/flujo-efectivo', [ReportController::class, 'storeCashFlowMapping'])->name('report.cashflow.mappings.store');
+        Route::delete('report/estados-complementarios/mapeos/flujo-efectivo/{mapping}', [ReportController::class, 'destroyCashFlowMapping'])->name('report.cashflow.mappings.destroy');
 
 
         Route::get('report/tax-summary', [ReportController::class, 'taxSummary'])->name('report.tax.summary');

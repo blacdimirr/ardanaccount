@@ -14,6 +14,11 @@
         <div class="col-sm-12">
             <div class="card">
                 <div class="card-body">
+                    <div class="d-flex justify-content-end mb-3">
+                        <a href="{{ route('report.complementary.mappings') }}" class="btn btn-sm btn-primary">
+                            <i class="ti ti-settings"></i> {{ __('Configure Mappings') }}
+                        </a>
+                    </div>
                     {{ Form::open(['route' => ['report.complementary.statements'], 'method' => 'GET', 'id' => 'report_complementary_statements']) }}
                     <div class="row align-items-end">
                         <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">

@@ -58,6 +58,8 @@ use App\Models\ChartOfAccountParent;
 use App\Models\Status;
 use App\Models\TransactionLines;
 use App\Models\User;
+use App\Models\PublicCashFlowMapping;
+use App\Models\PublicEquityVariationMapping;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
@@ -3858,6 +3860,108 @@ class ReportController extends Controller
         ]);
 
         return $pdf->download('estado-flujo-efectivo.pdf');
+    }
+
+    public function complementaryStatementMappings()
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $creatorId = \Auth::user()->creatorId();
+        $accounts = ChartOfAccount::where('created_by', $creatorId)->orderBy('code')->get();
+        $equityMappings = PublicEquityVariationMapping::where('created_by', $creatorId)
+            ->with('account')
+            ->orderBy('section')
+            ->orderBy('sort_order')
+            ->orderBy('line_name')
+            ->get();
+        $cashFlowMappings = PublicCashFlowMapping::where('created_by', $creatorId)
+            ->with('account')
+            ->orderBy('section')
+            ->orderBy('sort_order')
+            ->orderBy('line_name')
+            ->get();
+
+        return view('report.complementary_statement_mappings', compact('accounts', 'equityMappings', 'cashFlowMappings'));
+    }
+
+    public function storeEquityMapping(Request $request)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $request->validate([
+            'line_name' => 'required|string|max:255',
+            'section' => 'required|in:increase,decrease',
+            'chart_of_account_id' => 'nullable|exists:chart_of_accounts,id',
+            'sort_order' => 'nullable|integer|min:0',
+        ]);
+
+        PublicEquityVariationMapping::create([
+            'line_name' => $request->line_name,
+            'section' => $request->section,
+            'chart_of_account_id' => $request->chart_of_account_id,
+            'sort_order' => $request->sort_order ?? 0,
+            'created_by' => \Auth::user()->creatorId(),
+        ]);
+
+        return redirect()->route('report.complementary.mappings')->with('success', __('Mapping created successfully.'));
+    }
+
+    public function storeCashFlowMapping(Request $request)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $request->validate([
+            'line_name' => 'required|string|max:255',
+            'section' => 'required|in:operating,investing,financing',
+            'chart_of_account_id' => 'nullable|exists:chart_of_accounts,id',
+            'sort_order' => 'nullable|integer|min:0',
+        ]);
+
+        PublicCashFlowMapping::create([
+            'line_name' => $request->line_name,
+            'section' => $request->section,
+            'chart_of_account_id' => $request->chart_of_account_id,
+            'sort_order' => $request->sort_order ?? 0,
+            'created_by' => \Auth::user()->creatorId(),
+        ]);
+
+        return redirect()->route('report.complementary.mappings')->with('success', __('Mapping created successfully.'));
+    }
+
+    public function destroyEquityMapping(PublicEquityVariationMapping $mapping)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        if ($mapping->created_by !== \Auth::user()->creatorId()) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $mapping->delete();
+
+        return redirect()->route('report.complementary.mappings')->with('success', __('Mapping deleted successfully.'));
+    }
+
+    public function destroyCashFlowMapping(PublicCashFlowMapping $mapping)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        if ($mapping->created_by !== \Auth::user()->creatorId()) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $mapping->delete();
+
+        return redirect()->route('report.complementary.mappings')->with('success', __('Mapping deleted successfully.'));
     }
 
     public function fondosMovimientos(Request $request)
