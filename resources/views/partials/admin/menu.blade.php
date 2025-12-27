@@ -736,6 +736,11 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                             <a class="dash-link"
                                 href="{{ route('report.public.budget.execution') }}">{{ __('Public Budget Execution') }}</a>
                         </li>
+                        <li
+                            class="dash-item {{ Request::route()->getName() == 'report.public.financial.position' ? ' active' : '' }}">
+                            <a class="dash-link"
+                                href="{{ route('report.public.financial.position') }}">{{ __('Public Financial Position Statement') }}</a>
+                        </li>
                         @endcan
                         @can('tesoreria_recaudaciones_manage')
                         <li

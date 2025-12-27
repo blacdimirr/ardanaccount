@@ -38,6 +38,7 @@ use App\Exports\PublicBudgetExecutionExport;
 use App\Exports\ProductStockExport;
 use App\Exports\ProfitLossExport;
 use App\Exports\TrialBalancExport;
+use App\Exports\PublicFinancialPositionExport;
 use App\Exports\Dgii606Export;
 use App\Exports\Dgii607Export;
 use App\Exports\Dgii608Export;
@@ -48,6 +49,7 @@ use App\Services\Dgii608Service;
 use App\Services\EstadoCuentaConciliacionService;
 use App\Services\NominaAsientoService;
 use App\Services\BudgetExecutionReportService;
+use App\Services\PublicFinancialPositionService;
 use App\Models\ChartOfAccountParent;
 use App\Models\Status;
 use App\Models\TransactionLines;
@@ -3688,6 +3690,62 @@ class ReportController extends Controller
         ob_end_clean();
 
         return $data;
+    }
+
+    public function publicFinancialPosition(Request $request, PublicFinancialPositionService $service)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $cutoffDate = $request->get('cutoff_date', date('Y-m-d'));
+        $creatorId = \Auth::user()->creatorId();
+        $report = $service->buildReport($creatorId, $cutoffDate);
+
+        return view('report.public_financial_position', compact('cutoffDate', 'report'));
+    }
+
+    public function publicFinancialPositionExport(Request $request, PublicFinancialPositionService $service)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $request->validate([
+            'cutoff_date' => 'required|date',
+        ]);
+
+        $creatorId = \Auth::user()->creatorId();
+        $companyName = User::where('id', $creatorId)->value('name') ?? '';
+        $report = $service->buildReport($creatorId, $request->cutoff_date);
+
+        return Excel::download(
+            new PublicFinancialPositionExport($report, $request->cutoff_date, $companyName),
+            'estado-situacion-financiera.xlsx'
+        );
+    }
+
+    public function publicFinancialPositionPdf(Request $request, PublicFinancialPositionService $service)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $request->validate([
+            'cutoff_date' => 'required|date',
+        ]);
+
+        $creatorId = \Auth::user()->creatorId();
+        $companyName = User::where('id', $creatorId)->value('name') ?? '';
+        $report = $service->buildReport($creatorId, $request->cutoff_date);
+
+        $pdf = Pdf::loadView('report.public_financial_position_pdf', [
+            'cutoffDate' => $request->cutoff_date,
+            'report' => $report,
+            'companyName' => $companyName,
+        ]);
+
+        return $pdf->download('estado-situacion-financiera.pdf');
     }
 
     public function fondosMovimientos(Request $request)

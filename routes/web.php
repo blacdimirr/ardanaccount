@@ -880,6 +880,9 @@ Route::group(
         Route::post('report/budget-execution/export', [ReportController::class, 'budgetExecutionExport'])->name('report.budget.execution.export');
         Route::get('report/public-budget-execution', [ReportController::class, 'publicBudgetExecution'])->name('report.public.budget.execution');
         Route::post('report/public-budget-execution/export', [ReportController::class, 'publicBudgetExecutionExport'])->name('report.public.budget.execution.export');
+        Route::get('report/estado-situacion-financiera', [ReportController::class, 'publicFinancialPosition'])->name('report.public.financial.position');
+        Route::post('report/estado-situacion-financiera/export', [ReportController::class, 'publicFinancialPositionExport'])->name('report.public.financial.position.export');
+        Route::post('report/estado-situacion-financiera/pdf', [ReportController::class, 'publicFinancialPositionPdf'])->name('report.public.financial.position.pdf');
 
 
         Route::get('report/tax-summary', [ReportController::class, 'taxSummary'])->name('report.tax.summary');

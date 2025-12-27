@@ -1721,5 +1721,13 @@
   "Public Budget Execution Report": "Estado de Ejecución Presupuestaria",
   "Execution Balance": "Saldo de ejecución",
   "Generated at": "Generado el",
-  "Institutional Report": "Informe institucional"
+  "Institutional Report": "Informe institucional",
+  "Public Financial Position Statement": "Estado de Situación Financiera",
+  "Cutoff Date": "Fecha de corte",
+  "Liabilities": "Pasivos",
+  "Equity": "Patrimonio",
+  "Section": "Sección",
+  "Line": "Línea",
+  "Total Liabilities & Equity": "Total pasivos y patrimonio",
+  "No statement mappings available.": "No hay líneas configuradas para el estado."
 }
