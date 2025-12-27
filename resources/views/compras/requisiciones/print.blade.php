@@ -11,6 +11,7 @@
     </style>
 </head>
 <body>
+    @include('pdf.partials.header')
     <div class="header">
         <h2>{{ __('Requisition') }} #{{ $requisicion->id }}</h2>
     </div>

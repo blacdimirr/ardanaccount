@@ -108,6 +108,7 @@
     </div>
 
     <div id="printableArea">
+        @include('pdf.partials.header')
         <div class="row mt-3">
             <div class="col">
                 <input type="hidden" value="{{__('Profit & Loss Summary').' '.'Report of'.' '.$filter['startDateRange'].' to '.$filter['endDateRange']}}" id="filename">

@@ -180,6 +180,7 @@
 </head>
 
 <body class="">
+    @include('pdf.partials.header')
     <div class="bill-preview-main" id="boxes">
         <div class="bill-header" style="background: {{ $color }};color:{{ $font_color }}">
             <table>

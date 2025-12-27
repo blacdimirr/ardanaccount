@@ -928,8 +928,8 @@
                                 @enderror
                             </div>
                             <div class="form-group col-md-6">
-                                {{ Form::label('registration_number', __('Company Registration Number *'), ['class' => 'form-label']) }}
-                                {{ Form::text('registration_number', null, ['class' => 'form-control','placeholder'=>__('Enter Company Registration Number')]) }}
+                                {{ Form::label('registration_number', __('RNC *'), ['class' => 'form-label']) }}
+                                {{ Form::text('registration_number', null, ['class' => 'form-control','placeholder'=>__('Ingrese el RNC')]) }}
                                 @error('registration_number')
                                 <span class="invalid-registration_number" role="alert">
                                     <strong class="text-danger">{{ $message }}</strong>

@@ -3,11 +3,17 @@
 namespace App\Exports;
 
 use App\Models\StockReport;
+use App\Exports\Concerns\WithCompanyHeader;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithCustomStartCell;
+use Maatwebsite\Excel\Concerns\WithDrawings;
+use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class ProductStockExport implements FromCollection, WithHeadings
+class ProductStockExport implements FromCollection, WithHeadings, WithEvents, WithCustomStartCell, WithDrawings
 {
+    use WithCompanyHeader;
+
     /**
     * @return \Illuminate\Support\Collection
     */

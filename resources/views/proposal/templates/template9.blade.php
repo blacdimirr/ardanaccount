@@ -188,6 +188,7 @@
 </head>
 
 <body>
+    @include('pdf.partials.header')
 
     <div class="proposal-preview-main" id="boxes" style="border-right:40px solid var(--theme-color);">
         <div class="proposal-header">

@@ -2,14 +2,20 @@
 
 namespace App\Exports;
 
+use App\Exports\Concerns\WithCompanyHeader;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
+use Maatwebsite\Excel\Concerns\WithCustomStartCell;
+use Maatwebsite\Excel\Concerns\WithDrawings;
+use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class ConciliacionBancariaExport implements FromArray, WithColumnWidths, WithStyles
+class ConciliacionBancariaExport implements FromArray, WithColumnWidths, WithStyles, WithEvents, WithCustomStartCell, WithDrawings
 {
+    use WithCompanyHeader;
+
     protected Collection $movimientos;
     protected string $startDate;
     protected string $endDate;
@@ -86,9 +92,11 @@ class ConciliacionBancariaExport implements FromArray, WithColumnWidths, WithSty
 
     public function styles(Worksheet $sheet): array
     {
+        $startRow = $this->companyHeaderStartRow();
+
         return [
-            1 => ['font' => ['bold' => true]],
-            4 => ['font' => ['bold' => true]],
+            $startRow => ['font' => ['bold' => true]],
+            $startRow + 3 => ['font' => ['bold' => true]],
         ];
     }
 }

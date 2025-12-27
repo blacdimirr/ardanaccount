@@ -13,6 +13,7 @@
     </style>
 </head>
 <body>
+    @include('pdf.partials.header')
     <div class="header">
         <h2>{{ __('Costos de nómina por servicio') }}</h2>
         <p>

@@ -104,6 +104,7 @@
     </div>
 
     <div class="row" id="printableArea">
+        @include('pdf.partials.header')
         <div class="col-sm-12">
             <div class="card">
                 <div class="card-body">

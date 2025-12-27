@@ -4,12 +4,18 @@ namespace App\Exports;
 
 use App\Services\Dgii608Service;
 use App\Services\DgiiFormatter;
+use App\Exports\Concerns\WithCompanyHeader;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithCustomStartCell;
+use Maatwebsite\Excel\Concerns\WithDrawings;
+use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class Dgii608Export implements FromCollection, WithHeadings
+class Dgii608Export implements FromCollection, WithHeadings, WithEvents, WithCustomStartCell, WithDrawings
 {
+    use WithCompanyHeader;
+
     public function __construct(
         protected int $year,
         protected int $month,

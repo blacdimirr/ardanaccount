@@ -180,6 +180,7 @@
 </head>
 
 <body>
+    @include('pdf.partials.header')
     <div class="invoice-preview-main" id="boxes">
         <div class="invoice-header" style="">
             <table class="vertical-align-top">

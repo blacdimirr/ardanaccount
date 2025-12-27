@@ -22,6 +22,7 @@
 @endpush
 
 @section('content')
+    @include('pdf.partials.header')
     <div class="row">
         <div class="col-lg-10">
             <div class="container">

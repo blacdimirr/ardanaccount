@@ -2,10 +2,12 @@
 
 namespace App\Exports;
 
+use App\Exports\Concerns\WithCompanyHeader;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithCustomStartCell;
+use Maatwebsite\Excel\Concerns\WithDrawings;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
@@ -13,8 +15,12 @@ use Maatwebsite\Excel\Events\AfterSheet;
 use Maatwebsite\Excel\Events\BeforeWriting;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class BalanceSheetExport implements FromArray, WithEvents, WithHeadings, WithStyles, WithColumnWidths, WithCustomStartCell
+class BalanceSheetExport implements FromArray, WithEvents, WithHeadings, WithStyles, WithColumnWidths, WithCustomStartCell, WithDrawings
 {
+    use WithCompanyHeader {
+        registerEvents as registerCompanyHeaderEvents;
+    }
+
     /**
      * @return \Illuminate\Support\Collection
      */
@@ -181,7 +187,7 @@ class BalanceSheetExport implements FromArray, WithEvents, WithHeadings, WithSty
 
     public function startCell(): string
     {
-        return 'A5';
+        return 'A9';
     }
 
     public function columnWidths(): array
@@ -197,12 +203,12 @@ class BalanceSheetExport implements FromArray, WithEvents, WithHeadings, WithSty
 
     public function styles(Worksheet $sheet)
     {
-        $sheet->getStyle('A5')->getFont()->setBold(true);
-        $sheet->getStyle('B5')->getFont()->setBold(true);
-        $sheet->getStyle('C5')->getFont()->setBold(true);
-        $sheet->getStyle('D5')->getFont()->setBold(true);
-        $sheet->getStyle('E5')->getFont()->setBold(true);
-        $sheet->getStyle('F5')->getFont()->setBold(true);
+        $sheet->getStyle('A9')->getFont()->setBold(true);
+        $sheet->getStyle('B9')->getFont()->setBold(true);
+        $sheet->getStyle('C9')->getFont()->setBold(true);
+        $sheet->getStyle('D9')->getFont()->setBold(true);
+        $sheet->getStyle('E9')->getFont()->setBold(true);
+        $sheet->getStyle('F9')->getFont()->setBold(true);
     }
 
     public function array(): array
@@ -218,17 +224,19 @@ class BalanceSheetExport implements FromArray, WithEvents, WithHeadings, WithSty
             },
 
             AfterSheet::class => function (AfterSheet $event) {
-                $event->sheet->getDelegate()->mergeCells('A1:F1');
-                $event->sheet->getDelegate()->mergeCells('A2:F2');
-                $event->sheet->getDelegate()->mergeCells('A3:F3');
+                $this->registerCompanyHeaderEvents()[AfterSheet::class]($event);
 
-                $event->sheet->getDelegate()->setCellValue('A1', 'Balance Sheet - ' . $this->companyName)->getStyle('A1')->getFont()->setBold(true);
-                $event->sheet->getDelegate()->setCellValue('A2', 'Print Out Date : ' . date('Y-m-d H:i'));
-                $event->sheet->getDelegate()->setCellValue('A3', 'Date : ' . $this->startDate . ' - ' . $this->endDate);
+                $event->sheet->getDelegate()->mergeCells('A5:F5');
+                $event->sheet->getDelegate()->mergeCells('A6:F6');
+                $event->sheet->getDelegate()->mergeCells('A7:F7');
 
-                $event->sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-                $event->sheet->getStyle('A2')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-                $event->sheet->getStyle('A3')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                $event->sheet->getDelegate()->setCellValue('A5', 'Balance general - ' . $this->companyName)->getStyle('A5')->getFont()->setBold(true);
+                $event->sheet->getDelegate()->setCellValue('A6', 'Fecha de impresión: ' . date('d/m/Y H:i'));
+                $event->sheet->getDelegate()->setCellValue('A7', 'Periodo: ' . $this->startDate . ' - ' . $this->endDate);
+
+                $event->sheet->getStyle('A5')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                $event->sheet->getStyle('A6')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                $event->sheet->getStyle('A7')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
 
                 $event->sheet->getDelegate()->getStyle('A')->getAlignment()->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
                 $event->sheet->getDelegate()->getStyle('B')->getAlignment()->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
@@ -240,7 +248,7 @@ class BalanceSheetExport implements FromArray, WithEvents, WithHeadings, WithSty
                         $row['Account Name'] == 'Total Assets' || $row['Account Name'] == '  Liabilities' || $row['Account Name'] == '  Equity' ||
                         $row['Account Name'] == '  Total Equity' || $row['Account Name'] == 'Liabilities & Equity' || $row['Account Name'] == 'Total Liabilities & Equity' ||
                         preg_match('/\bTotal\b/i', $row['Account Name']))) {
-                        $rowIndex = $index + 6; // Adjust for 1-based indexing and header row
+                        $rowIndex = $index + 10; // Adjust for 1-based indexing and header row
                         $event->sheet->getStyle('A' . $rowIndex . ':C' . $rowIndex)
                             ->applyFromArray([
                                 'font' => [

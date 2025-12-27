@@ -3,11 +3,17 @@
 namespace App\Exports;
 
 use App\Models\Revenue;
+use App\Exports\Concerns\WithCompanyHeader;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithCustomStartCell;
+use Maatwebsite\Excel\Concerns\WithDrawings;
+use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class RevenueExport implements FromCollection, WithHeadings
+class RevenueExport implements FromCollection, WithHeadings, WithEvents, WithCustomStartCell, WithDrawings
 {
+    use WithCompanyHeader;
+
 
     protected $date;
 

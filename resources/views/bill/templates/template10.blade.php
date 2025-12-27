@@ -179,6 +179,7 @@
 </head>
 
 <body>
+    @include('pdf.partials.header')
     <div class="bill-preview-main" id="boxes">
         <div class="bill-header">
             <table class="vertical-align-top">

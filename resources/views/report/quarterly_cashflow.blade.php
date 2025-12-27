@@ -87,6 +87,7 @@
     </div>
 
     <div id="printableArea">
+        @include('pdf.partials.header')
         <div class="row mt-1">
             <div class="col">
                 <input type="hidden" value="{{__('Quarterly Cashflow').' '.'Report of'.' '.$filter['startDateRange'].' to '.$filter['endDateRange']}}" id="filename">

@@ -227,6 +227,7 @@
 
 
     <div id="printableArea">
+        @include('pdf.partials.header')
         <div class="row mt-3">
             <div class="col">
                 <input type="hidden"

@@ -14,6 +14,7 @@
     </style>
 </head>
 <body>
+    @include('pdf.partials.header')
     <div class="header">
         <h2>{{ __('Equity Variation Statement') }}</h2>
         <p>

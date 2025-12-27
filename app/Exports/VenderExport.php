@@ -3,11 +3,17 @@
 namespace App\Exports;
 
 use App\Models\Vender;
+use App\Exports\Concerns\WithCompanyHeader;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithCustomStartCell;
+use Maatwebsite\Excel\Concerns\WithDrawings;
+use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class VenderExport implements FromCollection, WithHeadings
+class VenderExport implements FromCollection, WithHeadings, WithEvents, WithCustomStartCell, WithDrawings
 {
+    use WithCompanyHeader;
+
     /**
      * @return \Illuminate\Support\Collection
      */

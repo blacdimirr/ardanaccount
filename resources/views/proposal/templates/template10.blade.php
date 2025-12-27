@@ -179,6 +179,7 @@
 </head>
 
 <body>
+    @include('pdf.partials.header')
     <div class="proposal-preview-main" id="boxes">
         <div class="proposal-header">
             <table class="vertical-align-top">
