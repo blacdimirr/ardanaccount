@@ -639,6 +639,8 @@ Route::group(
             ->name('conciliacion.manual');
         Route::get('extractos', [\App\Http\Controllers\MovimientoBancarioController::class, 'index'])
             ->name('extractos.index');
+        Route::get('extractos/template', [\App\Http\Controllers\MovimientoBancarioController::class, 'template'])
+            ->name('extractos.template');
         Route::post('extractos/preview', [\App\Http\Controllers\MovimientoBancarioController::class, 'preview'])
             ->name('extractos.preview');
         Route::post('extractos/confirm', [\App\Http\Controllers\MovimientoBancarioController::class, 'confirm'])
