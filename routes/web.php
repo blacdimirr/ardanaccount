@@ -624,6 +624,24 @@ Route::group(
             'XSS',
             'revalidate',
         ],
+        'prefix' => 'tesoreria',
+        'as' => 'tesoreria.',
+    ],
+    function () {
+        Route::resource('fondos', \App\Http\Controllers\FondoRotatorioController::class)->except(['show', 'destroy']);
+        Route::get('fondos/{fondo}/movimientos/create', [\App\Http\Controllers\FondoRotatorioController::class, 'createMovimiento'])
+            ->name('fondos.movimientos.create');
+        Route::post('fondos/{fondo}/movimientos', [\App\Http\Controllers\FondoRotatorioController::class, 'storeMovimiento'])
+            ->name('fondos.movimientos.store');
+    }
+);
+Route::group(
+    [
+        'middleware' => [
+            'auth',
+            'XSS',
+            'revalidate',
+        ],
     ],
     function () {
 
@@ -859,6 +877,8 @@ Route::group(
         Route::get('report/bill-summary', [ReportController::class, 'billSummary'])->name('report.bill.summary');
         Route::get('report/product-stock-report', [ReportController::class, 'productStock'])->name('report.product.stock.report');
         Route::get('report/invoice-report', [ReportController::class, 'invoiceReport'])->name('report.invoice');
+        Route::get('report/fondos-movimientos', [ReportController::class, 'fondosMovimientos'])->name('report.fondos.movimientos');
+        Route::post('report/fondos-movimientos/export', [ReportController::class, 'fondosMovimientosExport'])->name('report.fondos.movimientos.export');
 
 
         Route::get('report/account-statement-report', [ReportController::class, 'accountStatement'])->name('report.account.statement');

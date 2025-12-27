@@ -22,9 +22,12 @@ use App\Models\StockReport;
 use App\Models\Tax;
 use App\Models\Vender;
 use App\Models\Utility;
+use App\Models\FondoRotatorio;
+use App\Models\MovimientoFondo;
 use App\Exports\AccountStatementExport;
 use App\Exports\BalanceSheetExport;
 use App\Exports\BudgetExecutionExport;
+use App\Exports\FondoMovimientosExport;
 use App\Exports\ProductStockExport;
 use App\Exports\ProfitLossExport;
 use App\Exports\TrialBalancExport;
@@ -3608,6 +3611,70 @@ class ReportController extends Controller
 
         $name = 'budget_execution_' . date('Y-m-d_H-i-s');
         $data = Excel::download(new BudgetExecutionExport($rows), $name . '.xlsx');
+        ob_end_clean();
+
+        return $data;
+    }
+
+    public function fondosMovimientos(Request $request)
+    {
+        if (!\Auth::user()->can('tesoreria_fondos_manage')) {
+            return redirect()->back()->with('error', __('Permission Denied.'));
+        }
+
+        $creatorId = \Auth::user()->creatorId();
+        $startDate = $request->get('start_date', now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->get('end_date', now()->format('Y-m-d'));
+        $selectedFondo = $request->get('fondo_id');
+
+        $fondos = FondoRotatorio::where('created_by', $creatorId)->orderBy('nombre')->get();
+
+        $movimientosQuery = MovimientoFondo::with('fondo')
+            ->where('created_by', $creatorId)
+            ->whereDate('fecha', '>=', $startDate)
+            ->whereDate('fecha', '<=', $endDate)
+            ->orderBy('fecha', 'desc');
+
+        if (!empty($selectedFondo)) {
+            $movimientosQuery->where('fondo_id', $selectedFondo);
+        }
+
+        $movimientos = $movimientosQuery->get();
+
+        return view('report.fondos_movimientos', compact('movimientos', 'fondos', 'startDate', 'endDate', 'selectedFondo'));
+    }
+
+    public function fondosMovimientosExport(Request $request)
+    {
+        if (!\Auth::user()->can('tesoreria_fondos_manage')) {
+            return redirect()->back()->with('error', __('Permission Denied.'));
+        }
+
+        $creatorId = \Auth::user()->creatorId();
+        $startDate = $request->get('start_date', now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->get('end_date', now()->format('Y-m-d'));
+        $selectedFondo = $request->get('fondo_id');
+
+        $movimientosQuery = MovimientoFondo::with('fondo')
+            ->where('created_by', $creatorId)
+            ->whereDate('fecha', '>=', $startDate)
+            ->whereDate('fecha', '<=', $endDate)
+            ->orderBy('fecha', 'desc');
+
+        if (!empty($selectedFondo)) {
+            $movimientosQuery->where('fondo_id', $selectedFondo);
+        }
+
+        $movimientos = $movimientosQuery->get();
+        $fondoNombre = '';
+        if (!empty($selectedFondo)) {
+            $fondoNombre = FondoRotatorio::where('created_by', $creatorId)
+                ->where('id', $selectedFondo)
+                ->value('nombre') ?? '';
+        }
+
+        $name = 'fund_movements_' . date('Y-m-d_H-i-s');
+        $data = Excel::download(new FondoMovimientosExport($movimientos, $startDate, $endDate, $fondoNombre), $name . '.xlsx');
         ob_end_clean();
 
         return $data;
