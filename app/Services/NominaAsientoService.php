@@ -184,16 +184,17 @@ class NominaAsientoService
 
             if (!$bankAccount) {
                 $bankAccount = BankAccount::where('created_by', $creatorId)
+                    ->whereNull('chart_account_id')
                     ->orderBy('id')
                     ->first();
 
-                if ($bankAccount && !$bankAccount->chart_account_id) {
+                if ($bankAccount) {
                     $bankAccount->chart_account_id = $bankAccountId;
                     $bankAccount->save();
                 }
             }
 
-            if ($bankAccount) {
+            if ($bankAccount && (int) $bankAccount->chart_account_id === (int) $bankAccountId) {
                 Utility::bankAccountBalance($bankAccount->id, $resumen['totales']['neto'], 'debit');
             }
         }
