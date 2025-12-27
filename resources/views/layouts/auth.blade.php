@@ -144,6 +144,7 @@
                 <div class="custom-row">
                     <div class="card">
                         <div class="card-body">
+                            <x-alert-messages />
                             @yield('content')
                         </div>
                     </div>

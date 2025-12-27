@@ -1290,8 +1290,9 @@
                                                     <div class="row">
                                                         <div class="col-12">
                                                             <div class="error" style="display: none;">
-                                                                <div class='alert-danger alert'>
-                                                                    {{ __('Please correct the errors and try again.') }}</div>
+                                                                <x-alert type="danger">
+                                                                    {{ __('Por favor corrige los errores e intenta nuevamente.') }}
+                                                                </x-alert>
                                                             </div>
                                                         </div>
                                                     </div>

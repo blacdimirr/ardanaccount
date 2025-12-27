@@ -115,7 +115,7 @@
                     </div>
 
                     @if ($budgets->isEmpty())
-                        <div class="alert alert-warning">{{ __('No budget selected') }}</div>
+                        <x-alert type="warning">{{ __('No hay presupuesto seleccionado.') }}</x-alert>
                     @else
                         <div class="table-responsive">
                             <table class="table">

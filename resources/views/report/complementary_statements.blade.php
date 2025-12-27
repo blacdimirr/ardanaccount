@@ -88,7 +88,7 @@
                     </div>
 
                     @if (!$equityHasLines)
-                        <div class="alert alert-warning">{{ __('No statement mappings available.') }}</div>
+                        <x-alert type="warning">{{ __('No hay mapeos de estados disponibles.') }}</x-alert>
                     @else
                         <div class="table-responsive">
                             <table class="table">
@@ -164,7 +164,7 @@
                     </div>
 
                     @if (!$cashFlowHasLines)
-                        <div class="alert alert-warning">{{ __('No statement mappings available.') }}</div>
+                        <x-alert type="warning">{{ __('No hay mapeos de estados disponibles.') }}</x-alert>
                     @else
                         <div class="table-responsive">
                             <table class="table">
