@@ -99,6 +99,31 @@ class MovimientoBancarioController extends Controller
         return redirect()->route('tesoreria.extractos.index')->with('success', __('Bank statement movements imported successfully.'));
     }
 
+    public function template()
+    {
+        if (!\Auth::user()->can('tesoreria_extractos_import')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $headers = ['fecha', 'monto', 'descripcion', 'referencia'];
+        $rows = [
+            $headers,
+            [now()->format('Y-m-d'), '1500.00', 'Deposito de recaudacion', 'REF-001'],
+        ];
+        $output = '';
+        foreach ($rows as $row) {
+            $output .= implode(',', array_map(function ($value) {
+                return '"' . str_replace('"', '""', $value) . '"';
+            }, $row)) . "\n";
+        }
+
+        return response()->streamDownload(function () use ($output) {
+            echo $output;
+        }, 'plantilla_movimientos_bancarios.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
     private function cuentaRecaudadoraRule(): Exists
     {
         $rule = Rule::exists('cuentas_recaudadoras', 'id')->where('activo', true);

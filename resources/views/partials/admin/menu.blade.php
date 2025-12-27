@@ -292,7 +292,7 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                 @endif
 
                 {{-- -------  Treasury ---------- --}}
-                @if (Gate::check('tesoreria_fondos_manage') || Gate::check('tesoreria_recaudaciones_manage') || Gate::check('tesoreria_extractos_import'))
+                @if (Gate::check('tesoreria_fondos_manage') || Gate::check('tesoreria_recaudaciones_manage') || Gate::check('tesoreria_extractos_import') || Gate::check('tesoreria_conciliacion_manage'))
                 <li
                     class="dash-item dash-hasmenu {{ Request::segment(1) == 'tesoreria' ? ' active dash-trigger' : '' }}">
                     <a href="#!" class="dash-link "><span class="dash-micon"><i
@@ -325,6 +325,13 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                             class="dash-item {{ Request::route()->getName() == 'tesoreria.extractos.index' ? ' active' : '' }}">
                             <a class="dash-link"
                                 href="{{ route('tesoreria.extractos.index') }}">{{ __('Bank Statement Import') }}</a>
+                        </li>
+                        @endcan
+                        @can('tesoreria_conciliacion_manage')
+                        <li
+                            class="dash-item {{ Request::route()->getName() == 'tesoreria.conciliacion.index' ? ' active' : '' }}">
+                            <a class="dash-link"
+                                href="{{ route('tesoreria.conciliacion.index') }}">{{ __('Bank Reconciliation') }}</a>
                         </li>
                         @endcan
                     </ul>
