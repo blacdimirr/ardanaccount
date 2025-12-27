@@ -247,6 +247,7 @@
                     </div>
                 </div>
             </div>
+            <x-alert-messages />
             @yield('content')
             <!-- [ Main Content ] end -->
         </div>

@@ -59,12 +59,12 @@
                         </table>
                     </div>
                     @if ($proceso->adjudicacion)
-                        <div class="alert alert-info mt-3">
-                            {{ __('Award already recorded.') }}
+                        <x-alert type="info" class="mt-3">
+                            {{ __('La adjudicación ya fue registrada.') }}
                             <a href="{{ route('compras.adjudicaciones.show', $proceso->adjudicacion->id) }}" class="ms-2">
-                                {{ __('View award') }}
+                                {{ __('Ver adjudicación') }}
                             </a>
-                        </div>
+                        </x-alert>
                     @else
                         <a href="{{ route('compras.adjudicaciones.create') }}" class="btn btn-sm btn-secondary mt-3">
                             {{ __('Create Award') }}

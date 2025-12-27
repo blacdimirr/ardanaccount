@@ -29,10 +29,10 @@
                 </div>
                 <div class="card-body">
                     @if ($cuentas->isEmpty())
-                        <div class="alert alert-warning">
-                            {{ __('Please configure a collection account before registering collections.') }}
-                            <a href="{{ route('tesoreria.cuentas-recaudadoras.index') }}" class="alert-link">{{ __('Collection Accounts') }}</a>
-                        </div>
+                        <x-alert type="warning">
+                            {{ __('Debe configurar una cuenta recaudadora antes de registrar recaudaciones.') }}
+                            <a href="{{ route('tesoreria.cuentas-recaudadoras.index') }}" class="alert-link">{{ __('Cuentas recaudadoras') }}</a>
+                        </x-alert>
                     @endif
                     {{ Form::open(['route' => 'tesoreria.recaudaciones.store', 'class' => 'needs-validation', 'novalidate']) }}
                     <div class="row">

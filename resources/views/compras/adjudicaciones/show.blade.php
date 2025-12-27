@@ -49,12 +49,12 @@
                         {{ __('Print') }}
                     </a>
                     @if ($adjudicacion->contrato)
-                        <div class="alert alert-info mb-0">
-                            {{ __('Contract already created.') }}
+                        <x-alert type="info" class="mb-0">
+                            {{ __('El contrato ya fue creado.') }}
                             <a href="{{ route('compras.contratos.show', $adjudicacion->contrato->id) }}" class="ms-2">
-                                {{ __('View') }}
+                                {{ __('Ver') }}
                             </a>
-                        </div>
+                        </x-alert>
                     @endif
                 </div>
             </div>

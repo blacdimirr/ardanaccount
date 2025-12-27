@@ -36,9 +36,6 @@
     <div class="">
         <h2 class="mb-3 f-w-600">{{ __('Forgot Password') }}</h2>
         <small class="text-muted">{{ __('We will send a link to reset your password') }}</small>
-        @if (session('status'))
-            <small class="text-muted">{{ session('status') }}</small>
-        @endif
     </div>
     <form method="POST" action="{{ route('password.email') }}" class="needs-validation" novalidate>
         @csrf

@@ -43,11 +43,6 @@
     @endif --}}
     {{ Form::open(['route' => 'login', 'method' => 'post', 'id' => 'loginForm', 'class'=>'needs-validation','novalidate' ]) }}
     @csrf
-    @if (session('status'))
-        <div class="mb-4 font-medium text-lg text-green-600 text-danger">
-            {{session('status') }}
-        </div>
-    @endif
     <div class="">
         <div class="form-group mb-3">
             <label for="email" class="form-label">{{ __('Email') }}</label>
