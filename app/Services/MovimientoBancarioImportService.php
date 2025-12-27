@@ -37,6 +37,7 @@ class MovimientoBancarioImportService
 
     private function parseCsv(string $contents): array
     {
+        $contents = $this->normalizeContents($contents);
         $lines = preg_split('/\\r\\n|\\r|\\n/', trim($contents));
         if (empty($lines)) {
             return [];
@@ -76,6 +77,22 @@ class MovimientoBancarioImportService
         }
 
         return $mapped;
+    }
+
+    private function normalizeContents(string $contents): string
+    {
+        if (str_contains($contents, "\x00")) {
+            $converted = @iconv('UTF-16LE', 'UTF-8//IGNORE', $contents);
+            if ($converted === false) {
+                $converted = @iconv('UTF-16BE', 'UTF-8//IGNORE', $contents);
+            }
+
+            if ($converted !== false && $converted !== null) {
+                return $converted;
+            }
+        }
+
+        return $contents;
     }
 
     private function detectDelimiter(array $lines): string
