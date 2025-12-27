@@ -651,6 +651,8 @@ class Utility extends Model
             'nomina_periodos_manage',
             'nomina_config_ss_manage',
             'nomina_config_isr_manage',
+            'nomina_ir3_generate',
+            'nomina_ir4_generate',
 
         ];
         foreach ($arrPermissions as $ap) {
@@ -692,6 +694,8 @@ class Utility extends Model
             'nomina_periodos_manage',
             'nomina_config_ss_manage',
             'nomina_config_isr_manage',
+            'nomina_ir3_generate',
+            'nomina_ir4_generate',
         ];
         foreach ($companyNewPermission as $op) {
             // check if permission is not assign to owner then assign.

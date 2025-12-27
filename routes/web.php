@@ -65,6 +65,7 @@ use App\Http\Controllers\NominaConfigIsrController;
 use App\Http\Controllers\NominaConceptoController;
 use App\Http\Controllers\NominaEmpleadoController;
 use App\Http\Controllers\NominaPeriodoController;
+use App\Http\Controllers\NominaReporteFiscalController;
 use App\Http\Controllers\PaytrController;
 use App\Http\Controllers\YooKassaController;
 use App\Http\Controllers\XenditPaymentController;
@@ -943,6 +944,11 @@ Route::group(
         Route::get('nomina-calculos', [NominaCalculoController::class, 'index'])->name('nomina.calculos.index');
         Route::post('nomina-calculos', [NominaCalculoController::class, 'calcular'])->name('nomina.calculos.calcular');
         Route::get('nomina-calculos/export', [NominaCalculoController::class, 'export'])->name('nomina.calculos.export');
+        Route::get('nomina-reportes-fiscales', [NominaReporteFiscalController::class, 'index'])->name('nomina.reportes_fiscales.index');
+        Route::post('nomina-reportes-fiscales/ir3', [NominaReporteFiscalController::class, 'generarIr3'])
+            ->name('nomina.reportes_fiscales.ir3');
+        Route::post('nomina-reportes-fiscales/ir4', [NominaReporteFiscalController::class, 'generarIr4'])
+            ->name('nomina.reportes_fiscales.ir4');
         Route::get('nomina-config-ss', [NominaConfigAportesSsController::class, 'index'])->name('nomina.config_ss.index');
         Route::put('nomina-config-ss', [NominaConfigAportesSsController::class, 'update'])->name('nomina.config_ss.update');
         Route::get('nomina-config-isr', [NominaConfigIsrController::class, 'index'])->name('nomina.config_isr.index');
