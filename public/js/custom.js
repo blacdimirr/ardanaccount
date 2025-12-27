@@ -15,6 +15,7 @@ $(function() {
 
 
     loadConfirm();
+    bindFormSubmitGuard();
     daterange();
 
 });
@@ -26,6 +27,7 @@ $(document).ready(function() {
 
 
     loadConfirm();
+    bindFormSubmitGuard();
     select2();
     daterange();
 
@@ -290,31 +292,122 @@ function summernote() {
 
 
 function loadConfirm() {
+    $(document)
+        .off("click.confirm", ".bs-pass-para")
+        .on("click.confirm", ".bs-pass-para", function (event) {
+            event.preventDefault();
+            const $trigger = $(this);
+            const form = $trigger.closest("form");
+            const confirmMessage = $trigger.data("confirm");
+            const confirmYes = $trigger.data("confirm-yes");
+            let title = "¿Confirmar acción?";
+            let text = "Esta acción no se puede deshacer. ¿Deseas continuar?";
 
-    $(document).on("click", ".bs-pass-para", function() {
-        var form = $(this).closest("form");
-        const swalWithBootstrapButtons = Swal.mixin({
-            customClass: {
-                confirmButton: 'btn btn-success',
-                cancelButton: 'btn btn-danger'
-            },
-            buttonsStyling: false
-        })
-        swalWithBootstrapButtons.fire({
-            title: 'Are you sure?',
-            text: "This action can not be undone. Do you want to continue?",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes',
-            cancelButtonText: 'No',
-            reverseButtons: true
-        }).then((result) => {
-            if (result.isConfirmed) {
-                form.submit();
+            if (confirmMessage) {
+                const parts = confirmMessage.toString().split("|");
+                if (parts.length > 1) {
+                    title = parts[0].trim() || title;
+                    text = parts.slice(1).join("|").trim() || text;
+                } else {
+                    text = confirmMessage;
+                }
             }
-        })
-    });
 
+            const swalWithBootstrapButtons = Swal.mixin({
+                customClass: {
+                    confirmButton: "btn btn-success",
+                    cancelButton: "btn btn-danger"
+                },
+                buttonsStyling: false
+            });
+
+            swalWithBootstrapButtons.fire({
+                title: title,
+                text: text,
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Sí, continuar",
+                cancelButtonText: "Cancelar",
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    if (confirmYes) {
+                        new Function(confirmYes)();
+                        return;
+                    }
+
+                    if (form.length) {
+                        form.submit();
+                    }
+                }
+            });
+        });
+
+}
+
+function bindFormSubmitGuard() {
+    $(document)
+        .off("submit.form-guard", "form")
+        .on("submit.form-guard", "form", function (event) {
+            const form = this;
+            const $form = $(form);
+            const method = (form.getAttribute("method") || "get").toLowerCase();
+
+            if ($form.data("disable-on-submit") === false) {
+                return;
+            }
+
+            if ($form.data("submitting")) {
+                event.preventDefault();
+                return;
+            }
+
+            if (form.classList.contains("needs-validation") && form.checkValidity && !form.checkValidity()) {
+                return;
+            }
+
+            const action = (form.getAttribute("action") || "").toLowerCase();
+            const formLoadingText = $form.data("loading-text");
+            const formLoadingFlag = $form.data("loading") === true || $form.data("loading") === "true";
+            const isLongRunning =
+                formLoadingFlag ||
+                action.includes("report") ||
+                action.includes("extracto") ||
+                action.includes("pdf") ||
+                action.includes("export");
+
+            $form.data("submitting", true);
+            $form.attr("aria-busy", "true");
+
+            $form.find('button[type="submit"], input[type="submit"]').each(function () {
+                const $button = $(this);
+                const buttonLoadingText = $button.data("loading-text");
+                const buttonLoadingFlag = $button.data("loading") === true || $button.data("loading") === "true";
+                const shouldShowLoading = buttonLoadingFlag || !!buttonLoadingText || isLongRunning;
+
+                if ($button.data("no-disable")) {
+                    return;
+                }
+
+                if ($button.data("original-content") === undefined) {
+                    $button.data("original-content", $button.is("input") ? $button.val() : $button.html());
+                }
+
+                $button.prop("disabled", true);
+
+                if (shouldShowLoading) {
+                    const loadingText = buttonLoadingText || formLoadingText || "Procesando...";
+                    if ($button.is("input")) {
+                        $button.val(loadingText);
+                    } else {
+                        $button.html(
+                            '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' +
+                                loadingText
+                        );
+                    }
+                }
+            });
+        });
 }
 
 
