@@ -170,7 +170,7 @@
                                                                 data-original-title="{{ __('Duplicate') }}"
                                                                 data-bs-toggle="tooltip" title="{{ __('Duplicate Bill') }}"
                                                                 data-original-title="{{ __('Delete') }}"
-                                                                data-confirm="You want to confirm this action. Press Yes to continue or Cancel to go back"
+                                                                data-confirm="{{ __('You want to confirm this action. Press Yes to continue or Cancel to go back') }}"
                                                                 data-confirm-yes="document.getElementById('duplicate-form-{{ $bill->id }}').submit();">
                                                                 <i class="ti ti-copy text-white"></i>
                                                                 {!! Form::close() !!}

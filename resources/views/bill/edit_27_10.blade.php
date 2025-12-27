@@ -36,7 +36,7 @@
                     select2();
                 },
                 hide: function (deleteElement) {
-                    if (confirm('Are you sure you want to delete this element?')) {
+                    if (confirm('¿Estás seguro de que deseas eliminar este elemento?')) {
                         var el = $(this);
                         var id = $(el.find('.id')).val();
                         var amount = $(el.find('.amount')).html();

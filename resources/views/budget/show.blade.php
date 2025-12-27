@@ -202,7 +202,7 @@
                 <div class="modal fade" id="{{ $modal['id'] }}" tabindex="-1" aria-labelledby="{{ $modal['id'] }}Label" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
-                            {{ Form::open(['route' => ['budget.pim.update', $budget->id], 'method' => 'POST']) }}
+                            {{ Form::open(['route' => ['budget.pim.update', $budget->id], 'method' => 'POST', 'data-loading' => true, 'data-loading-text' => __('Actualizando presupuesto...')]) }}
                             <div class="modal-header">
                                 <h5 class="modal-title" id="{{ $modal['id'] }}Label">{{ __('Update PIM') }} - {{ $modal['name'] }}</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

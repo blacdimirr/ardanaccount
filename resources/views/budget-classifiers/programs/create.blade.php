@@ -1,4 +1,4 @@
-{{ Form::open(['route' => 'budget-classifiers.programs.store']) }}
+{{ Form::open(['route' => 'budget-classifiers.programs.store', 'data-loading' => true, 'data-loading-text' => __('Guardando programa...')]) }}
 <div class="modal-body">
     @include('budget-classifiers.programs._form')
 </div>

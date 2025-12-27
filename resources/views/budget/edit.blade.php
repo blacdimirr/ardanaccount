@@ -179,7 +179,7 @@
 
 <div class="card bg-none card-box mt-3">
     <div class="card-body">
-        {{ Form::model($budget, array('route' => array('budget.update', $budget->id), 'method' => 'PUT' ,'class'=>'needs-validation','novalidate')) }}
+        {{ Form::model($budget, array('route' => array('budget.update', $budget->id), 'method' => 'PUT' ,'class'=>'needs-validation','novalidate','data-loading' => true,'data-loading-text' => __('Actualizando presupuesto...'))) }}
         <div class="row">
             <input type="hidden" name="type" id="type" value="{{ csrf_token() }}">
 
@@ -576,7 +576,6 @@
     </div>
 </div>
 @endsection
-
 
 
 

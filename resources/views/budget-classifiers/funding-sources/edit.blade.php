@@ -1,4 +1,4 @@
-{{ Form::model($fundingSource, ['route' => ['budget-classifiers.funding-sources.update', $fundingSource->id], 'method' => 'PUT']) }}
+{{ Form::model($fundingSource, ['route' => ['budget-classifiers.funding-sources.update', $fundingSource->id], 'method' => 'PUT', 'data-loading' => true, 'data-loading-text' => __('Actualizando fuente de financiamiento...')]) }}
 <div class="modal-body">
     @include('budget-classifiers.funding-sources._form')
 </div>
