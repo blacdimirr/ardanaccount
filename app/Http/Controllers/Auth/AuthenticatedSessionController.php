@@ -470,7 +470,7 @@ class AuthenticatedSessionController extends Controller
     public function showCustomerLinkRequestForm($lang = '')
     {
         $langList = Utility::langList();
-        $lang = array_key_exists($lang, $langList) ? $lang : 'en';
+        $lang = array_key_exists($lang, $langList) ? $lang : 'es';
 
         if($lang == '')
         {
@@ -512,21 +512,21 @@ class AuthenticatedSessionController extends Controller
 
                 $message->from($settings['mail_username'] ,$settings['mail_from_name']);
                 $message->to($request->email);
-                $message->subject('Reset Password Notification');
+                $message->subject(__('Notificación de restablecimiento de contraseña'));
             }
         );
 
-        return back()->with('status', 'We have e-mailed your password reset link!');
+        return back()->with('status', __('¡Hemos enviado el enlace para restablecer tu contraseña por correo electrónico!'));
     }
 
     public function showResetForm(Request $request, $token = null)
     {
 
         $default_language = DB::table('settings')->select('value')->where('name', 'default_language')->first();
-        $lang             = !empty($default_language) ? $default_language->value : 'en';
+        $lang             = !empty($default_language) ? $default_language->value : 'es';
 
         $langList = Utility::langList();
-        $lang = array_key_exists($lang, $langList) ? $lang : 'en';
+        $lang = array_key_exists($lang, $langList) ? $lang : 'es';
 
         if ($lang == '') {
             $lang = Utility::getValByName('default_language');
@@ -584,7 +584,7 @@ class AuthenticatedSessionController extends Controller
     public function showVendorLinkRequestForm($lang = '')
     {
         $langList = Utility::langList();
-        $lang = array_key_exists($lang, $langList) ? $lang : 'en';
+        $lang = array_key_exists($lang, $langList) ? $lang : 'es';
 
         if($lang == '')
         {
@@ -622,11 +622,11 @@ class AuthenticatedSessionController extends Controller
                 $settings = Utility::settings();
                 $message->from($settings['mail_username'] ,$settings['mail_from_name']);
                 $message->to($request->email);
-                $message->subject('Reset Password Notification');
+                $message->subject(__('Notificación de restablecimiento de contraseña'));
             }
         );
 
-        return back()->with('status', 'We have e-mailed your password reset link!');
+        return back()->with('status', __('¡Hemos enviado el enlace para restablecer tu contraseña por correo electrónico!'));
     }
 
     public function getVendorPassword($token)
@@ -682,4 +682,3 @@ function get_device_type($user_agent)
         }
     }
 }
-

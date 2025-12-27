@@ -97,7 +97,7 @@ class RegisteredUserController extends Controller
     public function showRegistrationForm($lang = '')
     {
         $langList = Utility::langList();
-        $lang = array_key_exists($lang, $langList) ? $lang : 'en';
+        $lang = array_key_exists($lang, $langList) ? $lang : 'es';
 
         if($lang == '')
         {

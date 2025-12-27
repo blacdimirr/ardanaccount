@@ -75,9 +75,9 @@
                 },
                 success: function(data) {
                     if (data.is_success) {
-                        show_toastr('success', data.message, 'success');
+                        show_toastr('{{ __('Success') }}', data.message, 'success');
                     } else {
-                        show_toastr('Error', data.message, 'error');
+                        show_toastr('{{ __('Error') }}', data.message, 'error');
                     }
                     $("#email_sending").hide();
                     $('#commonModal').modal('hide');
@@ -208,7 +208,7 @@
                 type: 'post',
                 success: function(response) {
                     if (response.is_success) {
-                        show_toastr('success', response.success, 'success');
+                        show_toastr('{{ __('Success') }}', response.success, 'success');
                         // toastr('Success', response.success, 'success');
                         if (chbox.val() == 1) {
                             $('#' + chbox.attr('id')).val(0);
@@ -216,15 +216,15 @@
                             $('#' + chbox.attr('id')).val(1);
                         }
                     } else {
-                        show_toastr('Error', response.error, 'error');
+                        show_toastr('{{ __('Error') }}', response.error, 'error');
                     }
                 },
                 error: function(response) {
                     response = response.responseJSON;
                     if (response.is_success) {
-                        show_toastr('Error', response.error, 'error');
+                        show_toastr('{{ __('Error') }}', response.error, 'error');
                     } else {
-                        show_toastr('Error', response, 'error');
+                        show_toastr('{{ __('Error') }}', response, 'error');
                     }
                 }
             })

@@ -77,12 +77,12 @@ $setting_arr = Utility::file_validate();
 
 @if($message = Session::get('success'))
     <script>
-        show_toastr('success', '{!! $message !!}');
+        show_toastr('{{ __('Success') }}', '{!! $message !!}');
     </script>
 @endif
 @if($message = Session::get('error'))
     <script>
-        show_toastr('error', '{!! $message !!}');
+        show_toastr('{{ __('Error') }}', '{!! $message !!}');
     </script>
 @endif
 @stack('script-page')

@@ -55,7 +55,7 @@ class IyziPayController extends Controller
             $address = ($address) ? $address : 'Nidakule Göztepe, Merdivenköy Mah. Bora Sok. No:1';
             // create a new payment request
             $request = new \Iyzipay\Request\CreateCheckoutFormInitializeRequest();
-            $request->setLocale('en');
+            $request->setLocale(app()->getLocale() ?: 'es');
             $request->setPrice($get_amount);
             $request->setPaidPrice($get_amount);
             $request->setCurrency($currency);
@@ -94,9 +94,9 @@ class IyziPayController extends Controller
             $basketItems = array();
             $firstBasketItem = new \Iyzipay\Model\BasketItem();
             $firstBasketItem->setId("BI101");
-            $firstBasketItem->setName("Binocular");
-            $firstBasketItem->setCategory1("Collectibles");
-            $firstBasketItem->setCategory2("Accessories");
+            $firstBasketItem->setName(__('Binocular'));
+            $firstBasketItem->setCategory1(__('Collectibles'));
+            $firstBasketItem->setCategory2(__('Accessories'));
             $firstBasketItem->setItemType(\Iyzipay\Model\BasketItemType::PHYSICAL);
             $firstBasketItem->setPrice($get_amount);
             $basketItems[0] = $firstBasketItem;
@@ -269,7 +269,7 @@ class IyziPayController extends Controller
             $address = ($address) ? $address : 'Nidakule Göztepe, Merdivenköy Mah. Bora Sok. No:1';
             // create a new payment request
             $request = new \Iyzipay\Request\CreateCheckoutFormInitializeRequest();
-            $request->setLocale('en');
+            $request->setLocale(app()->getLocale() ?: 'es');
             $request->setPrice($get_amount);
             $request->setPaidPrice($get_amount);
             $request->setCurrency($currency);

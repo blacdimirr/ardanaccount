@@ -101,7 +101,7 @@ class UserController extends Controller
             $psw                   = $request->password;
             $request['password']      = !empty($userpassword) ? \Hash::make($userpassword) : null;
             $request['type']       = $role_r->name;
-            $request['lang']       = !empty($default_language) ? $default_language->value : 'en';
+            $request['lang']       = !empty($default_language) ? $default_language->value : 'es';
             $request['is_enable_login'] = $enableLogin;
             $request['created_by'] = \Auth::user()->creatorId();
 

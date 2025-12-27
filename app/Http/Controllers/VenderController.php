@@ -582,7 +582,7 @@ class VenderController extends Controller
             $vendorData->shipping_zip       = $vendor[17] ?? "";
             $vendorData->shipping_address   = $vendor[18] ?? "";
             $vendorData->balance            = $vendor[19] ?? "";
-            $vendorData->lang               = 'en';
+            $vendorData->lang               = Utility::getValByName('default_language') ?: 'es';
             $vendorData->created_by         = \Auth::user()->creatorId();
 
             if (empty($vendorData)) {

@@ -193,14 +193,14 @@
                         $("#comments").prepend(html);
                         $("#form-comment textarea[name='comment']").val('');
                         load_task(curr.closest('.task-id').attr('id'));
-                        show_toastr('success', 'Comment Added Successfully!');
+                        show_toastr('{{ __('Success') }}', '{{ __('Comment Added Successfully!') }}');
                     },
                     error: function(data) {
-                        show_toastr('error', 'Some Thing Is Wrong!');
+                        show_toastr('{{ __('Error') }}', '{{ __('Some Thing Is Wrong!') }}');
                     }
                 });
             } else {
-                show_toastr('error', 'Please add comment!');
+                show_toastr('{{ __('Error') }}', '{{ __('Please add comment!') }}');
             }
         });
 
@@ -218,15 +218,15 @@
                 success: function(data) {
                     location.reload();
                     load_task(btn.closest('.task-id').attr('id'));
-                    show_toastr('success', 'Comment Deleted Successfully!');
+                    show_toastr('{{ __('Success') }}', '{{ __('Comment Deleted Successfully!') }}');
                     btn.closest('.list-group-item').remove();
                 },
                 error: function(data) {
                     data = data.responseJSON;
                     if (data.message) {
-                        show_toastr('error', data.message);
+                        show_toastr('{{ __('Error') }}', data.message);
                     } else {
-                        show_toastr('error', 'Some Thing Is Wrong!');
+                        show_toastr('{{ __('Error') }}', '{{ __('Some Thing Is Wrong!') }}');
                     }
                 }
             });
@@ -274,14 +274,14 @@
                         $("#comments").prepend(html);
                         $("#form-note textarea[name='note']").val('');
                         load_task(curr.closest('.task-id').attr('id'));
-                        show_toastr('success', 'note Added Successfully!');
+                        show_toastr('{{ __('Success') }}', '{{ __('Note Added Successfully!') }}');
                     },
                     error: function(data) {
-                        show_toastr('error', 'Some Thing Is Wrong!');
+                        show_toastr('{{ __('Error') }}', '{{ __('Some Thing Is Wrong!') }}');
                     }
                 });
             } else {
-                show_toastr('error', 'Please add Note!');
+                show_toastr('{{ __('Error') }}', '{{ __('Please add Note!') }}');
             }
         });
         $(document).on("click", ".delete-note", function() {
@@ -297,15 +297,15 @@
                 },
                 success: function(data) {
                     load_task(btn.closest('.task-id').attr('id'));
-                    show_toastr('success', 'note Deleted Successfully!');
+                    show_toastr('{{ __('Success') }}', '{{ __('Note Deleted Successfully!') }}');
                     btn.closest('.list-group-item').remove();
                 },
                 error: function(data) {
                     data = data.responseJSON;
                     if (data.message) {
-                        show_toastr('error', data.message);
+                        show_toastr('{{ __('Error') }}', data.message);
                     } else {
-                        show_toastr('error', 'Some Thing Is Wrong!');
+                        show_toastr('{{ __('Error') }}', '{{ __('Some Thing Is Wrong!') }}');
                     }
                 }
             });

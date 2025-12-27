@@ -134,7 +134,7 @@ class MercadoPaymentController extends Controller
                 }
                 // callback url :  domain.com/plan/mercado
             } else {
-                return redirect()->back()->with('error', 'Enter valid amount.');
+                return redirect()->back()->with('error', __('Enter valid amount.'));
             }
         } else {
             return redirect()->back()->with('error', 'Plan is deleted.');
@@ -358,7 +358,7 @@ class MercadoPaymentController extends Controller
                 }
                 // callback url :  domain.com/plan/mercado
             } else {
-                return redirect()->back()->with('error', 'Enter valid amount.');
+                return redirect()->back()->with('error', __('Enter valid amount.'));
             }
         } else {
             return redirect()->back()->with('error', 'Plan is deleted.');

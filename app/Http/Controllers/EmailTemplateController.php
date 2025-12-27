@@ -151,16 +151,21 @@ class EmailTemplateController extends Controller
     }
 
     // Used For View Email Template Language Wise
-    public function manageEmailLang($id, $lang = 'en')
+    public function manageEmailLang($id, $lang = 'es')
     {
         if(\Auth::user()->type == 'company')
         {
             $languages         = Utility::languages();
+            $defaultLang = Utility::getValByName('default_language') ?: 'es';
             $emailTemplate     = EmailTemplate::first();
             // $emailTemplate     = EmailTemplate::where('id', '=', $id)->first();
             $currEmailTempLang = EmailTemplateLang::where('parent_id', '=', $id)->where('lang', $lang)->first();
             // $currEmailTempLang = EmailTemplateLang::where('parent_id', '=', $id)->where('lang', $lang)->first();
 
+            if(!isset($currEmailTempLang) || empty($currEmailTempLang))
+            {
+                $currEmailTempLang = EmailTemplateLang::where('parent_id', '=', $id)->where('lang', $defaultLang)->first();
+            }
             if(!isset($currEmailTempLang) || empty($currEmailTempLang))
             {
                 $currEmailTempLang       = EmailTemplateLang::where('parent_id', '=', $id)->where('lang', 'en')->first();
@@ -182,7 +187,7 @@ class EmailTemplateController extends Controller
         }
         else
         {
-            return redirect()->back()->with('error', 'Permission denied.');
+            return redirect()->back()->with('error', __('Permission denied.'));
         }
     }
 
