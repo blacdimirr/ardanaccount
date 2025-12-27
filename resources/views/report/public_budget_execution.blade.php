@@ -45,7 +45,7 @@
         </a>
     </div>
     <div class="float-end me-2">
-        {{ Form::open(['route' => ['report.public.budget.execution.export'], 'method' => 'POST']) }}
+        {{ Form::open(['route' => ['report.public.budget.execution.export'], 'method' => 'POST', 'data-loading' => true, 'data-loading-text' => __('Generando estado del presupuesto...')]) }}
         {{ Form::hidden('budget_id', $selectedBudgetId) }}
         {{ Form::hidden('classifier', $classifier) }}
         <button type="submit" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" title="{{ __('Export') }}"
@@ -59,7 +59,7 @@
         <div class="col-sm-12">
             <div class="card">
                 <div class="card-body">
-                    {{ Form::open(['route' => ['report.public.budget.execution'], 'method' => 'GET', 'id' => 'report_public_budget_execution']) }}
+                    {{ Form::open(['route' => ['report.public.budget.execution'], 'method' => 'GET', 'id' => 'report_public_budget_execution', 'data-loading' => true, 'data-loading-text' => __('Cargando estado del presupuesto...')]) }}
                     <div class="row align-items-end">
                         <div class="col-xl-5 col-lg-6 col-md-6 col-sm-12">
                             <div class="btn-box">
