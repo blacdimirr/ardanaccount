@@ -43,12 +43,16 @@ use App\Exports\Dgii606Export;
 use App\Exports\Dgii607Export;
 use App\Exports\Dgii608Export;
 use App\Exports\NominaCostosServicioExport;
+use App\Exports\PublicCashFlowExport;
+use App\Exports\PublicEquityVariationExport;
 use App\Services\Dgii606Service;
 use App\Services\Dgii607Service;
 use App\Services\Dgii608Service;
 use App\Services\EstadoCuentaConciliacionService;
 use App\Services\NominaAsientoService;
 use App\Services\BudgetExecutionReportService;
+use App\Services\PublicCashFlowService;
+use App\Services\PublicEquityVariationService;
 use App\Services\PublicFinancialPositionService;
 use App\Models\ChartOfAccountParent;
 use App\Models\Status;
@@ -3746,6 +3750,114 @@ class ReportController extends Controller
         ]);
 
         return $pdf->download('estado-situacion-financiera.pdf');
+    }
+
+    public function complementaryStatements(Request $request, PublicEquityVariationService $equityService, PublicCashFlowService $cashFlowService)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $startDate = $request->get('start_date', now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->get('end_date', now()->format('Y-m-d'));
+        $creatorId = \Auth::user()->creatorId();
+
+        $equityReport = $equityService->buildReport($creatorId, $startDate, $endDate);
+        $cashFlowReport = $cashFlowService->buildReport($creatorId, $startDate, $endDate);
+
+        return view('report.complementary_statements', compact('startDate', 'endDate', 'equityReport', 'cashFlowReport'));
+    }
+
+    public function equityVariationExport(Request $request, PublicEquityVariationService $equityService)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        $creatorId = \Auth::user()->creatorId();
+        $companyName = User::where('id', $creatorId)->value('name') ?? '';
+        $report = $equityService->buildReport($creatorId, $request->start_date, $request->end_date);
+
+        return Excel::download(
+            new PublicEquityVariationExport($report, $request->start_date, $request->end_date, $companyName),
+            'estado-variacion-patrimonio.xlsx'
+        );
+    }
+
+    public function equityVariationPdf(Request $request, PublicEquityVariationService $equityService)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        $creatorId = \Auth::user()->creatorId();
+        $companyName = User::where('id', $creatorId)->value('name') ?? '';
+        $report = $equityService->buildReport($creatorId, $request->start_date, $request->end_date);
+
+        $pdf = Pdf::loadView('report.equity_variation_pdf', [
+            'startDate' => $request->start_date,
+            'endDate' => $request->end_date,
+            'report' => $report,
+            'companyName' => $companyName,
+        ]);
+
+        return $pdf->download('estado-variacion-patrimonio.pdf');
+    }
+
+    public function cashFlowExport(Request $request, PublicCashFlowService $cashFlowService)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        $creatorId = \Auth::user()->creatorId();
+        $companyName = User::where('id', $creatorId)->value('name') ?? '';
+        $report = $cashFlowService->buildReport($creatorId, $request->start_date, $request->end_date);
+
+        return Excel::download(
+            new PublicCashFlowExport($report, $request->start_date, $request->end_date, $companyName),
+            'estado-flujo-efectivo.xlsx'
+        );
+    }
+
+    public function cashFlowPdf(Request $request, PublicCashFlowService $cashFlowService)
+    {
+        if (!\Auth::user()->can('reportes_financieros_publicos_view')) {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        $creatorId = \Auth::user()->creatorId();
+        $companyName = User::where('id', $creatorId)->value('name') ?? '';
+        $report = $cashFlowService->buildReport($creatorId, $request->start_date, $request->end_date);
+
+        $pdf = Pdf::loadView('report.cash_flow_pdf', [
+            'startDate' => $request->start_date,
+            'endDate' => $request->end_date,
+            'report' => $report,
+            'companyName' => $companyName,
+        ]);
+
+        return $pdf->download('estado-flujo-efectivo.pdf');
     }
 
     public function fondosMovimientos(Request $request)
