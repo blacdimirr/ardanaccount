@@ -16,7 +16,7 @@
                     <h5>{{ __('IR-3 mensual') }}</h5>
                 </div>
                 <div class="card-body">
-                    {{ Form::open(['method' => 'POST', 'route' => ['nomina.reportes_fiscales.ir3']]) }}
+                    {{ Form::open(['method' => 'POST', 'route' => ['nomina.reportes_fiscales.ir3'], 'data-loading' => true, 'data-loading-text' => __('Generando reporte IR-3...')]) }}
                     <div class="row align-items-end">
                         <div class="form-group col-md-4">
                             {{ Form::label('mes', __('Mes'), ['class' => 'form-label']) }}
@@ -48,7 +48,7 @@
                     <h5>{{ __('IR-4 anual') }}</h5>
                 </div>
                 <div class="card-body">
-                    {{ Form::open(['method' => 'POST', 'route' => ['nomina.reportes_fiscales.ir4']]) }}
+                    {{ Form::open(['method' => 'POST', 'route' => ['nomina.reportes_fiscales.ir4'], 'data-loading' => true, 'data-loading-text' => __('Generando reporte IR-4...')]) }}
                     <div class="row align-items-end">
                         <div class="form-group col-md-8">
                             {{ Form::label('anio', __('Año'), ['class' => 'form-label']) }}
