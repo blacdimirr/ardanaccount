@@ -18,7 +18,8 @@ class NominaReporteFiscalController extends Controller
         }
 
         $currentYear = (int) Carbon::now()->format('Y');
-        $years = collect(range($currentYear, $currentYear - 5))->values();
+        $years = collect(range($currentYear, $currentYear - 5))
+            ->mapWithKeys(fn($year) => [$year => $year]);
         $months = collect([
             1 => __('Enero'),
             2 => __('Febrero'),
