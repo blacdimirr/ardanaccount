@@ -204,7 +204,7 @@ class NominaAsientoService
     private function getExpenseAccountId(int $creatorId): ?int
     {
         $account = ChartOfAccount::where('created_by', $creatorId)
-            ->where('name', 'Salaries and Wages')
+            ->where('name', 'Sueldos Fijos')
             ->first();
 
         if ($account) {
@@ -230,7 +230,7 @@ class NominaAsientoService
         $createdByScope = [$creatorId, 1];
 
         $account = ChartOfAccount::whereIn('created_by', $createdByScope)
-            ->where('name', 'Accr. Benefits - Payroll Taxes')
+            ->where('name', 'Gastos de Personal por Pagar')
             ->first();
 
         if ($account) {
@@ -296,7 +296,7 @@ class NominaAsientoService
         }
 
         $account = ChartOfAccount::whereIn('created_by', $createdByScope)
-            ->whereIn('name', ['Checking Account', 'Petty Cash'])
+            ->whereIn('name', ['Sueldos Fijos', 'Petty Cash'])
             ->orderBy('code')
             ->first();
 
