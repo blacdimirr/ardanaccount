@@ -66,6 +66,7 @@ use App\Http\Controllers\NominaConceptoController;
 use App\Http\Controllers\NominaEmpleadoController;
 use App\Http\Controllers\NominaPeriodoController;
 use App\Http\Controllers\NominaReporteFiscalController;
+use App\Http\Controllers\NotasEstadosFinancierosController;
 use App\Http\Controllers\PaytrController;
 use App\Http\Controllers\YooKassaController;
 use App\Http\Controllers\XenditPaymentController;
@@ -893,6 +894,7 @@ Route::group(
         Route::delete('report/estados-complementarios/mapeos/variacion-patrimonio/{mapping}', [ReportController::class, 'destroyEquityMapping'])->name('report.equity.mappings.destroy');
         Route::post('report/estados-complementarios/mapeos/flujo-efectivo', [ReportController::class, 'storeCashFlowMapping'])->name('report.cashflow.mappings.store');
         Route::delete('report/estados-complementarios/mapeos/flujo-efectivo/{mapping}', [ReportController::class, 'destroyCashFlowMapping'])->name('report.cashflow.mappings.destroy');
+        Route::resource('report/notas-estados-financieros', NotasEstadosFinancierosController::class)->except('show')->names('report.notas');
 
 
         Route::get('report/tax-summary', [ReportController::class, 'taxSummary'])->name('report.tax.summary');

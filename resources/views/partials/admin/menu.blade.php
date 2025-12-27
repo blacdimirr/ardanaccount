@@ -669,6 +669,7 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                 Gate::check('statement report') ||
                 Gate::check('reportes_presupuesto_view') ||
                 Gate::check('reportes_financieros_publicos_view') ||
+                Gate::check('reportes_notas_manage') ||
                 Gate::check('tesoreria_conciliacion_manage') ||
                 Gate::check('tesoreria_recaudaciones_manage') ||
                 Gate::check('nomina_periodos_manage'))
@@ -745,6 +746,11 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                             class="dash-item {{ Request::route()->getName() == 'report.complementary.statements' ? ' active' : '' }}">
                             <a class="dash-link"
                                 href="{{ route('report.complementary.statements') }}">{{ __('Complementary Statements') }}</a>
+                        </li>
+                        @endcan
+                        @can('reportes_notas_manage')
+                        <li class="dash-item {{ Request::route()->getName() == 'report.notas.index' ? ' active' : '' }}">
+                            <a class="dash-link" href="{{ route('report.notas.index') }}">{{ __('Notas a los estados') }}</a>
                         </li>
                         @endcan
                         @can('tesoreria_recaudaciones_manage')

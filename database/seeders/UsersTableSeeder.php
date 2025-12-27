@@ -674,6 +674,12 @@ class UsersTableSeeder extends Seeder
                 'updated_at' => date('Y - m - d H:i:s'),
             ],
             [
+                'name' => 'reportes_notas_manage',
+                'guard_name' => 'web',
+                'created_at' => date('Y - m - d H:i:s'),
+                'updated_at' => date('Y - m - d H:i:s'),
+            ],
+            [
                 'name' => 'nomina_empleados_manage',
                 'guard_name' => 'web',
                 'created_at' => date('Y - m - d H:i:s'),
@@ -1466,6 +1472,7 @@ class UsersTableSeeder extends Seeder
             'loss & profit report',
             'reportes_presupuesto_view',
             'reportes_financieros_publicos_view',
+            'reportes_notas_manage',
             'nomina_empleados_manage',
             'nomina_conceptos_manage',
             'nomina_periodos_manage',
@@ -1673,6 +1680,7 @@ class UsersTableSeeder extends Seeder
             'loss & profit report',
             'reportes_presupuesto_view',
             'reportes_financieros_publicos_view',
+            'reportes_notas_manage',
             'nomina_ir3_generate',
             'nomina_ir4_generate',
             'manage transaction',

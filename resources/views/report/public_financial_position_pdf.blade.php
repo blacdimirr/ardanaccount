@@ -55,5 +55,18 @@
             </tr>
         </tbody>
     </table>
+
+    @if (!empty($notes) && $notes->isNotEmpty())
+        <h3 style="margin-top: 18px;">{{ __('Notas a los estados financieros') }}</h3>
+        <ol>
+            @foreach ($notes as $note)
+                <li style="margin-bottom: 12px;">
+                    <strong>{{ $note->codigo_nota }} - {{ $note->titulo }}</strong><br>
+                    <small>{{ __('Period') }}: {{ optional($note->periodo)->format('Y-m-d') }}</small>
+                    <div>{!! nl2br(e($note->contenido)) !!}</div>
+                </li>
+            @endforeach
+        </ol>
+    @endif
 </body>
 </html>
