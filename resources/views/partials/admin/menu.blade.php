@@ -291,6 +291,25 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                 </li>
                 @endif
 
+                {{-- -------  Treasury ---------- --}}
+                @if (Gate::check('tesoreria_fondos_manage'))
+                <li
+                    class="dash-item dash-hasmenu {{ Request::segment(1) == 'tesoreria' ? ' active dash-trigger' : '' }}">
+                    <a href="#!" class="dash-link "><span class="dash-micon"><i
+                                class="ti ti-cash-banknote"></i></span><span
+                            class="dash-mtext">{{ __('Treasury') }}</span>
+                        <span class="dash-arrow"><i data-feather="chevron-right"></i></span>
+                    </a>
+                    <ul class="dash-submenu {{ Request::segment(1) == 'tesoreria' ? 'show' : '' }}">
+                        <li
+                            class="dash-item {{ Request::route()->getName() == 'tesoreria.fondos.index' ? ' active' : '' }}">
+                            <a class="dash-link"
+                                href="{{ route('tesoreria.fondos.index') }}">{{ __('Rotary Funds / Petty Cash') }}</a>
+                        </li>
+                    </ul>
+                </li>
+                @endif
+
                 {{-- -------  Income ---------- --}}
                 @if (Gate::check('manage invoice') || Gate::check('manage revenue') || Gate::check('manage credit note'))
                 <li
