@@ -37,17 +37,20 @@ class MovimientoBancarioImportService
 
     private function parseCsv(string $contents): array
     {
+        $contents = $this->normalizeContents($contents);
         $lines = preg_split('/\\r\\n|\\r|\\n/', trim($contents));
         if (empty($lines)) {
             return [];
         }
 
+        $delimiter = $this->detectDelimiter($lines);
         $rows = [];
-        foreach ($lines as $line) {
+        foreach ($lines as $index => $line) {
+            $line = $this->normalizeLine($line, $index === 0);
             if (trim($line) === '') {
                 continue;
             }
-            $rows[] = str_getcsv($line);
+            $rows[] = str_getcsv($line, $delimiter);
         }
 
         if (empty($rows)) {
@@ -74,6 +77,54 @@ class MovimientoBancarioImportService
         }
 
         return $mapped;
+    }
+
+    private function normalizeContents(string $contents): string
+    {
+        if (str_contains($contents, "\x00")) {
+            $converted = @iconv('UTF-16LE', 'UTF-8//IGNORE', $contents);
+            if ($converted === false) {
+                $converted = @iconv('UTF-16BE', 'UTF-8//IGNORE', $contents);
+            }
+
+            if ($converted !== false && $converted !== null) {
+                return $converted;
+            }
+        }
+
+        return $contents;
+    }
+
+    private function detectDelimiter(array $lines): string
+    {
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            }
+
+            $candidates = [
+                ',' => substr_count($line, ','),
+                ';' => substr_count($line, ';'),
+                "\t" => substr_count($line, "\t"),
+            ];
+
+            arsort($candidates);
+            $delimiter = array_key_first($candidates);
+
+            return $candidates[$delimiter] > 0 ? $delimiter : ',';
+        }
+
+        return ',';
+    }
+
+    private function normalizeLine(string $line, bool $isFirstLine): string
+    {
+        if ($isFirstLine) {
+            $line = preg_replace('/^\xEF\xBB\xBF/', '', $line);
+        }
+
+        return $line;
     }
 
     private function normalizeHeaders(array $headers): array
