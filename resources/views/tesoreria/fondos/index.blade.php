@@ -44,8 +44,8 @@
                                     <tr class="font-style">
                                         <td>{{ $fondo->nombre }}</td>
                                         <td>{{ $fondo->cuentaContable ? $fondo->cuentaContable->name : '-' }}</td>
-                                        <td>{{ \\Auth::user()->priceFormat($fondo->monto_inicial) }}</td>
-                                        <td>{{ \\Auth::user()->priceFormat($fondo->monto_disponible) }}</td>
+                                        <td>{{ \Auth::user()->priceFormat($fondo->monto_inicial) }}</td>
+                                        <td>{{ \Auth::user()->priceFormat($fondo->monto_disponible) }}</td>
                                         <td class="Action">
                                             <span>
                                                 <div class="action-btn me-2">
