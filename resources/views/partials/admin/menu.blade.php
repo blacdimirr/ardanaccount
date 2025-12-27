@@ -668,6 +668,7 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                 Gate::check('manage transaction') ||
                 Gate::check('statement report') ||
                 Gate::check('reportes_presupuesto_view') ||
+                Gate::check('reportes_financieros_publicos_view') ||
                 Gate::check('tesoreria_conciliacion_manage') ||
                 Gate::check('tesoreria_recaudaciones_manage') ||
                 Gate::check('nomina_periodos_manage'))
@@ -727,6 +728,13 @@ $SITE_RTL = !empty($setting['SITE_RTL']) ? $setting['SITE_RTL'] : 'off';
                             class="dash-item {{ Request::route()->getName() == 'report.budget.execution' ? ' active' : '' }}">
                             <a class="dash-link"
                                 href="{{ route('report.budget.execution') }}">{{ __('Budget Execution') }}</a>
+                        </li>
+                        @endcan
+                        @can('reportes_financieros_publicos_view')
+                        <li
+                            class="dash-item {{ Request::route()->getName() == 'report.public.budget.execution' ? ' active' : '' }}">
+                            <a class="dash-link"
+                                href="{{ route('report.public.budget.execution') }}">{{ __('Public Budget Execution') }}</a>
                         </li>
                         @endcan
                         @can('tesoreria_recaudaciones_manage')
