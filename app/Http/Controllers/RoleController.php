@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Validator;
@@ -32,20 +31,9 @@ class RoleController extends Controller
     {
         if(\Auth::user()->can('create role'))
         {
-            $user = \Auth::user();
-            if($user->type == 'super admin')
-            {
-                $permissions = Permission::all()->pluck('name', 'id')->toArray();
-            }
-            else
-            {
-                $permissions = new Collection();
-                foreach($user->roles as $role)
-                {
-                    $permissions = $permissions->merge($role->permissions);
-                }
-                $permissions = $permissions->pluck('name', 'id')->toArray();
-            }
+            $permissions = Permission::where('guard_name', \Auth::getDefaultDriver())
+                ->pluck('name', 'id')
+                ->toArray();
 
             return view('role.create', ['permissions' => $permissions]);
         }
@@ -103,22 +91,13 @@ class RoleController extends Controller
         if(\Auth::user()->can('edit role'))
         {
 
-            $user = \Auth::user();
-            if($user->type == 'super admin')
-            {
-                $permissions = Permission::all()->pluck('name', 'id')->toArray();
-            }
-            else
-            {
-                $permissions = new Collection();
-                foreach($user->roles as $role1)
-                {
-                    $permissions = $permissions->merge($role1->permissions);
-                }
-                $permissions = $permissions->pluck('name', 'id')->toArray();
-            }
+            $permissions = Permission::where('guard_name', \Auth::getDefaultDriver())
+                ->pluck('name', 'id')
+                ->toArray();
 
-            return view('role.edit', compact('role', 'permissions'));
+            $rolePermissions = $role->permissions->pluck('id')->toArray();
+
+            return view('role.edit', compact('role', 'permissions', 'rolePermissions'));
         }
         else
         {
