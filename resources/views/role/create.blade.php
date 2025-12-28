@@ -84,9 +84,9 @@
                                     'action' => $actionLabel,
                                 ];
                             }
-                            $modules = array_values(array_unique($modules));
+                            $modules = $permissionsByModule;
                         @endphp
-                        @foreach($permissionsByModule as $moduleKey => $moduleGroup)
+                        @foreach($modules as $moduleKey => $moduleGroup)
                             <tr>
                                 <td><input type="checkbox" class="form-check-input align-middle ischeck"  data-id="{{ $moduleKey }}" ></td>
                                 <td><label class="ischeck" data-id="{{ $moduleKey }}">{{ ucfirst($moduleGroup['label']) }}</label></td>
