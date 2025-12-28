@@ -352,6 +352,10 @@ function bindFormSubmitGuard() {
         .on("submit.form-guard", "form", function (event) {
             const form = this;
             const $form = $(form);
+            const submitter =
+                (event.originalEvent && event.originalEvent.submitter) ||
+                $form.data("submitter") ||
+                null;
             const method = (form.getAttribute("method") || "get").toLowerCase();
 
             if ($form.data("disable-on-submit") === false) {
@@ -379,6 +383,7 @@ function bindFormSubmitGuard() {
                 action.includes("export");
 
             $form.data("submitting", true);
+            $form.attr("data-submitting", "true");
             $form.attr("aria-busy", "true");
 
             $form.find('button[type="submit"], input[type="submit"]').each(function () {
@@ -386,6 +391,7 @@ function bindFormSubmitGuard() {
                 const buttonLoadingText = $button.data("loading-text");
                 const buttonLoadingFlag = $button.data("loading") === true || $button.data("loading") === "true";
                 const shouldShowLoading = buttonLoadingFlag || !!buttonLoadingText || isLongRunning;
+                const isSubmitter = submitter && (submitter === this || submitter === $button[0]);
 
                 if ($button.data("no-disable")) {
                     return;
@@ -395,7 +401,9 @@ function bindFormSubmitGuard() {
                     $button.data("original-content", $button.is("input") ? $button.val() : $button.html());
                 }
 
-                $button.prop("disabled", true);
+                if (!isSubmitter) {
+                    $button.prop("disabled", true);
+                }
 
                 if (shouldShowLoading) {
                     const loadingText = buttonLoadingText || formLoadingText || "Procesando...";
@@ -416,6 +424,15 @@ function bindFormSubmitGuard() {
         });
 }
 
+$(document)
+    .off("click.form-guard", "form button[type='submit'], form input[type='submit']")
+    .on("click.form-guard", "form button[type='submit'], form input[type='submit']", function () {
+        const $form = $(this).closest("form");
+        if ($form.length) {
+            $form.data("submitter", this);
+        }
+    });
+
 function initGlobalLoader() {
     $(document)
         .off("click.global-loader", "[data-loading='true']")
@@ -433,6 +450,7 @@ function initGlobalLoader() {
             }
 
             $trigger.data("loading-active", true);
+            $trigger.attr("data-loading-active", "true");
 
             if ($trigger.data("original-content") === undefined) {
                 $trigger.data("original-content", $trigger.is("input") ? $trigger.val() : $trigger.html());
@@ -498,6 +516,7 @@ function initGlobalLoader() {
     }
 
     setupHtml2PdfLoader();
+    bindLoadingResetEvents();
 }
 
 function finalizeAxiosLoader(config) {
@@ -554,6 +573,62 @@ function showGlobalErrorMessage() {
     if (typeof show_toastr === "function") {
         show_toastr("error", "Ocurrió un error al procesar la solicitud. Intente de nuevo.");
     }
+}
+
+function bindLoadingResetEvents() {
+    $(window).off("focus.loading-reset").on("focus.loading-reset", function () {
+        resetGlobalLoadingState();
+    });
+
+    $(document)
+        .off("visibilitychange.loading-reset")
+        .on("visibilitychange.loading-reset", function () {
+            if (document.visibilityState === "visible") {
+                resetGlobalLoadingState();
+            }
+        });
+
+    $(window).off("pageshow.loading-reset").on("pageshow.loading-reset", function () {
+        resetGlobalLoadingState();
+    });
+}
+
+function resetGlobalLoadingState() {
+    hideGlobalLoader();
+    $("[data-loading-active='true']").each(function () {
+        const $trigger = $(this);
+        const original = $trigger.data("original-content");
+        if (original !== undefined) {
+            if ($trigger.is("input")) {
+                $trigger.val(original);
+            } else {
+                $trigger.html(original);
+            }
+        }
+        $trigger.removeClass("disabled").removeAttr("aria-disabled");
+        $trigger.data("loading-active", false);
+        $trigger.removeAttr("data-loading-active");
+    });
+
+    $("form[data-submitting='true']").each(function () {
+        const $form = $(this);
+        $form.data("submitting", false);
+        $form.removeAttr("aria-busy");
+        $form.removeAttr("data-submitting");
+        $form.removeData("submitter");
+        $form.find('button[type="submit"], input[type="submit"]').each(function () {
+            const $button = $(this);
+            const original = $button.data("original-content");
+            if (original !== undefined) {
+                if ($button.is("input")) {
+                    $button.val(original);
+                } else {
+                    $button.html(original);
+                }
+            }
+            $button.prop("disabled", false);
+        });
+    });
 }
 
 function setupHtml2PdfLoader() {
