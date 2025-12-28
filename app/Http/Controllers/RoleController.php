@@ -32,6 +32,9 @@ class RoleController extends Controller
         if(\Auth::user()->can('create role'))
         {
             $permissions = Permission::where('guard_name', \Auth::getDefaultDriver())
+                ->orderBy('id')
+                ->get()
+                ->unique('name')
                 ->pluck('name', 'id')
                 ->toArray();
 
@@ -92,6 +95,9 @@ class RoleController extends Controller
         {
 
             $permissions = Permission::where('guard_name', \Auth::getDefaultDriver())
+                ->orderBy('id')
+                ->get()
+                ->unique('name')
                 ->pluck('name', 'id')
                 ->toArray();
 
