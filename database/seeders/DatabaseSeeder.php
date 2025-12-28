@@ -13,11 +13,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-       if (app()->runningInConsole()) {
+        if (app()->runningInConsole()) {
             $this->call(UsersTableSeeder::class);
             $this->call(NotificationSeeder::class);
             $this->call(AiTemplateSeeder::class);
             $this->call(NcfTypeSeeder::class);
+            $this->call(DemoDataSeeder::class);
             Artisan::call('module:migrate LandingPage');
            Artisan::call('module:migrate LandingPage');
             Artisan::call('module:seed LandingPage');
