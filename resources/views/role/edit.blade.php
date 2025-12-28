@@ -94,7 +94,7 @@
                                     <div class="row">
                                         @foreach($moduleGroup['items'] as $permissionItem)
                                             <div class="col-md-3 custom-control custom-checkbox">
-                                                {{Form::checkbox('permissions[]',$permissionItem['id'],$role->hasPermissionTo($permissionItem['name']), ['class'=>'form-check-input isscheck isscheck_'.$moduleKey,'id' =>'permission'.$permissionItem['id']])}}
+                                                {{Form::checkbox('permissions[]',$permissionItem['id'],in_array($permissionItem['id'], $rolePermissions), ['class'=>'form-check-input isscheck isscheck_'.$moduleKey,'id' =>'permission'.$permissionItem['id']])}}
                                                 {{Form::label('permission'.$permissionItem['id'],$permissionItem['action'],['class'=>'form-check-label'])}}<br>
                                             </div>
                                         @endforeach

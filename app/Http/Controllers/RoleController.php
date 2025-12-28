@@ -31,7 +31,9 @@ class RoleController extends Controller
     {
         if(\Auth::user()->can('create role'))
         {
-            $permissions = Permission::all()->pluck('name', 'id')->toArray();
+            $permissions = Permission::where('guard_name', \Auth::getDefaultDriver())
+                ->pluck('name', 'id')
+                ->toArray();
 
             return view('role.create', ['permissions' => $permissions]);
         }
@@ -89,9 +91,13 @@ class RoleController extends Controller
         if(\Auth::user()->can('edit role'))
         {
 
-            $permissions = Permission::all()->pluck('name', 'id')->toArray();
+            $permissions = Permission::where('guard_name', \Auth::getDefaultDriver())
+                ->pluck('name', 'id')
+                ->toArray();
 
-            return view('role.edit', compact('role', 'permissions'));
+            $rolePermissions = $role->permissions->pluck('id')->toArray();
+
+            return view('role.edit', compact('role', 'permissions', 'rolePermissions'));
         }
         else
         {
