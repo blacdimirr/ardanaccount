@@ -31,11 +31,45 @@
                         </thead>
                         <tbody>
                         @php
-                            $modules=['dashboard','user','role','proposal','retainer','invoice','bill','revenue','payment','proposal product','invoice product','bill product','goal','credit note','debit note','bank account','transfer','transaction','product & service','customer','vender','contract','constant tax','constant category','constant unit','constant custom field','constant contract type','company settings','assets','chart of account','journal entry','report'];
-                            if(\Auth::user()->type == 'super admin'){
-                                $modules[] = 'language';
-                                $modules[] = 'permission';
+                            $permissionNames = array_values($permissions);
+                            $modulePrefixes = [
+                                'income vs expense',
+                                'loss & profit',
+                                'balance sheet',
+                                'trial balance',
+                                'create payment',
+                                'delete payment',
+                                'convert invoice',
+                                'convert retainer',
+                                'manage',
+                                'create',
+                                'edit',
+                                'delete',
+                                'show',
+                                'buy',
+                                'send',
+                                'income',
+                                'expense',
+                                'tax',
+                                'invoice',
+                                'bill',
+                                'duplicate',
+                                'ledger',
+                                'contract',
+                            ];
+                            $modules = [];
+                            foreach($permissionNames as $permissionName)
+                            {
+                                foreach($modulePrefixes as $prefix)
+                                {
+                                    if(\Illuminate\Support\Str::startsWith($permissionName, $prefix . ' '))
+                                    {
+                                        $modules[] = trim(substr($permissionName, strlen($prefix)));
+                                        continue 2;
+                                    }
+                                }
                             }
+                            $modules = array_values(array_unique($modules));
                         @endphp
                         {{-- @dd($modules,$permissions) --}}
                         @foreach($modules as $module)
@@ -272,4 +306,3 @@
         });
     });
 </script>
-
