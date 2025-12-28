@@ -158,6 +158,16 @@
             <div class="loader-fill"></div>
         </div>
     </div>
+    <div id="global-loading-overlay" class="global-loading-overlay d-none" role="alert" aria-live="assertive"
+        aria-busy="true">
+        <div class="loading-card text-center">
+            <div class="spinner-border text-primary mb-3" role="status" aria-hidden="true"></div>
+            <p class="mb-1 fw-semibold">{{ __('Procesando, por favor espere...') }}</p>
+            <p class="mb-0 text-muted" id="global-loading-message">
+                {{ __('Estamos procesando su solicitud. Este proceso puede tardar unos segundos. Por favor, no cierre la página ni presione atrás.') }}
+            </p>
+        </div>
+    </div>
 
     @include('partials.admin.menu')
     <!-- [ navigation menu ] end -->

@@ -45,14 +45,20 @@
                                         <span>
                                             @can('view budget planner')
                                             <div class="action-btn me-2">
-                                                    <a href="{{ route('budget.show',\Crypt::encrypt($budget->id)) }}" class="mx-3 btn btn-sm align-items-center bg-warning " data-bs-toggle="tooltip" title="{{__('View')}}" data-original-title="{{__('Detail')}}">
+                                                    <a href="{{ route('budget.show',\Crypt::encrypt($budget->id)) }}" class="mx-3 btn btn-sm align-items-center bg-warning "
+                                                        data-loading="true" data-loading-text="{{ __('Cargando presupuesto...') }}"
+                                                        data-loading-message="{{ __('Estamos procesando su solicitud. Este proceso puede tardar unos segundos. Por favor, no cierre la página ni presione atrás.') }}"
+                                                        data-bs-toggle="tooltip" title="{{__('View')}}" data-original-title="{{__('Detail')}}">
                                                         <i class="ti ti-eye text-white"></i>
                                                     </a>
                                             </div>
                                             @endcan
                                             @can('edit budget planner')
                                             <div class="action-btn me-2">
-                                                 <a href="{{ route('budget.edit',Crypt::encrypt($budget->id)) }}" class="mx-3 btn btn-sm align-items-center bg-info " data-bs-toggle="tooltip" title="{{__('Edit')}}" data-original-title="{{__('Edit')}}">
+                                                 <a href="{{ route('budget.edit',Crypt::encrypt($budget->id)) }}" class="mx-3 btn btn-sm align-items-center bg-info "
+                                                    data-loading="true" data-loading-text="{{ __('Cargando presupuesto...') }}"
+                                                    data-loading-message="{{ __('Estamos procesando su solicitud. Este proceso puede tardar unos segundos. Por favor, no cierre la página ni presione atrás.') }}"
+                                                    data-bs-toggle="tooltip" title="{{__('Edit')}}" data-original-title="{{__('Edit')}}">
                                                     <i class="ti ti-pencil text-white"></i>
                                                 </a>
                                             </div>

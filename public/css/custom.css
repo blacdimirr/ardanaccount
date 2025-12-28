@@ -156,6 +156,30 @@ a.b-brand {
     padding: 2.3rem 2.3rem 2.3rem 3rem;
 }
 
+.global-loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1055;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.65);
+    padding: 1.5rem;
+}
+
+.global-loading-overlay .loading-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    max-width: 520px;
+    width: 100%;
+    box-shadow: 0 24px 40px rgba(15, 23, 42, 0.2);
+}
+
+.global-loading-overlay .loading-card .text-muted {
+    color: #6c757d !important;
+}
+
 .choose-files div {
     color: #fff;
     background: #584ED2 !important;
