@@ -84,6 +84,7 @@
                                     'action' => $actionLabel,
                                 ];
                             }
+                            $modules = array_values(array_unique($modules));
                         @endphp
                         @foreach($permissionsByModule as $moduleKey => $moduleGroup)
                             <tr>
