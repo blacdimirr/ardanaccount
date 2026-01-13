@@ -18,6 +18,9 @@ class MovimientoBancario extends Model
         'estado_conciliacion',
         'conciliable_id',
         'conciliable_type',
+        'migration_batch_id',
+        'staging_id',
+        'source_hash',
     ];
 
     protected $casts = [
