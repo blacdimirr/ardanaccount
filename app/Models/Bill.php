@@ -26,6 +26,9 @@ class Bill extends Model
         'itbis_withheld_total',
         'isr_withheld_total',
         'government_withheld_total',
+        'migration_batch_id',
+        'staging_id',
+        'source_hash',
     ];
 
     public function ncfType()
