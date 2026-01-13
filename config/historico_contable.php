@@ -8,6 +8,7 @@ return [
         'customer_name' => env('HISTORICO_CUSTOMER_NAME', 'HISTORICO INGRESOS'),
         'customer_email' => env('HISTORICO_CUSTOMER_EMAIL', 'historico.ingresos@example.com'),
         'bank_account_id' => env('HISTORICO_BANK_ACCOUNT_ID', 0),
+        'cuenta_recaudadora_id' => env('HISTORICO_CUENTA_RECAUDADORA_ID', 0),
     ],
     'payment_method_map' => [
         'CHEQUE' => 0,
@@ -19,5 +20,12 @@ return [
         'pagos' => ['CHEQUE', 'LIBRAMIENTO', 'TRANSFER', 'SUPLIDOR', 'BENEFICIARIO', 'MONTO', 'FECHA'],
         'ordenes_compra' => ['ORDEN', 'COMPRA', 'SUPLIDOR', 'MONTO', 'FECHA', 'OBJETO', 'DETALLE'],
         'ingresos' => ['ORIGEN', 'INGR', 'MONTO', 'FECHA', 'REFERENCIA', 'DEPOSITO', 'TRANSFER'],
+        'libro_banco' => ['FECHA', 'CHEQUE', 'TRANS', 'DESCRIPCION', 'DEBITO', 'CREDITO', 'BALANCE'],
+    ],
+    'bank_file_keywords' => [
+        'CONCILI',
+        'CONCILIACION',
+        'BANCO',
+        'LIBRO',
     ],
 ];
