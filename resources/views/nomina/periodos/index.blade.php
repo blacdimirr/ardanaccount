@@ -73,7 +73,7 @@
                                                         <a href="{{ route('nomina-periodos.preview-asiento', $periodo->id) }}"
                                                             class="mx-3 btn btn-sm align-items-center bg-primary"
                                                             data-bs-toggle="tooltip" data-original-title="{{ __('Asiento por servicio') }}">
-                                                            <i class="ti ti-list-details text-white"></i>
+                                                            <i class="ti ti-list text-white"></i>
                                                         </a>
                                                     </div>
                                                 @endcan

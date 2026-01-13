@@ -54,7 +54,7 @@ class MovimientoBancarioController extends Controller
                     'min:1',
                     $this->cuentaRecaudadoraRule(),
                 ],
-                'archivo' => 'required|file|mimes:csv,txt,ofx',
+                'archivo' => 'required|file|mimes:csv,txt,ofx,xlsx,xls|max:10240',
             ]
         );
 
@@ -63,7 +63,15 @@ class MovimientoBancarioController extends Controller
             return redirect()->route('tesoreria.extractos.index')->with('error', $messages->first());
         }
 
-        $movimientos = $service->parseAndMap($request->file('archivo'));
+        $file = $request->file('archivo');
+        if (!$file || !$file->isValid()) {
+            return redirect()->route('tesoreria.extractos.index')->with('error', __('Invalid file upload.'));
+        }
+        $contents = $file->get();
+        $extension = strtolower($file->getClientOriginalExtension() ?: '');
+        $movimientos = $service->parseAndMap($contents, $extension);
+
+
         if (empty($movimientos)) {
             return redirect()->route('tesoreria.extractos.index')->with('error', __('No movements were detected in the file.'));
         }
@@ -98,6 +106,9 @@ class MovimientoBancarioController extends Controller
 
         return redirect()->route('tesoreria.extractos.index')->with('success', __('Bank statement movements imported successfully.'));
     }
+
+
+
 
     public function template()
     {
