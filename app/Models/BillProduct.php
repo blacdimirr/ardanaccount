@@ -15,12 +15,16 @@ class BillProduct extends Model
         'discount',
         'total',
         'price',
+        'description',
         'category_id',
         'itbis_amount',
         'itbis_withheld_amount',
         'isr_withheld_amount',
         'government_withheld_amount',
         'retention_rule_id',
+        'migration_batch_id',
+        'staging_id',
+        'source_hash',
     ];
 
     protected $casts = [

@@ -17,6 +17,9 @@ class Revenue extends Model
         'reference',
         'description',
         'created_by',
+        'migration_batch_id',
+        'staging_id',
+        'source_hash',
     ];
 
     public function category()
