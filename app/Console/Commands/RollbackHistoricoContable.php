@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\HistoricoContableJournalService;
 use App\Services\HistoricoContableMigrationService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +13,7 @@ class RollbackHistoricoContable extends Command
 
     protected $description = 'Revierte una migración histórica por mes (batch).';
 
-    public function handle(HistoricoContableMigrationService $service): int
+    public function handle(HistoricoContableMigrationService $service, HistoricoContableJournalService $journalService): int
     {
         $monthInput = (string) $this->option('month');
         if (!$monthInput) {
@@ -33,7 +34,8 @@ class RollbackHistoricoContable extends Command
             return self::FAILURE;
         }
 
-        DB::transaction(function () use ($service, $batch) {
+        DB::transaction(function () use ($service, $journalService, $batch) {
+            $journalService->rollbackBatch($batch->id);
             $service->rollbackMonth($batch->id);
             DB::table('migration_batches')
                 ->where('id', $batch->id)

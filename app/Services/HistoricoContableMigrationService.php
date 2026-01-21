@@ -5,9 +5,7 @@ namespace App\Services;
 use App\Models\BankAccount;
 use App\Models\Bill;
 use App\Models\BillProduct;
-use App\Models\CuentaRecaudadora;
 use App\Models\Customer;
-use App\Models\MovimientoBancario;
 use App\Models\Payment;
 use App\Models\Revenue;
 use App\Models\Vender;
@@ -82,84 +80,10 @@ class HistoricoContableMigrationService
         ];
     }
 
-    public function findBankFile(string $monthPath): array
-    {
-        $files = glob($monthPath . '/*.{xls,xlsx,xlsm}', GLOB_BRACE);
-        $candidates = [];
-        foreach ($files as $file) {
-            if (!is_file($file)) {
-                continue;
-            }
-            $basename = basename($file);
-            if (str_starts_with($basename, '~$')) {
-                continue;
-            }
-            if (!$this->isBankFileCandidate($basename)) {
-                continue;
-            }
-            if (!$this->hasLibroBancoSheet($file)) {
-                continue;
-            }
-            $candidates[] = $file;
-        }
-
-        if (!$candidates) {
-            return ['selected' => null, 'duplicates' => []];
-        }
-
-        usort($candidates, fn($a, $b) => filemtime($b) <=> filemtime($a));
-        $selected = array_shift($candidates);
-
-        return [
-            'selected' => $selected,
-            'duplicates' => $candidates,
-        ];
-    }
-
-    public function discoverMonthFiles(string $rootPath): array
-    {
-        $inventory = [];
-        foreach ($this->listMonthFolders($rootPath) as $monthFolder) {
-            $monthPath = $rootPath . '/' . $monthFolder;
-            $matrizInfo = $this->findMatrizFile($monthPath);
-            $bankInfo = $this->findBankFile($monthPath);
-            $inventory[] = [
-                'month_folder' => $monthFolder,
-                'matriz_file' => $matrizInfo['selected'],
-                'bank_file' => $bankInfo['selected'],
-                'bank_duplicates' => $bankInfo['duplicates'] ?? [],
-            ];
-        }
-
-        return $inventory;
-    }
-
     public function listSheetNames(string $filePath): array
     {
         $reader = IOFactory::createReaderForFile($filePath);
         return $reader->listWorksheetNames($filePath);
-    }
-
-    public function hasLibroBancoSheet(string $filePath): bool
-    {
-        $sheetNames = $this->listSheetNames($filePath);
-        foreach ($sheetNames as $name) {
-            if ($this->normalize($name) === $this->normalize('LIBRO BANCO')) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public function resolveLibroBancoSheet(string $filePath): ?string
-    {
-        $sheetNames = $this->listSheetNames($filePath);
-        foreach ($sheetNames as $name) {
-            if ($this->normalize($name) === $this->normalize('LIBRO BANCO')) {
-                return $name;
-            }
-        }
-        return null;
     }
 
     public function detectSheets(array $sheetNames): array
@@ -235,7 +159,6 @@ class HistoricoContableMigrationService
         $files[] = $this->exportErrorCsv('staging_pagos_emitidos', $monthFolder, $storagePath, 'pagos');
         $files[] = $this->exportErrorCsv('staging_ordenes_compra', $monthFolder, $storagePath, 'ordenes_compra');
         $files[] = $this->exportErrorCsv('staging_ingresos_origen', $monthFolder, $storagePath, 'ingresos');
-        $files[] = $this->exportErrorCsv('staging_libro_banco', $monthFolder, $storagePath, 'libro_banco');
         return array_values(array_filter($files));
     }
 
@@ -269,7 +192,7 @@ class HistoricoContableMigrationService
                 'source_file' => basename($filePath),
                 'source_sheet' => $sheetName,
                 'source_row_number' => $rowNumber,
-                'raw_json' => $this->safeJsonEncode($mapped['raw']),
+                'raw_json' => json_encode($mapped['raw'], JSON_UNESCAPED_UNICODE),
                 'hash' => $hash,
                 'status' => self::STATUS_NEW,
                 'error_message' => null,
@@ -327,7 +250,7 @@ class HistoricoContableMigrationService
                 'source_file' => basename($filePath),
                 'source_sheet' => $sheetName,
                 'source_row_number' => $rowNumber,
-                'raw_json' => $this->safeJsonEncode($mapped['raw']),
+                'raw_json' => json_encode($mapped['raw'], JSON_UNESCAPED_UNICODE),
                 'hash' => $hash,
                 'status' => self::STATUS_NEW,
                 'error_message' => null,
@@ -382,7 +305,7 @@ class HistoricoContableMigrationService
                 'source_file' => basename($filePath),
                 'source_sheet' => $sheetName,
                 'source_row_number' => $rowNumber,
-                'raw_json' => $this->safeJsonEncode($mapped['raw']),
+                'raw_json' => json_encode($mapped['raw'], JSON_UNESCAPED_UNICODE),
                 'hash' => $hash,
                 'status' => self::STATUS_NEW,
                 'error_message' => null,
@@ -397,67 +320,6 @@ class HistoricoContableMigrationService
             ];
 
             $inserted = DB::table('staging_ingresos_origen')->insertOrIgnore($data);
-            if ($inserted) {
-                $rowsInserted++;
-            }
-        });
-
-        return $rowsInserted;
-    }
-
-    public function stageLibroBanco(string $monthFolder, string $filePath, string $sheetName, ?int $batchId, int $chunkSize): int
-    {
-        $headerRow = $this->detectHeaderRow($filePath, $sheetName, config('historico_contable.sheet_keywords.libro_banco'));
-        if (!$headerRow) {
-            return 0;
-        }
-
-        $headers = $this->readRow($filePath, $sheetName, $headerRow);
-        $headerMap = $this->buildHeaderMap($headers);
-        $rowsInserted = 0;
-
-        $this->iterateRows($filePath, $sheetName, $headerRow + 1, $chunkSize, function ($row, $rowNumber) use ($monthFolder, $filePath, $sheetName, $headerMap, $batchId, &$rowsInserted) {
-            $mapped = $this->mapLibroBancoRow($row, $headerMap);
-            if (!$mapped['has_data']) {
-                return;
-            }
-
-            $hash = sha1(implode('|', [
-                $monthFolder,
-                $mapped['txn_date'] ?? '',
-                $mapped['reference'] ?? '',
-                $mapped['debit'] ?? 0,
-                $mapped['credit'] ?? 0,
-                $mapped['balance'] ?? '',
-                $this->normalizeSpaces($mapped['description'] ?? ''),
-                $mapped['cuenta_recaudadora_id'] ?? '',
-            ]));
-
-            $status = $mapped['amount_error'] ? self::STATUS_ERROR : self::STATUS_NEW;
-            $errorMessage = $mapped['amount_error'] ? 'Monto inválido' : null;
-
-            $data = [
-                'migration_batch_id' => $batchId,
-                'source_month_folder' => $monthFolder,
-                'source_file' => basename($filePath),
-                'source_sheet' => $sheetName,
-                'source_row_number' => $rowNumber,
-                'raw_json' => $this->safeJsonEncode($mapped['raw']),
-                'hash' => $hash,
-                'status' => $status,
-                'error_message' => $errorMessage,
-                'txn_date' => $mapped['txn_date'],
-                'description' => $mapped['description'],
-                'reference' => $mapped['reference'],
-                'debit' => $mapped['debit'],
-                'credit' => $mapped['credit'],
-                'balance' => $mapped['balance'],
-                'cuenta_recaudadora_id' => $mapped['cuenta_recaudadora_id'],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
-
-            $inserted = DB::table('staging_libro_banco')->insertOrIgnore($data);
             if ($inserted) {
                 $rowsInserted++;
             }
@@ -493,46 +355,6 @@ class HistoricoContableMigrationService
                     }
 
                     DB::table('staging_pagos_emitidos')
-                        ->where('id', $row->id)
-                        ->update([
-                            'status' => $status,
-                            'error_message' => $error,
-                            'updated_at' => now(),
-                        ]);
-                }
-            });
-
-        return ['total' => $total, 'errors' => $errors];
-    }
-
-    public function validateLibroBanco(string $monthFolder): array
-    {
-        $total = 0;
-        $errors = 0;
-
-        DB::table('staging_libro_banco')
-            ->where('source_month_folder', $monthFolder)
-            ->where('status', self::STATUS_NEW)
-            ->orderBy('id')
-            ->chunkById(500, function ($rows) use (&$total, &$errors) {
-                foreach ($rows as $row) {
-                    $total++;
-                    $error = null;
-
-                    if (!$row->txn_date) {
-                        $error = 'Fecha requerida';
-                    } elseif ($row->debit > 0 && $row->credit > 0) {
-                        $error = 'Débito y crédito simultáneos';
-                    } elseif (($row->debit ?? 0) == 0 && ($row->credit ?? 0) == 0) {
-                        $error = 'Débito o crédito requerido';
-                    }
-
-                    $status = $error ? self::STATUS_ERROR : self::STATUS_VALIDATED;
-                    if ($error) {
-                        $errors++;
-                    }
-
-                    DB::table('staging_libro_banco')
                         ->where('id', $row->id)
                         ->update([
                             'status' => $status,
@@ -768,57 +590,6 @@ class HistoricoContableMigrationService
         return $count;
     }
 
-    public function importLibroBanco(string $monthFolder, int $batchId, array $options = []): int
-    {
-        $cuentaRecaudadoraId = $options['cuenta_recaudadora_id'] ?? config('historico_contable.defaults.cuenta_recaudadora_id');
-        $count = 0;
-
-        DB::table('staging_libro_banco')
-            ->where('source_month_folder', $monthFolder)
-            ->where('status', self::STATUS_VALIDATED)
-            ->orderBy('id')
-            ->chunkById(200, function ($rows) use (&$count, $batchId, $cuentaRecaudadoraId) {
-                foreach ($rows as $row) {
-                    $amount = $row->debit > 0 ? $row->debit : $row->credit;
-
-                    $attributes = ['source_hash' => $row->hash];
-                    $values = [
-                        'cuenta_recaudadora_id' => $row->cuenta_recaudadora_id ?: $cuentaRecaudadoraId,
-                        'fecha' => $row->txn_date,
-                        'monto' => $amount,
-                        'descripcion' => $row->description,
-                        'referencia' => $row->reference,
-                        'origen_archivo' => $row->source_file,
-                        'estado_conciliacion' => 'pendiente',
-                        'migration_batch_id' => $batchId,
-                        'staging_id' => $row->id,
-                        'source_hash' => $row->hash,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
-
-                    $movimiento = MovimientoBancario::firstOrCreate($attributes, $values);
-
-                    DB::table('staging_libro_banco')
-                        ->where('id', $row->id)
-                        ->update([
-                            'status' => self::STATUS_IMPORTED,
-                            'updated_at' => now(),
-                        ]);
-
-                    $count++;
-                    Log::info('Movimiento bancario importado', ['movimiento_id' => $movimiento->id, 'staging_id' => $row->id]);
-                }
-            });
-
-        return $count;
-    }
-
-    public function rollbackLibroBanco(int $batchId): void
-    {
-        MovimientoBancario::where('migration_batch_id', $batchId)->delete();
-    }
-
     private function exportErrorCsv(string $table, string $monthFolder, string $storagePath, string $label): ?string
     {
         $rows = DB::table($table)
@@ -846,32 +617,8 @@ class HistoricoContableMigrationService
         return $file;
     }
 
-    private function fixedHeaderRow(string $sheetName): ?int
+    private function detectHeaderRow(string $filePath, string $sheetName, array $keywords): ?int
     {
-        $s = $this->normalize($sheetName);
-
-        // Matriz ENERO 2025 (and similar): headers are at fixed rows per sheet
-        if (str_contains($s, 'RELACION CHEQUES EMITIDOS') || str_contains($s, 'RELACION DE CHEQUES EMITIDOS') || str_contains($s, 'RELACION DE PAGOS EMITIDOS') || str_contains($s, 'RELACION PAGOS EMITIDOS')) {
-            return 9;
-        }
-
-        if (str_contains($s, 'RELACION ORDENES DE COMPRAS') || str_contains($s, 'RELACION DE ORDENES DE COMPRAS')) {
-            return 4;
-        }
-
-        if (str_contains($s, 'INGRESOS SEGUN ORIGEN')) {
-            return 6;
-        }
-
-        return null;
-    }
-
-private function detectHeaderRow(string $filePath, string $sheetName, array $keywords): ?int
-    {
-        if ($fixed = $this->fixedHeaderRow($sheetName)) {
-            return $fixed;
-        }
-
         $rows = $this->readRows($filePath, $sheetName, 1, 60);
         $bestRow = null;
         $bestScore = 0;
@@ -952,13 +699,13 @@ private function detectHeaderRow(string $filePath, string $sheetName, array $key
     {
         $raw = $this->mapRawRow($row, $headerMap);
         $fecha = $this->parseDate($this->valueByHeaders($row, $headerMap, ['FECHA', 'FECHA DE PUBLICACION']));
-        $numeroOc = $this->valueByHeaders($row, $headerMap, ['#  ORDEN DE COMPRA O SERVICIOS', '# ORDEN DE COMPRA O SERVICIOS', 'ORDEN DE COMPRA', 'NO. ORDEN', 'ORDEN','Referencia del Proceso']);
+        $numeroOc = $this->valueByHeaders($row, $headerMap, ['#  ORDEN DE COMPRA O SERVICIOS', '# ORDEN DE COMPRA O SERVICIOS', 'ORDEN DE COMPRA', 'NO. ORDEN', 'ORDEN']);
         $suplidor = $this->valueByHeaders($row, $headerMap, ['BENEFICIARIO', 'EMPRESA ADJUDICADA', 'SUPLIDOR', 'PROVEEDOR']);
         $monto = $this->parseAmount($this->valueByHeaders($row, $headerMap, ['MONTO', 'VALOR']));
         $detalle = $this->valueByHeaders($row, $headerMap, ['PROCESO DE COMPRA', 'DETALLE', 'OBJETO', 'DESCRIPCION']);
         $estado = $this->valueByHeaders($row, $headerMap, ['ESTADO', 'STATUS', 'ESTADO DEL PROCEDIMIENTO']);
         $unidad = $this->valueByHeaders($row, $headerMap, ['UNIDAD', 'UNIDAD DE COMPRAS', 'SERVICIO']);
-        $rubro = $this->valueByHeaders($row, $headerMap, ['RUBRO', 'CTA', 'CUENTA','Rubro Del Proceso']);
+        $rubro = $this->valueByHeaders($row, $headerMap, ['RUBRO', 'CTA', 'CUENTA']);
 
         return [
             'raw' => $raw,
@@ -977,66 +724,14 @@ private function detectHeaderRow(string $filePath, string $sheetName, array $key
     private function mapIngresosRow(array $row, array $headerMap): array
     {
         $raw = $this->mapRawRow($row, $headerMap);
-
-        // If header detection failed for any reason, fall back to fixed column positions (A-E)
-        // for the "INGRESOS SEGUN ORIGEN" sheet in the Matriz.
-        $fecha = null;
-        $origen = null;
-        $referencia = null;
-        $monto = null;
-
-        if (empty($headerMap)) {
-            $origen = $row[0] ?? null;
-            $ars = $row[1] ?? null;
-            $origen = $origen ?: $ars;
-
-            $fecha = $this->parseDate($row[2] ?? null);
-            $referencia = $row[3] ?? null;
-            $monto = $this->parseAmount($row[4] ?? null);
-        } else {
-            $fecha = $this->parseDate($this->valueByHeaders($row, $headerMap, [
-                'FECHA',
-                'FECHA DEPOSITO',
-                'FECHA DEPÓSITO',
-            ]));
-
-            $origen = $this->valueByHeaders($row, $headerMap, ['ORIGEN', 'ARS']);
-
-            // Header in Matriz: "No. De Documento de referencia"
-            $referencia = $this->valueByHeaders($row, $headerMap, [
-                'NO DE DOCUMENTO DE REFERENCIA',
-                'NO. DE DOCUMENTO DE REFERENCIA',
-                'REFERENCIA',
-                'DOCUMENTO',
-            ]);
-
-            // Header in Matriz: "Valor transferido segun No. De Transferencia o Cheque"
-            $monto = $this->parseAmount($this->valueByHeaders($row, $headerMap, [
-                'VALOR TRANSFERIDO SEGUN NO DE TRANSFERENCIA O CHEQUE',
-                'VALOR DE TRANSFERENCIA O CHEQUE',
-                'VALOR TRANSFERIDO',
-                'MONTO',
-                'VALOR',
-            ]));
-        }
-
+        $fecha = $this->parseDate($this->valueByHeaders($row, $headerMap, ['FECHA', 'FECHA DEPOSITO', 'FECHA DEPÓSITO']));
+        $origen = $this->valueByHeaders($row, $headerMap, ['ORIGEN', 'ARS']);
+        $referencia = $this->valueByHeaders($row, $headerMap, ['REFERENCIA', 'DOCUMENTO', 'NO. DE DOCUMENTO DE REFERENCIA']);
+        $monto = $this->parseAmount($this->valueByHeaders($row, $headerMap, ['MONTO', 'VALOR', 'VALOR DE TRANSFERENCIA O CHEQUE']));
         $observacion = $this->valueByHeaders($row, $headerMap, ['OBSERVACION', 'CONCEPTO', 'DETALLE']);
         $banco = $this->valueByHeaders($row, $headerMap, ['BANCO', 'CUENTA']);
-
         $origenTexto = $this->sanitizeText($origen);
-
-        // Ignore subtotal/total rows that often have amounts (formulas) but no date.
-        $normOrigen = $origenTexto ? $this->normalize($origenTexto) : '';
-        $esSubtotal = $normOrigen !== '' && (
-            str_contains($normOrigen, 'SUBTOTAL') ||
-            str_contains($normOrigen, 'SUB TOTAL') ||
-            $normOrigen === 'TOTAL' ||
-            str_contains($normOrigen, 'TOTAL GENERAL') ||
-            str_contains($normOrigen, 'ANTICIPOS FINANCIEROS') ||
-            str_contains($normOrigen, 'FONDO 100') ||
-            str_contains($normOrigen, 'FONDOS ASISTENCIAL')
-        );
-
+        $esSubtotal = $origenTexto && str_contains($this->normalize($origenTexto), 'SUB');
 
         return [
             'raw' => $raw,
@@ -1050,83 +745,28 @@ private function detectHeaderRow(string $filePath, string $sheetName, array $key
         ];
     }
 
-    private function mapLibroBancoRow(array $row, array $headerMap): array
-    {
-        $raw = $this->mapRawRow($row, $headerMap);
-
-        $fecha = $this->parseDate($this->valueByHeaders($row, $headerMap, ['FECHA']));
-        $refField = $this->valueByHeaders($row, $headerMap, ['CHEQUE', 'CHEQUE/TRANS', 'TRANS', 'TRANSFERENCIA']);
-        $descripcion = $this->valueByHeaders($row, $headerMap, ['DESCRIPCION', 'CONCEPTO', 'DETALLE']);
-        $debitRaw = $this->valueByHeaders($row, $headerMap, ['DEBITO', 'DEBE']);
-        $creditRaw = $this->valueByHeaders($row, $headerMap, ['CREDITO', 'HABER']);
-        $balanceRaw = $this->valueByHeaders($row, $headerMap, ['BALANCE', 'SALDO']);
-
-        [$debit, $debitError] = $this->parseLibroBancoAmount($debitRaw);
-        [$credit, $creditError] = $this->parseLibroBancoAmount($creditRaw);
-        [$balance, $balanceError] = $this->parseLibroBancoAmount($balanceRaw);
-
-        $reference = $this->extractReference($refField ?: $descripcion);
-
-        return [
-            'raw' => $raw,
-            'has_data' => $this->rowHasData($row),
-            'txn_date' => $fecha,
-            'description' => $this->sanitizeText($this->normalizeSpaces($descripcion)),
-            'reference' => $this->sanitizeText($reference),
-            'debit' => $debit,
-            'credit' => $credit,
-            'balance' => $balanceError ? null : $balance,
-            'amount_error' => $debitError || $creditError,
-            'cuenta_recaudadora_id' => $this->resolveCuentaRecaudadoraId(),
-        ];
-    }
-
-
-    private function valueByHeaders(array $row, array $headerMap, array $keys)
+    private function valueByHeaders(array $row, array $headerMap, array $keys): ?string
     {
         foreach ($keys as $key) {
             $normalized = $this->normalize($key);
-
-            if (!array_key_exists($normalized, $headerMap)) {
-                continue;
-            }
-
-            $value = $row[$headerMap[$normalized]] ?? null;
-
-            // Keep native types (DateTime, numbers) so parseDate/parseAmount can work reliably.
-            if ($value instanceof \DateTimeInterface) {
-                return $value;
-            }
-
-            if (is_int($value) || is_float($value)) {
-                return $value;
-            }
-
-            if ($value !== null) {
-                $str = trim((string) $value);
-                if ($str !== '') {
-                    return $str;
+            if (array_key_exists($normalized, $headerMap)) {
+                $value = $row[$headerMap[$normalized]] ?? null;
+                if ($value !== null && trim((string) $value) !== '') {
+                    return trim((string) $value);
                 }
             }
         }
-
         return null;
     }
 
     private function mapRawRow(array $row, array $headerMap): array
     {
-        // If we couldn't build a header map, keep the raw row by numeric index so we can debug later.
-        if (empty($headerMap)) {
-            return $row;
-        }
-
         $raw = [];
         foreach ($headerMap as $header => $index) {
             $raw[$header] = $row[$index] ?? null;
         }
         return $raw;
     }
-
 
     private function readRow(string $filePath, string $sheetName, int $rowNumber): array
     {
@@ -1139,29 +779,13 @@ private function detectHeaderRow(string $filePath, string $sheetName, array $key
         $reader = IOFactory::createReaderForFile($filePath);
         $reader->setReadDataOnly(true);
         $reader->setLoadSheetsOnly([$sheetName]);
-
+        $filter = new ExcelChunkReadFilter();
+        $filter->setRows($startRow, $chunkSize);
+        $reader->setReadFilter($filter);
         $spreadsheet = $reader->load($filePath);
         $worksheet = $spreadsheet->getSheetByName($sheetName);
-
-        if (!$worksheet) {
-            return [];
-        }
-
-        $highestRow = (int) $worksheet->getHighestRow();
-        if ($startRow > $highestRow) {
-            return [];
-        }
-
-        $endRow = min($highestRow, $startRow + $chunkSize - 1);
-        $highestColumn = $worksheet->getHighestColumn();
-
-        // Read ONLY the requested range. This avoids row-number drift caused by Worksheet::toArray()
-        // iterating from row 1..highestRow even when a read filter is used.
-        $range = sprintf('A%d:%s%d', $startRow, $highestColumn, $endRow);
-
-        return $worksheet->rangeToArray($range, null, true, true, false);
+        return $worksheet->toArray(null, true, true, false);
     }
-
 
     private function iterateRows(string $filePath, string $sheetName, int $startRow, int $chunkSize, callable $callback): void
     {
@@ -1199,14 +823,8 @@ private function detectHeaderRow(string $filePath, string $sheetName, array $key
         $value = trim((string) $value);
         $value = mb_strtoupper($value, 'UTF-8');
         $value = str_replace(['Á', 'É', 'Í', 'Ó', 'Ú', 'Ü', 'Ñ'], ['A', 'E', 'I', 'O', 'U', 'U', 'N'], $value);
-
-        // Remove punctuation/symbols and normalize whitespace (helps with headers like "No. De Documento ...")
-        $value = preg_replace('/[^A-Z0-9]+/u', ' ', $value);
-        $value = preg_replace('/\s+/u', ' ', $value);
-
-        return trim($value);
+        return preg_replace('/\\s+/', ' ', $value);
     }
-
 
     private function sanitizeText($value): ?string
     {
@@ -1217,147 +835,54 @@ private function detectHeaderRow(string $filePath, string $sheetName, array $key
         return $text !== '' ? $text : null;
     }
 
-    private function safeJsonEncode($value): string
-    {
-        // Avoid empty raw_json when there are invalid UTF-8 characters coming from Excel,
-        // and ensure DateTime objects are serializable.
-        $normalize = function ($v) use (&$normalize) {
-            if ($v instanceof \DateTimeInterface) {
-                return (new \Carbon\Carbon($v))->format('Y-m-d');
-            }
-            if (is_array($v)) {
-                $out = [];
-                foreach ($v as $k => $vv) {
-                    $out[$k] = $normalize($vv);
-                }
-                return $out;
-            }
-            if (is_object($v)) {
-                // Best-effort stringify for unexpected objects
-                return method_exists($v, '__toString') ? (string) $v : get_class($v);
-            }
-            return $v;
-        };
-
-        try {
-            $json = json_encode($normalize($value), JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
-            return $json === false ? '[]' : $json;
-        } catch (\Throwable $e) {
-            return '[]';
-        }
-    }
-
     private function parseDate($value): ?string
     {
-        if ($value === null) {
+        if ($value === null || trim((string) $value) === '') {
             return null;
         }
 
-        // Already a DateTime object (common when using PhpSpreadsheet)
-        if ($value instanceof \DateTimeInterface) {
-            return (new \Carbon\Carbon($value))->format('Y-m-d');
-        }
-
-        $str = trim((string) $value);
-        if ($str === '') {
-            return null;
-        }
-
-        // Excel numeric date serial
         if (is_numeric($value)) {
             try {
-                if (class_exists(\PhpOffice\PhpSpreadsheet\Shared\Date::class)) {
-                    $dt = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((float) $value);
-                    return \Carbon\Carbon::instance($dt)->format('Y-m-d');
+                if (class_exists(\\PhpOffice\\PhpSpreadsheet\\Shared\\Date::class)) {
+                    $dt = \\PhpOffice\\PhpSpreadsheet\\Shared\\Date::excelToDateTimeObject((float) $value);
+                    return Carbon::instance($dt)->format('Y-m-d');
                 }
-            } catch (\Throwable $e) {
-                // continue to other parsing strategies
+            } catch (\\Throwable $e) {
+                return null;
             }
         }
 
-        // Normalize separators
-        $str = str_replace(['.', '-', ' '], ['/', '/', '/'], $str);
-
-        // Try common formats (add 2-digit year too)
-        $formats = ['d/m/Y', 'd/m/y', 'm/d/Y', 'm/d/y', 'Y/m/d', 'Y/d/m'];
-        foreach ($formats as $fmt) {
+        $value = str_replace(['.', '-'], ['/', '/'], trim((string) $value));
+        $formats = ['d/m/Y', 'm/d/Y', 'Y/m/d'];
+        foreach ($formats as $format) {
             try {
-                $dt = \Carbon\Carbon::createFromFormat($fmt, $str);
-                if ($dt !== false) {
-                    return $dt->format('Y-m-d');
+                $parsed = Carbon::createFromFormat($format, $value);
+                if ($parsed) {
+                    return $parsed->format('Y-m-d');
                 }
             } catch (\Throwable $e) {
-                // ignore
+                continue;
             }
         }
 
-        // Last resort: Carbon parser
         try {
-            return \Carbon\Carbon::parse($str)->format('Y-m-d');
-        } catch (\Throwable $e) {
+            return Carbon::parse($value)->format('Y-m-d');
+        } catch (\\Throwable $e) {
             return null;
         }
     }
-
 
     private function parseAmount($value): ?float
     {
-        if ($value === null) {
+        if ($value === null || trim((string) $value) === '') {
             return null;
         }
-        $raw = trim((string) $value);
-        if ($raw === '' || $raw === '-') {
-            return null;
-        }
-        if (is_int($value) || is_float($value)) {
-            return round((float) $value, 2);
-        }
-        $clean = str_replace([' ', ','], ['', ''], $raw);
-        $clean = str_replace(['$', 'RD$'], '', $clean);
-        if (preg_match('/^\\((.*)\\)$/', $clean, $m)) {
-            $clean = '-' . $m[1];
-        }
+        $clean = str_replace([' ', ','], ['', ''], (string) $value);
+        $clean = str_replace(['$'], '', $clean);
         if (!is_numeric($clean)) {
             return null;
         }
         return round((float) $clean, 2);
-    }
-
-    private function parseLibroBancoAmount($value): array
-    {
-        $blank = $value === null || trim((string) $value) === '' || trim((string) $value) === '-';
-        if ($blank) {
-            return [0.0, false];
-        }
-        $parsed = $this->parseAmount($value);
-        if ($parsed === null) {
-            return [0.0, true];
-        }
-        return [$parsed, false];
-    }
-
-    private function normalizeSpaces(?string $value): ?string
-    {
-        if ($value === null) {
-            return null;
-        }
-        $clean = preg_replace('/\\s+/u', ' ', trim($value));
-        return $clean !== '' ? $clean : null;
-    }
-
-    private function extractReference($value): ?string
-    {
-        if ($value === null) {
-            return null;
-        }
-        $text = trim((string) $value);
-        if ($text === '') {
-            return null;
-        }
-        if (preg_match('/\\b(\\d{3,})\\b/', $text, $m)) {
-            return $m[1];
-        }
-        return $text;
     }
 
     private function normalizeIngresoOrigen(?string $value): ?string
@@ -1391,19 +916,6 @@ private function detectHeaderRow(string $filePath, string $sheetName, array $key
             }
         }
         return null;
-    }
-
-    private function isBankFileCandidate(string $basename): bool
-    {
-        $normalized = $this->normalize($basename);
-        $keywords = config('historico_contable.bank_file_keywords', []);
-        foreach ($keywords as $keyword) {
-            if (str_contains($normalized, $this->normalize($keyword))) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private function resolveVendorId(?string $name, int $createdBy): ?int
@@ -1464,17 +976,6 @@ private function detectHeaderRow(string $filePath, string $sheetName, array $key
         return $account ? $account->id : ($defaultId ?? 0);
     }
 
-    private function resolveCuentaRecaudadoraId(): ?int
-    {
-        $defaultId = config('historico_contable.defaults.cuenta_recaudadora_id');
-        if ($defaultId) {
-            return (int) $defaultId;
-        }
-
-        $cuenta = CuentaRecaudadora::query()->orderBy('id')->first();
-        return $cuenta ? $cuenta->id : null;
-    }
-
     private function resolvePaymentMethod(?string $method): int
     {
         if (!$method) {
@@ -1512,3 +1013,4 @@ private function detectHeaderRow(string $filePath, string $sheetName, array $key
         return $map[$month] ?? null;
     }
 }
+*** End Patch"}```

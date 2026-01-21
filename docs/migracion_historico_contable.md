@@ -167,7 +167,86 @@ Campos comunes: `source_month_folder`, `source_file`, `source_sheet`, `source_ro
 
 ## 6) CLI y ejecución por lotes
 
-Comandos implementados (Laravel Artisan):
+### Guía paso a paso (principiantes): migración mes a mes
+
+> **Objetivo:** ejecutar un mes a la vez, con dry-run primero, revisar errores y luego cargar a producción.
+
+#### Paso 0) Preparación (solo una vez)
+1. **Confirma las migraciones DB** (staging y trazabilidad) en un entorno controlado:
+   ```bash
+   php artisan migrate
+   ```
+2. **Configura valores por defecto** (opcional) en `.env`:
+   - `HISTORICO_CREATED_BY=1`
+   - `HISTORICO_CATEGORY_ID=1`
+   - `HISTORICO_PRODUCT_ID=1`
+   - `HISTORICO_CUSTOMER_NAME="HISTORICO INGRESOS"`
+   - `HISTORICO_CUSTOMER_EMAIL="historico.ingresos@example.com"`
+   - `HISTORICO_BANK_ACCOUNT_ID=0`
+
+> Si no tienes valores claros, usa los defaults y ajusta después de validar un mes pequeño.
+
+#### Paso 1) Verifica el archivo del mes
+1. Abre la carpeta `HistoricoContable/<MES>` y confirma que exista un archivo que empiece con `MATRIZ`.
+2. Si hay **más de un archivo**, el proceso selecciona el más reciente. Revisa la tabla de inventario (sección 1) para confirmar.
+
+#### Paso 2) Ejecuta DRY-RUN del mes (staging + validación)
+Ejemplo para enero 2025:
+```bash
+php artisan migrate:historico --month="ENERO 2025" --dry-run
+```
+También puedes usar formato numérico:
+```bash
+php artisan migrate:historico --month="01-2025" --dry-run
+```
+
+**¿Qué hace este paso?**
+- Lee el Excel por chunks (sin agotar memoria).
+- Inserta en tablas de staging con `status=NEW`.
+- Valida registros y marca errores en staging.
+- Genera CSV de errores si aplica.
+
+#### Paso 3) Revisa errores de staging
+1. Verifica los archivos de error:
+   ```
+   storage/app/historico_contable/errores_<MES>_<tipo>.csv
+   ```
+2. Corrige el Excel si hay errores graves (ej. falta de referencias críticas).
+3. Repite el dry-run si se realizaron cambios.
+
+#### Paso 4) Ejecuta la carga real del mes
+Cuando el dry-run esté limpio o aceptable:
+```bash
+php artisan migrate:historico --month="ENERO 2025"
+```
+
+#### Paso 4.1) Genera los asientos contables del mes
+```bash
+php artisan migrate:historico:asientos --month="ENERO 2025"
+```
+
+#### Paso 5) Verifica el resultado del batch
+1. Revisa el log del mes:
+   ```
+   storage/logs/historico_contable_ENERO_2025.log
+   ```
+2. En DB, confirma que el batch tenga `status=SUCCESS`:
+   ```sql
+   SELECT * FROM migration_batches WHERE month_folder = 'ENERO 2025' ORDER BY id DESC LIMIT 1;
+   ```
+
+#### Paso 6) Rollback (si algo salió mal)
+```bash
+php artisan migrate:historico:rollback --month="ENERO 2025"
+```
+Esto elimina **solo** lo insertado por ese batch.
+
+#### Paso 7) Repetir mes a mes
+Repite el flujo **DRY-RUN → revisión → carga real** para cada mes.
+
+---
+
+### Comandos de referencia (Laravel Artisan)
 
 ```bash
 php artisan migrate:historico --month="01-2025" --dry-run
@@ -228,3 +307,44 @@ Logs y reportes:
 | Montos con formatos inconsistentes | Normalización y validación, fallback |
 | OC sin número interno | Log y status ERROR, revisión manual |
 | Ingresos con subtotales | Filtrar filas con “Sub-Total” en validación |
+
+## 9) Diccionario contable (asientos históricos)
+
+### Objetivo
+Generar **asientos contables** (journal entries + transaction_lines) desde los documentos migrados para que los reportes financieros (Balance, Estado de Resultados, Trial Balance, Flujo de Efectivo) reflejen el histórico.
+
+### Tabla de reglas
+Se agregó la tabla `historico_accounting_rules` para mapear conceptos/origen a cuentas contables (por código):
+
+| Columna | Descripción |
+| --- | --- |
+| document_type | `payment`, `bill`, `income` |
+| match_field | `concepto`, `detalle`, `origen` |
+| match_type | `contains`, `exact`, `regex` |
+| match_value | texto/regex a comparar |
+| debit_account_code | cuenta DEBE (código contable) |
+| credit_account_code | cuenta HABER (código contable) |
+
+### Reglas por defecto (config/historico_contable.php)
+- **Ingresos ARS** → Debe: 110102 (Bancos) / Haber: 410201 (Contribuciones Sociales)
+- **Ingresos Gobierno** → Debe: 110102 / Haber: 410401 (Transferencias Corrientes)
+- **Otros ingresos** → Debe: 110102 / Haber: 410298 (Otros ingresos no tributarios)
+- **Pagos/OC sin regla** → Debe: 510102 (Bienes y Servicios) / Haber: 110102 (pagos) o 2103020001 (CxP) para OC
+
+> Puedes ajustar estas cuentas en `.env` con las variables `HISTORICO_*_ACCOUNT_CODE`.
+
+### Comando para generar asientos
+Después de importar documentos:
+
+```bash
+php artisan migrate:historico:asientos --month="ENERO 2025"
+```
+
+Opcionalmente por batch:
+```bash
+php artisan migrate:historico:asientos --batch-id=123
+```
+
+### Qué se genera
+- `journal_entries` y `journal_items` con trazabilidad (`migration_batch_id`, `source_type`, `source_id`, `source_hash`)
+- `transaction_lines` para que los reportes financieros reflejen el histórico

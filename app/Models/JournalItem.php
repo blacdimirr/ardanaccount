@@ -13,6 +13,10 @@ class JournalItem extends Model
         'description',
         'debit',
         'credit',
+        'migration_batch_id',
+        'source_type',
+        'source_id',
+        'source_hash',
     ];
 
     public function accounts()
