@@ -192,7 +192,7 @@ class HistoricoContableMigrationService
                 'source_file' => basename($filePath),
                 'source_sheet' => $sheetName,
                 'source_row_number' => $rowNumber,
-                'raw_json' => json_encode($mapped['raw'], JSON_UNESCAPED_UNICODE),
+                'raw_json' => $this->safeJsonEncode($mapped['raw']),
                 'hash' => $hash,
                 'status' => self::STATUS_NEW,
                 'error_message' => null,
@@ -250,7 +250,7 @@ class HistoricoContableMigrationService
                 'source_file' => basename($filePath),
                 'source_sheet' => $sheetName,
                 'source_row_number' => $rowNumber,
-                'raw_json' => json_encode($mapped['raw'], JSON_UNESCAPED_UNICODE),
+                'raw_json' => $this->safeJsonEncode($mapped['raw']),
                 'hash' => $hash,
                 'status' => self::STATUS_NEW,
                 'error_message' => null,
@@ -305,7 +305,7 @@ class HistoricoContableMigrationService
                 'source_file' => basename($filePath),
                 'source_sheet' => $sheetName,
                 'source_row_number' => $rowNumber,
-                'raw_json' => json_encode($mapped['raw'], JSON_UNESCAPED_UNICODE),
+                'raw_json' => $this->safeJsonEncode($mapped['raw']),
                 'hash' => $hash,
                 'status' => self::STATUS_NEW,
                 'error_message' => null,
@@ -617,8 +617,32 @@ class HistoricoContableMigrationService
         return $file;
     }
 
-    private function detectHeaderRow(string $filePath, string $sheetName, array $keywords): ?int
+    private function fixedHeaderRow(string $sheetName): ?int
     {
+        $s = $this->normalize($sheetName);
+
+        // Matriz ENERO 2025 (and similar): headers are at fixed rows per sheet
+        if (str_contains($s, 'RELACION CHEQUES EMITIDOS') || str_contains($s, 'RELACION DE CHEQUES EMITIDOS') || str_contains($s, 'RELACION DE PAGOS EMITIDOS') || str_contains($s, 'RELACION PAGOS EMITIDOS')) {
+            return 9;
+        }
+
+        if (str_contains($s, 'RELACION ORDENES DE COMPRAS') || str_contains($s, 'RELACION DE ORDENES DE COMPRAS')) {
+            return 4;
+        }
+
+        if (str_contains($s, 'INGRESOS SEGUN ORIGEN')) {
+            return 6;
+        }
+
+        return null;
+    }
+
+private function detectHeaderRow(string $filePath, string $sheetName, array $keywords): ?int
+    {
+        if ($fixed = $this->fixedHeaderRow($sheetName)) {
+            return $fixed;
+        }
+
         $rows = $this->readRows($filePath, $sheetName, 1, 60);
         $bestRow = null;
         $bestScore = 0;
@@ -724,14 +748,66 @@ class HistoricoContableMigrationService
     private function mapIngresosRow(array $row, array $headerMap): array
     {
         $raw = $this->mapRawRow($row, $headerMap);
-        $fecha = $this->parseDate($this->valueByHeaders($row, $headerMap, ['FECHA', 'FECHA DEPOSITO', 'FECHA DEPÓSITO']));
-        $origen = $this->valueByHeaders($row, $headerMap, ['ORIGEN', 'ARS']);
-        $referencia = $this->valueByHeaders($row, $headerMap, ['REFERENCIA', 'DOCUMENTO', 'NO. DE DOCUMENTO DE REFERENCIA']);
-        $monto = $this->parseAmount($this->valueByHeaders($row, $headerMap, ['MONTO', 'VALOR', 'VALOR DE TRANSFERENCIA O CHEQUE']));
+
+        // If header detection failed for any reason, fall back to fixed column positions (A-E)
+        // for the "INGRESOS SEGUN ORIGEN" sheet in the Matriz.
+        $fecha = null;
+        $origen = null;
+        $referencia = null;
+        $monto = null;
+
+        if (empty($headerMap)) {
+            $origen = $row[0] ?? null;
+            $ars = $row[1] ?? null;
+            $origen = $origen ?: $ars;
+
+            $fecha = $this->parseDate($row[2] ?? null);
+            $referencia = $row[3] ?? null;
+            $monto = $this->parseAmount($row[4] ?? null);
+        } else {
+            $fecha = $this->parseDate($this->valueByHeaders($row, $headerMap, [
+                'FECHA',
+                'FECHA DEPOSITO',
+                'FECHA DEPÓSITO',
+            ]));
+
+            $origen = $this->valueByHeaders($row, $headerMap, ['ORIGEN', 'ARS']);
+
+            // Header in Matriz: "No. De Documento de referencia"
+            $referencia = $this->valueByHeaders($row, $headerMap, [
+                'NO DE DOCUMENTO DE REFERENCIA',
+                'NO. DE DOCUMENTO DE REFERENCIA',
+                'REFERENCIA',
+                'DOCUMENTO',
+            ]);
+
+            // Header in Matriz: "Valor transferido segun No. De Transferencia o Cheque"
+            $monto = $this->parseAmount($this->valueByHeaders($row, $headerMap, [
+                'VALOR TRANSFERIDO SEGUN NO DE TRANSFERENCIA O CHEQUE',
+                'VALOR DE TRANSFERENCIA O CHEQUE',
+                'VALOR TRANSFERIDO',
+                'MONTO',
+                'VALOR',
+            ]));
+        }
+
         $observacion = $this->valueByHeaders($row, $headerMap, ['OBSERVACION', 'CONCEPTO', 'DETALLE']);
         $banco = $this->valueByHeaders($row, $headerMap, ['BANCO', 'CUENTA']);
+
         $origenTexto = $this->sanitizeText($origen);
-        $esSubtotal = $origenTexto && str_contains($this->normalize($origenTexto), 'SUB');
+
+        // Ignore subtotal/total rows that often have amounts (formulas) but no date.
+        $normOrigen = $origenTexto ? $this->normalize($origenTexto) : '';
+        $esSubtotal = $normOrigen !== '' && (
+            str_contains($normOrigen, 'SUBTOTAL') ||
+            str_contains($normOrigen, 'SUB TOTAL') ||
+            $normOrigen === 'TOTAL' ||
+            str_contains($normOrigen, 'TOTAL GENERAL') ||
+            str_contains($normOrigen, 'ANTICIPOS FINANCIEROS') ||
+            str_contains($normOrigen, 'FONDO 100') ||
+            str_contains($normOrigen, 'FONDOS ASISTENCIAL')
+        );
+
 
         return [
             'raw' => $raw,
@@ -745,28 +821,52 @@ class HistoricoContableMigrationService
         ];
     }
 
-    private function valueByHeaders(array $row, array $headerMap, array $keys): ?string
+
+    private function valueByHeaders(array $row, array $headerMap, array $keys)
     {
         foreach ($keys as $key) {
             $normalized = $this->normalize($key);
-            if (array_key_exists($normalized, $headerMap)) {
-                $value = $row[$headerMap[$normalized]] ?? null;
-                if ($value !== null && trim((string) $value) !== '') {
-                    return trim((string) $value);
+
+            if (!array_key_exists($normalized, $headerMap)) {
+                continue;
+            }
+
+            $value = $row[$headerMap[$normalized]] ?? null;
+
+            // Keep native types (DateTime, numbers) so parseDate/parseAmount can work reliably.
+            if ($value instanceof \DateTimeInterface) {
+                return $value;
+            }
+
+            if (is_int($value) || is_float($value)) {
+                return $value;
+            }
+
+            if ($value !== null) {
+                $str = trim((string) $value);
+                if ($str !== '') {
+                    return $str;
                 }
             }
         }
+
         return null;
     }
 
     private function mapRawRow(array $row, array $headerMap): array
     {
+        // If we couldn't build a header map, keep the raw row by numeric index so we can debug later.
+        if (empty($headerMap)) {
+            return $row;
+        }
+
         $raw = [];
         foreach ($headerMap as $header => $index) {
             $raw[$header] = $row[$index] ?? null;
         }
         return $raw;
     }
+
 
     private function readRow(string $filePath, string $sheetName, int $rowNumber): array
     {
@@ -779,13 +879,29 @@ class HistoricoContableMigrationService
         $reader = IOFactory::createReaderForFile($filePath);
         $reader->setReadDataOnly(true);
         $reader->setLoadSheetsOnly([$sheetName]);
-        $filter = new ExcelChunkReadFilter();
-        $filter->setRows($startRow, $chunkSize);
-        $reader->setReadFilter($filter);
+
         $spreadsheet = $reader->load($filePath);
         $worksheet = $spreadsheet->getSheetByName($sheetName);
-        return $worksheet->toArray(null, true, true, false);
+
+        if (!$worksheet) {
+            return [];
+        }
+
+        $highestRow = (int) $worksheet->getHighestRow();
+        if ($startRow > $highestRow) {
+            return [];
+        }
+
+        $endRow = min($highestRow, $startRow + $chunkSize - 1);
+        $highestColumn = $worksheet->getHighestColumn();
+
+        // Read ONLY the requested range. This avoids row-number drift caused by Worksheet::toArray()
+        // iterating from row 1..highestRow even when a read filter is used.
+        $range = sprintf('A%d:%s%d', $startRow, $highestColumn, $endRow);
+
+        return $worksheet->rangeToArray($range, null, true, true, false);
     }
+
 
     private function iterateRows(string $filePath, string $sheetName, int $startRow, int $chunkSize, callable $callback): void
     {
@@ -823,8 +939,14 @@ class HistoricoContableMigrationService
         $value = trim((string) $value);
         $value = mb_strtoupper($value, 'UTF-8');
         $value = str_replace(['Á', 'É', 'Í', 'Ó', 'Ú', 'Ü', 'Ñ'], ['A', 'E', 'I', 'O', 'U', 'U', 'N'], $value);
-        return preg_replace('/\\s+/', ' ', $value);
+
+        // Remove punctuation/symbols and normalize whitespace (helps with headers like "No. De Documento ...")
+        $value = preg_replace('/[^A-Z0-9]+/u', ' ', $value);
+        $value = preg_replace('/\s+/u', ' ', $value);
+
+        return trim($value);
     }
+
 
     private function sanitizeText($value): ?string
     {
@@ -835,42 +957,88 @@ class HistoricoContableMigrationService
         return $text !== '' ? $text : null;
     }
 
+    private function safeJsonEncode($value): string
+    {
+        // Avoid empty raw_json when there are invalid UTF-8 characters coming from Excel,
+        // and ensure DateTime objects are serializable.
+        $normalize = function ($v) use (&$normalize) {
+            if ($v instanceof \DateTimeInterface) {
+                return (new \Carbon\Carbon($v))->format('Y-m-d');
+            }
+            if (is_array($v)) {
+                $out = [];
+                foreach ($v as $k => $vv) {
+                    $out[$k] = $normalize($vv);
+                }
+                return $out;
+            }
+            if (is_object($v)) {
+                // Best-effort stringify for unexpected objects
+                return method_exists($v, '__toString') ? (string) $v : get_class($v);
+            }
+            return $v;
+        };
+
+        try {
+            $json = json_encode($normalize($value), JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+            return $json === false ? '[]' : $json;
+        } catch (\Throwable $e) {
+            return '[]';
+        }
+    }
+
     private function parseDate($value): ?string
     {
-        if ($value === null || trim((string) $value) === '') {
+        if ($value === null) {
             return null;
         }
 
+        // Already a DateTime object (common when using PhpSpreadsheet)
+        if ($value instanceof \DateTimeInterface) {
+            return (new \Carbon\Carbon($value))->format('Y-m-d');
+        }
+
+        $str = trim((string) $value);
+        if ($str === '') {
+            return null;
+        }
+
+        // Excel numeric date serial
         if (is_numeric($value)) {
             try {
-                if (class_exists(\\PhpOffice\\PhpSpreadsheet\\Shared\\Date::class)) {
-                    $dt = \\PhpOffice\\PhpSpreadsheet\\Shared\\Date::excelToDateTimeObject((float) $value);
-                    return Carbon::instance($dt)->format('Y-m-d');
-                }
-            } catch (\\Throwable $e) {
-                return null;
-            }
-        }
-
-        $value = str_replace(['.', '-'], ['/', '/'], trim((string) $value));
-        $formats = ['d/m/Y', 'm/d/Y', 'Y/m/d'];
-        foreach ($formats as $format) {
-            try {
-                $parsed = Carbon::createFromFormat($format, $value);
-                if ($parsed) {
-                    return $parsed->format('Y-m-d');
+                if (class_exists(\PhpOffice\PhpSpreadsheet\Shared\Date::class)) {
+                    $dt = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((float) $value);
+                    return \Carbon\Carbon::instance($dt)->format('Y-m-d');
                 }
             } catch (\Throwable $e) {
-                continue;
+                // continue to other parsing strategies
             }
         }
 
+        // Normalize separators
+        $str = str_replace(['.', '-', ' '], ['/', '/', '/'], $str);
+
+        // Try common formats (add 2-digit year too)
+        $formats = ['d/m/Y', 'd/m/y', 'm/d/Y', 'm/d/y', 'Y/m/d', 'Y/d/m'];
+        foreach ($formats as $fmt) {
+            try {
+                $dt = \Carbon\Carbon::createFromFormat($fmt, $str);
+                if ($dt !== false) {
+                    return $dt->format('Y-m-d');
+                }
+            } catch (\Throwable $e) {
+                // ignore
+            }
+        }
+
+        // Last resort: Carbon parser
         try {
-            return Carbon::parse($value)->format('Y-m-d');
-        } catch (\\Throwable $e) {
+            return \Carbon\Carbon::parse($str)->format('Y-m-d');
+        } catch (\Throwable $e) {
             return null;
         }
     }
+
 
     private function parseAmount($value): ?float
     {
@@ -1013,4 +1181,3 @@ class HistoricoContableMigrationService
         return $map[$month] ?? null;
     }
 }
-*** End Patch"}```
