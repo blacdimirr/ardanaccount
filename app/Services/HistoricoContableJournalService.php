@@ -373,6 +373,8 @@ class HistoricoContableJournalService
             'source_id' => $sourceId,
             'source_hash' => $sourceHash,
         ]);
+
+        $this->updateBankBalances($accountId, $type === 'Debit' ? $amount : 0, $type === 'Credit' ? $amount : 0);
     }
 
     private function nextJournalNumber(int $creatorId): int
@@ -380,5 +382,26 @@ class HistoricoContableJournalService
         $latest = JournalEntry::where('created_by', $creatorId)->latest()->first();
 
         return $latest ? $latest->journal_id + 1 : 1;
+    }
+
+    private function updateBankBalances(int $accountId, float $debit, float $credit): void
+    {
+        $bankAccounts = BankAccount::where('chart_account_id', $accountId)->get();
+        if ($bankAccounts->isEmpty()) {
+            return;
+        }
+
+        foreach ($bankAccounts as $bankAccount) {
+            $oldBalance = (float) ($bankAccount->opening_balance ?? 0);
+            $newBalance = $oldBalance;
+            if ($debit > 0) {
+                $newBalance = $oldBalance - $debit;
+            }
+            if ($credit > 0) {
+                $newBalance = $oldBalance + $credit;
+            }
+            $bankAccount->opening_balance = $newBalance;
+            $bankAccount->save();
+        }
     }
 }
