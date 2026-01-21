@@ -17,5 +17,9 @@ class TransactionLines extends Model
         'credit',
         'debit',
         'created_by',
+        'migration_batch_id',
+        'source_type',
+        'source_id',
+        'source_hash',
     ];
 }

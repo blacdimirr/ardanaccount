@@ -18,6 +18,9 @@ class Payment extends Model
         'created_by',
         'ncf',
         'estado_conciliacion',
+        'migration_batch_id',
+        'staging_id',
+        'source_hash',
     ];
 
     public function category()
