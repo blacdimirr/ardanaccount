@@ -12,6 +12,10 @@ class JournalEntry extends Model
         'description',
         'journal_id',
         'created_by',
+        'migration_batch_id',
+        'source_type',
+        'source_id',
+        'source_hash',
     ];
 
 
