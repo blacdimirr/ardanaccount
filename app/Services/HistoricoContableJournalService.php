@@ -393,13 +393,7 @@ class HistoricoContableJournalService
 
         foreach ($bankAccounts as $bankAccount) {
             $oldBalance = (float) ($bankAccount->opening_balance ?? 0);
-            $newBalance = $oldBalance;
-            if ($debit > 0) {
-                $newBalance = $oldBalance - $debit;
-            }
-            if ($credit > 0) {
-                $newBalance = $oldBalance + $credit;
-            }
+            $newBalance = $oldBalance + $debit - $credit;
             $bankAccount->opening_balance = $newBalance;
             $bankAccount->save();
         }
