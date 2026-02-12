@@ -97,10 +97,12 @@ class HistoricoContableMigrationService
             'pagos' => $this->detectSheetByKeywords($normalized, ['RELACION DE CHEQUES EMITIDOS', 'RELACION CHEQUES EMITIDOS', 'RELACION DE PAGOS EMITIDOS']),
             'ordenes_compra' => $this->detectSheetByKeywords($normalized, ['RELACION DE ORDENES DE COMPRAS', 'RELACION ORDENES DE COMPRAS']),
             'ingresos' => $this->detectSheetByKeywords($normalized, ['INGR SEGUN ORIGEN', 'INGRE SEGUN ORIGEN', 'INGRESO SEGUN ORIGEN', 'INGRESOS SEGUN ORIGEN']),
+            // Hoja usada para generar asientos contables por cuentas afectadas (débitos) y control de valor/retención
+            'cuenta_t_vs' => $this->detectSheetByKeywords($normalized, ['CUENTAS T VS', 'CUENTAS T VS']),
         ];
     }
 
-    public function stageMonth(string $rootPath, string $monthFolder, string $filePath, array $sheets, bool $dryRun, int $chunkSize = 500): array
+        public function stageMonth(string $rootPath, string $monthFolder, string $filePath, array $sheets, bool $dryRun, int $chunkSize = 500): array
     {
         $results = [
             'pagos' => 0,
@@ -108,22 +110,19 @@ class HistoricoContableMigrationService
             'ingresos' => 0,
         ];
 
-        if ($sheets['pagos']) {
-            $results['pagos'] = $this->stagePagos($monthFolder, $filePath, $sheets['pagos'], $chunkSize);
+        if (!empty($sheets['pagos'])) {
+            $results['pagos'] = $this->stagePagos($monthFolder, $filePath, $sheets['pagos'], $chunkSize, $dryRun);
         }
-        if ($sheets['ordenes_compra']) {
-            $results['ordenes_compra'] = $this->stageOrdenesCompra($monthFolder, $filePath, $sheets['ordenes_compra'], $chunkSize);
+        if (!empty($sheets['ordenes_compra'])) {
+            $results['ordenes_compra'] = $this->stageOrdenesCompra($monthFolder, $filePath, $sheets['ordenes_compra'], $chunkSize, $dryRun);
         }
-        if ($sheets['ingresos']) {
-            $results['ingresos'] = $this->stageIngresos($monthFolder, $filePath, $sheets['ingresos'], $chunkSize);
-        }
-
-        if ($dryRun) {
-            return $results;
+        if (!empty($sheets['ingresos'])) {
+            $results['ingresos'] = $this->stageIngresos($monthFolder, $filePath, $sheets['ingresos'], $chunkSize, $dryRun);
         }
 
         return $results;
     }
+
 
     public function validateMonth(string $monthFolder): array
     {
@@ -162,7 +161,7 @@ class HistoricoContableMigrationService
         return array_values(array_filter($files));
     }
 
-    private function stagePagos(string $monthFolder, string $filePath, string $sheetName, int $chunkSize): int
+        private function stagePagos(string $monthFolder, string $filePath, string $sheetName, int $chunkSize, bool $dryRun = false): int
     {
         $headerRow = $this->detectHeaderRow($filePath, $sheetName, config('historico_contable.sheet_keywords.pagos'));
         if (!$headerRow) {
@@ -173,43 +172,47 @@ class HistoricoContableMigrationService
         $headerMap = $this->buildHeaderMap($headers);
 
         $rowsInserted = 0;
-        $this->iterateRows($filePath, $sheetName, $headerRow + 1, $chunkSize, function ($row, $rowNumber) use ($monthFolder, $filePath, $sheetName, $headerMap, &$rowsInserted) {
+
+        $this->iterateRows($filePath, $sheetName, $headerRow + 1, $chunkSize, function ($row, $rowNumber) use ($monthFolder, $filePath, $sheetName, $headerMap, &$rowsInserted, $dryRun) {
             $mapped = $this->mapPagosRow($row, $headerMap);
             if (!$mapped['has_data']) {
                 return;
             }
-            $hash = sha1(implode('|', [
-                $monthFolder,
-                $mapped['fecha'] ?? '',
-                $mapped['referencia'] ?? '',
-                $mapped['suplidor'] ?? '',
-                $mapped['monto'] ?? '',
-                $mapped['metodo'] ?? '',
-            ]));
+
+            $raw = $this->mapRawRow($row, $headerMap);
+            $rawJson = $this->safeJsonEncode($raw);
+
+            // Make hash stable and UNIQUE per excel row to avoid insertOrIgnore collisions when mapping fails.
+            $hash = sha1(implode('|', [$monthFolder, $sheetName, (string) $rowNumber, $rawJson]));
 
             $data = [
+                'hash' => $hash,
                 'source_month_folder' => $monthFolder,
                 'source_file' => basename($filePath),
                 'source_sheet' => $sheetName,
                 'source_row_number' => $rowNumber,
-                'raw_json' => json_encode($mapped['raw'], JSON_UNESCAPED_UNICODE),
-                'hash' => $hash,
-                'status' => self::STATUS_NEW,
-                'error_message' => null,
+                'raw_json' => $rawJson,
+
                 'fecha' => $mapped['fecha'],
-                'monto' => $mapped['monto'],
                 'referencia' => $mapped['referencia'],
+                'monto' => $mapped['monto'],
                 'suplidor' => $mapped['suplidor'],
-                'metodo' => $mapped['metodo'],
+                'concepto' => $mapped['concepto'],
+                'libramiento' => $mapped['libramiento'],
                 'cheque' => $mapped['cheque'],
                 'transferencia' => $mapped['transferencia'],
-                'libramiento' => $mapped['libramiento'],
-                'concepto' => $mapped['concepto'],
-                'orden_compra' => $mapped['orden_compra'],
                 'banco' => $mapped['banco'],
+
+                'status' => 'NEW',
+                'error_message' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
+
+            if ($dryRun) {
+                $rowsInserted++;
+                return;
+            }
 
             $inserted = DB::table('staging_pagos_emitidos')->insertOrIgnore($data);
             if ($inserted) {
@@ -220,7 +223,8 @@ class HistoricoContableMigrationService
         return $rowsInserted;
     }
 
-    private function stageOrdenesCompra(string $monthFolder, string $filePath, string $sheetName, int $chunkSize): int
+
+        private function stageOrdenesCompra(string $monthFolder, string $filePath, string $sheetName, int $chunkSize, bool $dryRun = false): int
     {
         $headerRow = $this->detectHeaderRow($filePath, $sheetName, config('historico_contable.sheet_keywords.ordenes_compra'));
         if (!$headerRow) {
@@ -231,40 +235,40 @@ class HistoricoContableMigrationService
         $headerMap = $this->buildHeaderMap($headers);
 
         $rowsInserted = 0;
-        $this->iterateRows($filePath, $sheetName, $headerRow + 1, $chunkSize, function ($row, $rowNumber) use ($monthFolder, $filePath, $sheetName, $headerMap, &$rowsInserted) {
+
+        $this->iterateRows($filePath, $sheetName, $headerRow + 1, $chunkSize, function ($row, $rowNumber) use ($monthFolder, $filePath, $sheetName, $headerMap, &$rowsInserted, $dryRun) {
             $mapped = $this->mapOrdenesCompraRow($row, $headerMap);
             if (!$mapped['has_data']) {
                 return;
             }
 
-            $hash = sha1(implode('|', [
-                $monthFolder,
-                $mapped['fecha'] ?? '',
-                $mapped['numero_oc'] ?? '',
-                $mapped['suplidor'] ?? '',
-                $mapped['monto'] ?? '',
-            ]));
+            $raw = $this->mapRawRow($row, $headerMap);
+            $rawJson = $this->safeJsonEncode($raw);
+            $hash = sha1(implode('|', [$monthFolder, $sheetName, (string) $rowNumber, $rawJson]));
 
             $data = [
+                'hash' => $hash,
                 'source_month_folder' => $monthFolder,
                 'source_file' => basename($filePath),
                 'source_sheet' => $sheetName,
                 'source_row_number' => $rowNumber,
-                'raw_json' => json_encode($mapped['raw'], JSON_UNESCAPED_UNICODE),
-                'hash' => $hash,
-                'status' => self::STATUS_NEW,
+                'raw_json' => $rawJson,
+                'fecha' => $mapped['fecha'] ?? null,
+                'numero_oc' => $mapped['numero_oc'] ?? null,
+                'monto' => $mapped['monto'] ?? null,
+                'suplidor' => $mapped['suplidor'] ?? null,
+               'concepto' => $mapped['concepto'] ?? ($mapped['detalle'] ?? null),
+               'rnc' => $mapped['rnc'] ?? null,
+                'status' => 'NEW',
                 'error_message' => null,
-                'fecha' => $mapped['fecha'],
-                'monto' => $mapped['monto'],
-                'numero_oc' => $mapped['numero_oc'],
-                'suplidor' => $mapped['suplidor'],
-                'detalle' => $mapped['detalle'],
-                'estado' => $mapped['estado'],
-                'unidad' => $mapped['unidad'],
-                'rubro' => $mapped['rubro'],
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
+
+            if ($dryRun) {
+                $rowsInserted++;
+                return;
+            }
 
             $inserted = DB::table('staging_ordenes_compra')->insertOrIgnore($data);
             if ($inserted) {
@@ -275,7 +279,8 @@ class HistoricoContableMigrationService
         return $rowsInserted;
     }
 
-    private function stageIngresos(string $monthFolder, string $filePath, string $sheetName, int $chunkSize): int
+
+        private function stageIngresos(string $monthFolder, string $filePath, string $sheetName, int $chunkSize, bool $dryRun = false): int
     {
         $headerRow = $this->detectHeaderRow($filePath, $sheetName, config('historico_contable.sheet_keywords.ingresos'));
         if (!$headerRow) {
@@ -286,38 +291,41 @@ class HistoricoContableMigrationService
         $headerMap = $this->buildHeaderMap($headers);
 
         $rowsInserted = 0;
-        $this->iterateRows($filePath, $sheetName, $headerRow + 1, $chunkSize, function ($row, $rowNumber) use ($monthFolder, $filePath, $sheetName, $headerMap, &$rowsInserted) {
+
+        $this->iterateRows($filePath, $sheetName, $headerRow + 1, $chunkSize, function ($row, $rowNumber) use ($monthFolder, $filePath, $sheetName, $headerMap, &$rowsInserted, $dryRun) {
             $mapped = $this->mapIngresosRow($row, $headerMap);
             if (!$mapped['has_data']) {
                 return;
             }
 
-            $hash = sha1(implode('|', [
-                $monthFolder,
-                $mapped['fecha'] ?? '',
-                $mapped['origen'] ?? '',
-                $mapped['referencia'] ?? '',
-                $mapped['monto'] ?? '',
-            ]));
+            $raw = $this->mapRawRow($row, $headerMap);
+            $rawJson = $this->safeJsonEncode($raw);
+            $hash = sha1(implode('|', [$monthFolder, $sheetName, (string) $rowNumber, $rawJson]));
 
             $data = [
+                'hash' => $hash,
                 'source_month_folder' => $monthFolder,
                 'source_file' => basename($filePath),
                 'source_sheet' => $sheetName,
                 'source_row_number' => $rowNumber,
-                'raw_json' => json_encode($mapped['raw'], JSON_UNESCAPED_UNICODE),
-                'hash' => $hash,
-                'status' => self::STATUS_NEW,
-                'error_message' => null,
+                'raw_json' => $rawJson,
+
                 'fecha' => $mapped['fecha'],
-                'monto' => $mapped['monto'],
                 'origen' => $mapped['origen'],
                 'referencia' => $mapped['referencia'],
+                'monto' => $mapped['monto'],
                 'observacion' => $mapped['observacion'],
-                'banco' => $mapped['banco'],
+
+                'status' => 'NEW',
+                'error_message' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
+
+            if ($dryRun) {
+                $rowsInserted++;
+                return;
+            }
 
             $inserted = DB::table('staging_ingresos_origen')->insertOrIgnore($data);
             if ($inserted) {
@@ -327,6 +335,7 @@ class HistoricoContableMigrationService
 
         return $rowsInserted;
     }
+
 
     private function validatePagos(string $monthFolder): array
     {
@@ -617,13 +626,49 @@ class HistoricoContableMigrationService
         return $file;
     }
 
-    private function detectHeaderRow(string $filePath, string $sheetName, array $keywords): ?int
+        private function fixedHeaderRow(string $sheetName): ?int
     {
+        $s = $this->normalize($sheetName);
+
+        // Based on MATRIZ PARA USO DE CONTABILIDAD 01-2025
+        if (str_contains($s, 'INGRESOS SEGUN ORIGEN')) {
+            return 6;
+        }
+        if (str_contains($s, 'RELACION ORDENES DE COMPRAS')) {
+            return 4;
+        }
+        if (str_contains($s, 'RELACION CHEQUES EMITIDOS') || str_contains($s, 'RELACION DE CHEQUES EMITIDOS') || str_contains($s, 'RELACION DE PAGOS EMITIDOS') || str_contains($s, 'RELACION PAGOS EMITIDOS')) {
+            return 9;
+        }
+
+        return null;
+    }
+
+
+    private function detectHeaderRow(string $filePath, string $sheetName, ?array $keywords): ?int
+    {
+        // Prefer fixed header row per sheet when known (avoids mis-detection).
+        $fixed = $this->fixedHeaderRow($sheetName);
+        if ($fixed) {
+            return $fixed;
+        }
+
+        $keywords = array_values(array_filter((array) $keywords));
+        if (empty($keywords)) {
+            // Safe defaults if config is missing
+            $keywords = [
+                'FECHA', 'CHEQUE', 'TRANSFERENCIA', 'LIBRAMIENTO', 'SUPLIDOR', 'BENEFICIARIO',
+                'MONTO', 'VALOR', 'ORDEN', 'COMPRA', 'OC', 'ORIGEN', 'CONCEPTO',
+            ];
+        }
+
         $rows = $this->readRows($filePath, $sheetName, 1, 60);
         $bestRow = null;
         $bestScore = 0;
+
         foreach ($rows as $idx => $row) {
             $score = 0;
+
             foreach ($row as $cell) {
                 $value = $this->normalize($cell);
                 if ($value === '') {
@@ -636,14 +681,16 @@ class HistoricoContableMigrationService
                     }
                 }
             }
+
             if ($score > $bestScore) {
                 $bestScore = $score;
-                $bestRow = $idx + 1;
+                $bestRow = $idx + 1; // because readRows starts at row 1 here
             }
         }
 
         return $bestScore >= 2 ? $bestRow : null;
     }
+
 
     private function buildHeaderMap(array $headers): array
     {
@@ -759,8 +806,13 @@ class HistoricoContableMigrationService
         return null;
     }
 
-    private function mapRawRow(array $row, array $headerMap): array
+        private function mapRawRow(array $row, array $headerMap): array
     {
+        // If headerMap is empty (bad header detection), keep a positional array for debugging.
+        if (empty($headerMap)) {
+            return array_values($row);
+        }
+
         $raw = [];
         foreach ($headerMap as $header => $index) {
             $raw[$header] = $row[$index] ?? null;
@@ -768,24 +820,54 @@ class HistoricoContableMigrationService
         return $raw;
     }
 
-    private function readRow(string $filePath, string $sheetName, int $rowNumber): array
+
+        private function safeJsonEncode($value): string
+    {
+        try {
+            $json = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+            return $json === false ? '[]' : $json;
+        } catch (\Throwable $e) {
+            return '[]';
+        }
+    }
+
+private function readRow(string $filePath, string $sheetName, int $rowNumber): array
     {
         $rows = $this->readRows($filePath, $sheetName, $rowNumber, 1);
         return $rows[0] ?? [];
     }
 
-    private function readRows(string $filePath, string $sheetName, int $startRow, int $chunkSize): array
+        private function readRows(string $filePath, string $sheetName, int $startRow, int $chunkSize): array
     {
+        // IMPORTANT: Using toArray() after applying a read filter can return rows starting from 1,
+        // which breaks the absolute row numbering. Read an explicit range to keep offsets stable.
         $reader = IOFactory::createReaderForFile($filePath);
         $reader->setReadDataOnly(true);
         $reader->setLoadSheetsOnly([$sheetName]);
+
         $filter = new ExcelChunkReadFilter();
         $filter->setRows($startRow, $chunkSize);
         $reader->setReadFilter($filter);
+
         $spreadsheet = $reader->load($filePath);
         $worksheet = $spreadsheet->getSheetByName($sheetName);
-        return $worksheet->toArray(null, true, true, false);
+
+        if (!$worksheet) {
+            return [];
+        }
+
+        $highestRow = (int) $worksheet->getHighestDataRow();
+        $endRow = min($highestRow, $startRow + $chunkSize - 1);
+        if ($endRow < $startRow) {
+            return [];
+        }
+
+        $highestCol = $worksheet->getHighestDataColumn();
+        $range = "A{$startRow}:{$highestCol}{$endRow}";
+
+        return $worksheet->rangeToArray($range, null, true, true, false);
     }
+
 
     private function iterateRows(string $filePath, string $sheetName, int $startRow, int $chunkSize, callable $callback): void
     {
@@ -818,13 +900,23 @@ class HistoricoContableMigrationService
         return false;
     }
 
-    private function normalize($value): string
+        private function normalize($value): string
     {
-        $value = trim((string) $value);
+        // Normalize headers/labels coming from Excel: uppercase, remove accents, remove punctuation,
+        // collapse whitespace (also handles NBSP).
+        $value = (string) $value;
+        $value = str_replace(["\u{00A0}", "\t", "\r", "\n"], ' ', $value);
+        $value = trim($value);
         $value = mb_strtoupper($value, 'UTF-8');
         $value = str_replace(['Á', 'É', 'Í', 'Ó', 'Ú', 'Ü', 'Ñ'], ['A', 'E', 'I', 'O', 'U', 'U', 'N'], $value);
-        return preg_replace('/\\s+/', ' ', $value);
+
+        // Replace any non-alphanumeric sequences with a single space.
+        $value = preg_replace('/[^A-Z0-9]+/u', ' ', $value) ?? $value;
+        $value = preg_replace('/\s+/', ' ', $value) ?? $value;
+
+        return trim($value);
     }
+
 
     private function sanitizeText($value): ?string
     {
@@ -835,42 +927,53 @@ class HistoricoContableMigrationService
         return $text !== '' ? $text : null;
     }
 
-    private function parseDate($value): ?string
+        private function parseDate($value): ?string
     {
-        if ($value === null || trim((string) $value) === '') {
+        if ($value === null) {
             return null;
         }
 
+        if ($value instanceof \DateTimeInterface) {
+            return Carbon::instance($value)->format('Y-m-d');
+        }
+
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+
+        // Excel numeric date
         if (is_numeric($value)) {
             try {
-                if (class_exists(\\PhpOffice\\PhpSpreadsheet\\Shared\\Date::class)) {
-                    $dt = \\PhpOffice\\PhpSpreadsheet\\Shared\\Date::excelToDateTimeObject((float) $value);
+                if (class_exists(\PhpOffice\PhpSpreadsheet\Shared\Date::class)) {
+                    $dt = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((float) $value);
                     return Carbon::instance($dt)->format('Y-m-d');
                 }
-            } catch (\\Throwable $e) {
+            } catch (\Throwable $e) {
                 return null;
             }
         }
 
-        $value = str_replace(['.', '-'], ['/', '/'], trim((string) $value));
-        $formats = ['d/m/Y', 'm/d/Y', 'Y/m/d'];
-        foreach ($formats as $format) {
+        $value = str_replace(['.', '-', '\\'], ['/', '/', '/'], $value);
+
+        $formats = ['d/m/Y', 'd/m/y', 'm/d/Y', 'm/d/y', 'Y/m/d', 'Y/d/m'];
+        foreach ($formats as $fmt) {
             try {
-                $parsed = Carbon::createFromFormat($format, $value);
-                if ($parsed) {
-                    return $parsed->format('Y-m-d');
+                $dt = Carbon::createFromFormat($fmt, $value);
+                if ($dt !== false) {
+                    return $dt->format('Y-m-d');
                 }
             } catch (\Throwable $e) {
-                continue;
             }
         }
 
         try {
             return Carbon::parse($value)->format('Y-m-d');
-        } catch (\\Throwable $e) {
+        } catch (\Throwable $e) {
             return null;
         }
     }
+
 
     private function parseAmount($value): ?float
     {
@@ -1012,4 +1115,108 @@ class HistoricoContableMigrationService
 
         return $map[$month] ?? null;
     }
+
+    public function migrateAsientos(string $monthFolder, array $options = []): array
+    {
+        if (!class_exists(\App\Services\HistoricoContableJournalService::class)) {
+            throw new \RuntimeException(
+                'No se encontró App\\Services\\HistoricoContableJournalService. ' .
+                'Asegúrate de crear el archivo app/Services/HistoricoContableJournalService.php y ejecutar composer dump-autoload.'
+            );
+        }
+
+        $journal = app()->make(\App\Services\HistoricoContableJournalService::class);
+
+        $batchIds = $this->resolveBatchIdsForMonth($monthFolder);
+        $summary = [
+            'month' => $monthFolder,
+            'batch_ids' => $batchIds,
+            'payments' => 0,
+            'revenues' => 0,
+            'bills' => 0,
+            'skipped' => 0,
+        ];
+
+        foreach ($batchIds as $batchId) {
+            $res = $journal->generateForBatch((int) $batchId, $options);
+            foreach (['payments','revenues','bills','skipped'] as $k) {
+                $summary[$k] += (int) ($res[$k] ?? 0);
+            }
+        }
+
+        return $summary;
+    }
+
+    public function rollbackAsientos(string $monthFolder): array
+    {
+        if (!class_exists(\App\Services\HistoricoContableJournalService::class)) {
+            throw new \RuntimeException(
+                'No se encontró App\\Services\\HistoricoContableJournalService. ' .
+                'Asegúrate de crear el archivo app/Services/HistoricoContableJournalService.php y ejecutar composer dump-autoload.'
+            );
+        }
+
+        $journal = app()->make(\App\Services\HistoricoContableJournalService::class);
+
+        $batchIds = $this->resolveBatchIdsForMonth($monthFolder);
+        $summary = [
+            'month' => $monthFolder,
+            'batch_ids' => $batchIds,
+            'deleted_entries' => 0,
+        ];
+
+        foreach ($batchIds as $batchId) {
+            $res = $journal->rollbackBatch((int) $batchId);
+            $summary['deleted_entries'] += (int) ($res['deleted_entries'] ?? 0);
+        }
+
+        return $summary;
+    }
+
+    private function resolveBatchIdsForMonth(string $monthFolder): array
+    {
+        $batchIds = [];
+
+        $pStageIds = DB::table('staging_pagos_emitidos')
+            ->where('source_month_folder', $monthFolder)
+            ->pluck('id')
+            ->all();
+
+        if (!empty($pStageIds)) {
+            $batchIds = array_merge(
+                $batchIds,
+                Payment::whereIn('staging_id', $pStageIds)->distinct()->pluck('migration_batch_id')->all()
+            );
+        }
+
+        $rStageIds = DB::table('staging_ingresos_origen')
+            ->where('source_month_folder', $monthFolder)
+            ->pluck('id')
+            ->all();
+
+        if (!empty($rStageIds)) {
+            $batchIds = array_merge(
+                $batchIds,
+                Revenue::whereIn('staging_id', $rStageIds)->distinct()->pluck('migration_batch_id')->all()
+            );
+        }
+
+        $bStageIds = DB::table('staging_ordenes_compra')
+            ->where('source_month_folder', $monthFolder)
+            ->pluck('id')
+            ->all();
+
+        if (!empty($bStageIds)) {
+            $batchIds = array_merge(
+                $batchIds,
+                Bill::whereIn('staging_id', $bStageIds)->distinct()->pluck('migration_batch_id')->all()
+            );
+        }
+
+        $batchIds = array_values(array_unique(array_filter($batchIds, fn($x) => $x !== null)));
+
+        sort($batchIds);
+        return $batchIds;
+    }
+
 }
