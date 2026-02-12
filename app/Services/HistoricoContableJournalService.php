@@ -500,10 +500,50 @@ class HistoricoContableJournalService
             return 0.0;
         }
 
-        $str = str_replace(["\u{00A0}", " "], "", $str);
-        $str = str_replace(',', '', $str);
+        $str = str_replace(["\u{00A0}", ' '], '', $str);
 
-        return is_numeric($str) ? (float) $str : 0.0;
+        $negative = false;
+        if (str_starts_with($str, '(') && str_ends_with($str, ')')) {
+            $negative = true;
+            $str = substr($str, 1, -1);
+        }
+
+        $str = preg_replace('/[^0-9,.-]/', '', $str) ?? '';
+
+        $lastComma = strrpos($str, ',');
+        $lastDot = strrpos($str, '.');
+
+        if ($lastComma !== false && $lastDot !== false) {
+            if ($lastComma > $lastDot) {
+                $str = str_replace('.', '', $str);
+                $str = str_replace(',', '.', $str);
+            } else {
+                $str = str_replace(',', '', $str);
+            }
+        } elseif ($lastComma !== false) {
+            $parts = explode(',', $str);
+            $lastPart = end($parts) ?: '';
+            $thousandsGrouping = count($parts) > 1
+                && count(array_filter(array_slice($parts, 1), fn ($part) => strlen($part) === 3)) === count($parts) - 1;
+
+            if ($thousandsGrouping) {
+                $str = implode('', $parts);
+            } else {
+                $str = implode('', array_slice($parts, 0, -1)) . '.' . $lastPart;
+            }
+        } elseif ($lastDot !== false) {
+            $parts = explode('.', $str);
+            $thousandsGrouping = count($parts) > 1
+                && count(array_filter(array_slice($parts, 1), fn ($part) => strlen($part) === 3)) === count($parts) - 1;
+
+            if ($thousandsGrouping) {
+                $str = implode('', $parts);
+            }
+        }
+
+        $number = is_numeric($str) ? (float) $str : 0.0;
+
+        return $negative ? ($number * -1) : $number;
     }
 
     private function loadRules(int $createdBy): Collection

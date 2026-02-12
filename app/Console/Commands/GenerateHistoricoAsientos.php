@@ -54,9 +54,19 @@ class GenerateHistoricoAsientos extends Command
 
         $matrizFile = $this->option('matriz-file');
         if (!$matrizFile) {
-            $monthPath = base_path('HistoricoContable/' . $resolvedMonth);
-            $matrizSelection = $migrationService->findMatrizFile($monthPath);
-            $matrizFile = $matrizSelection['selected'] ?? null;
+            $batchSourceFile = (string) ($batch->source_file ?? '');
+
+            if ($batchSourceFile !== '') {
+                $matrizFile = is_file($batchSourceFile)
+                    ? $batchSourceFile
+                    : base_path('HistoricoContable/' . $resolvedMonth . '/' . ltrim($batchSourceFile, '/'));
+            }
+
+            if (!$matrizFile || !is_file($matrizFile)) {
+                $monthPath = base_path('HistoricoContable/' . $resolvedMonth);
+                $matrizSelection = $migrationService->findMatrizFile($monthPath);
+                $matrizFile = $matrizSelection['selected'] ?? null;
+            }
         }
 
         if (!$matrizFile || !is_file($matrizFile)) {
