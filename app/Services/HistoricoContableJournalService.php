@@ -241,11 +241,11 @@ class HistoricoContableJournalService
      * - Crédito: Banco por "VALOR"
      * - Crédito: Retenciones por "RETENCION" (si > 0)
      *
-     * Nota: la hoja no incluye fecha; usa options['journal_date'] o hoy.
+     * Nota: la fecha del asiento se deriva del nombre del archivo Matriz (ej. 01-2025 => 2025-01-31).
      */
     private function generateFromCuentaTVS(string $filePath, int $batchId, int $createdBy, array $options = []): int
     {
-        $sheetName = $options['cuenta_t_vs_sheet'] ?? 'CUENTAS T VS';
+        $sheetName = 'CUENTA T VS';
 
         $reader = IOFactory::createReaderForFile($filePath);
         $spreadsheet = $reader->load($filePath);
@@ -270,49 +270,15 @@ class HistoricoContableJournalService
             return 0;
         }
 
-        // Fila 2 contiene headers
-        $headerRow = $data[2] ?? [];
-
-        // Construir mapa: columna => codigoCuenta (hasta encontrar "Totales")
-        $accountCols = []; // ['A' => '211101', ...]
-        $metaCols = [
-            'totales' => null,
-            'transf' => null,
-            'valor' => null,
-            'retencion' => null,
-        ];
-
-        foreach ($headerRow as $col => $value) {
-            if ($value === null || $value === '') {
-                continue;
-            }
-
-            // Meta columns (texto)
-            $label = is_string($value) ? mb_strtoupper(trim($value), 'UTF-8') : null;
-            if ($label) {
-                if ($label === 'TOTALES') {
-                    $metaCols['totales'] = $col;
-                    continue;
-                }
-                if (str_contains($label, 'TRANSF')) {
-                    $metaCols['transf'] = $col;
-                    continue;
-                }
-                if ($label === 'VALOR') {
-                    $metaCols['valor'] = $col;
-                    continue;
-                }
-                if (str_contains($label, 'RETENC')) {
-                    $metaCols['retencion'] = $col;
-                    continue;
-                }
-            }
-
-            // Account code columns (numérico)
-            if (is_numeric($value)) {
-                $accountCols[$col] = (string) (int) $value;
-            }
+        // Detecta automáticamente la fila de encabezados:
+        // primera fila con >= 5 códigos de cuenta y/o columnas meta contables.
+        [$headerRowIndex, $headerRow] = $this->detectCuentaTVSHeaderRow($data);
+        if (!$headerRowIndex || empty($headerRow)) {
+            return 0;
         }
+
+        // Construir mapa: columna => codigoCuenta y columnas meta de control.
+        [$accountCols, $metaCols] = $this->parseCuentaTVSHeader($headerRow);
 
         // Si no encontramos la columna de Totales por texto, asumimos que las primeras columnas son cuentas
         // y usamos la parte numérica como cuentas.
@@ -320,11 +286,8 @@ class HistoricoContableJournalService
             return 0;
         }
 
-        $bankAccountCode = $options['bank_account_code']
-            ?? (config('historico_contable.accounting_defaults.bank_account_code') ?: '1101010001');
-        $withholdingAccountCode = $options['withholding_account_code']
-            ?? config('historico_contable.accounting_defaults.withholding_payable_account_code')
-            ?? config('historico_contable.accounting_defaults.payables_account_code');
+        $bankAccountCode = $options['bank_account_code'] ?? '1101010001';
+        $withholdingAccountCode = $options['withholding_account_code'] ?? '210306';
 
         $bankAccountId = $this->resolveAccountByCode($bankAccountCode, $createdBy);
         $withholdingAccountId = $this->resolveAccountByCode($withholdingAccountCode, $createdBy);
@@ -337,17 +300,17 @@ class HistoricoContableJournalService
 
         $created = 0;
 
-        // Filas 3..n
-        for ($r = 3; $r <= count($data); $r++) {
+        // Filas de detalle (después del encabezado)
+        for ($r = $headerRowIndex + 1; $r <= count($data); $r++) {
             $row = $data[$r] ?? null;
             if (!$row) {
                 continue;
             }
 
             $transfNo = $metaCols['transf'] ? ($row[$metaCols['transf']] ?? null) : null;
-            $total = $metaCols['totales'] ? (float) ($row[$metaCols['totales']] ?? 0) : 0.0;
-            $valor = $metaCols['valor'] ? (float) ($row[$metaCols['valor']] ?? 0) : 0.0;
-            $retencion = $metaCols['retencion'] ? (float) ($row[$metaCols['retencion']] ?? 0) : 0.0;
+            $total = $metaCols['totales'] ? $this->toFloat($row[$metaCols['totales']] ?? 0) : 0.0;
+            $valor = $metaCols['valor'] ? $this->toFloat($row[$metaCols['valor']] ?? 0) : 0.0;
+            $retencion = $metaCols['retencion'] ? $this->toFloat($row[$metaCols['retencion']] ?? 0) : 0.0;
 
             // Si no hay transferencia y el total es 0, omitimos
             if ((!$transfNo || trim((string) $transfNo) === '') && $total <= 0) {
@@ -359,10 +322,7 @@ class HistoricoContableJournalService
             $sumDebits = 0.0;
             foreach ($accountCols as $col => $code) {
                 $amount = $row[$col] ?? null;
-                if (!is_numeric($amount)) {
-                    continue;
-                }
-                $amount = (float) $amount;
+                $amount = $this->toFloat($amount);
                 if ($amount <= 0) {
                     continue;
                 }
@@ -465,6 +425,125 @@ class HistoricoContableJournalService
         }
 
         return $created;
+    }
+
+
+    private function detectCuentaTVSHeaderRow(array $data): array
+    {
+        $maxRows = min(count($data), 20);
+
+        for ($r = 1; $r <= $maxRows; $r++) {
+            $row = $data[$r] ?? [];
+            if (empty($row)) {
+                continue;
+            }
+
+            [$accountCols, $metaCols] = $this->parseCuentaTVSHeader($row);
+            if (count($accountCols) >= 5 || ($metaCols['totales'] && $metaCols['valor'])) {
+                return [$r, $row];
+            }
+        }
+
+        return [null, []];
+    }
+
+    private function parseCuentaTVSHeader(array $headerRow): array
+    {
+        $accountCols = [];
+        $metaCols = [
+            'totales' => null,
+            'transf' => null,
+            'valor' => null,
+            'retencion' => null,
+        ];
+
+        foreach ($headerRow as $col => $value) {
+            if ($value === null || trim((string) $value) === '') {
+                continue;
+            }
+
+            $label = mb_strtoupper(trim((string) $value), 'UTF-8');
+
+            if ($label === 'TOTALES') {
+                $metaCols['totales'] = $col;
+                continue;
+            }
+            if (str_contains($label, 'TRANSF')) {
+                $metaCols['transf'] = $col;
+                continue;
+            }
+            if ($label === 'VALOR') {
+                $metaCols['valor'] = $col;
+                continue;
+            }
+            if (str_contains($label, 'RETENC')) {
+                $metaCols['retencion'] = $col;
+                continue;
+            }
+
+            if (preg_match('/^\d{4,}$/', preg_replace('/\D+/', '', (string) $value))) {
+                $accountCols[$col] = preg_replace('/\D+/', '', (string) $value);
+            }
+        }
+
+        return [$accountCols, $metaCols];
+    }
+
+    private function toFloat(mixed $value): float
+    {
+        if (is_int($value) || is_float($value)) {
+            return (float) $value;
+        }
+
+        $str = trim((string) $value);
+        if ($str === '' || $str === '-' || $str === '--') {
+            return 0.0;
+        }
+
+        $str = str_replace(["\u{00A0}", ' '], '', $str);
+
+        $negative = false;
+        if (str_starts_with($str, '(') && str_ends_with($str, ')')) {
+            $negative = true;
+            $str = substr($str, 1, -1);
+        }
+
+        $str = preg_replace('/[^0-9,.-]/', '', $str) ?? '';
+
+        $lastComma = strrpos($str, ',');
+        $lastDot = strrpos($str, '.');
+
+        if ($lastComma !== false && $lastDot !== false) {
+            if ($lastComma > $lastDot) {
+                $str = str_replace('.', '', $str);
+                $str = str_replace(',', '.', $str);
+            } else {
+                $str = str_replace(',', '', $str);
+            }
+        } elseif ($lastComma !== false) {
+            $parts = explode(',', $str);
+            $lastPart = end($parts) ?: '';
+            $thousandsGrouping = count($parts) > 1
+                && count(array_filter(array_slice($parts, 1), fn ($part) => strlen($part) === 3)) === count($parts) - 1;
+
+            if ($thousandsGrouping) {
+                $str = implode('', $parts);
+            } else {
+                $str = implode('', array_slice($parts, 0, -1)) . '.' . $lastPart;
+            }
+        } elseif ($lastDot !== false) {
+            $parts = explode('.', $str);
+            $thousandsGrouping = count($parts) > 1
+                && count(array_filter(array_slice($parts, 1), fn ($part) => strlen($part) === 3)) === count($parts) - 1;
+
+            if ($thousandsGrouping) {
+                $str = implode('', $parts);
+            }
+        }
+
+        $number = is_numeric($str) ? (float) $str : 0.0;
+
+        return $negative ? ($number * -1) : $number;
     }
 
     private function loadRules(int $createdBy): Collection

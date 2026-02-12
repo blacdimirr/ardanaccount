@@ -98,7 +98,7 @@ class HistoricoContableMigrationService
             'ordenes_compra' => $this->detectSheetByKeywords($normalized, ['RELACION DE ORDENES DE COMPRAS', 'RELACION ORDENES DE COMPRAS']),
             'ingresos' => $this->detectSheetByKeywords($normalized, ['INGR SEGUN ORIGEN', 'INGRE SEGUN ORIGEN', 'INGRESO SEGUN ORIGEN', 'INGRESOS SEGUN ORIGEN']),
             // Hoja usada para generar asientos contables por cuentas afectadas (débitos) y control de valor/retención
-            'cuenta_t_vs' => $this->detectSheetByKeywords($normalized, ['CUENTAS T VS', 'CUENTAS T VS']),
+            'cuenta_t_vs' => $this->detectSheetByKeywords($normalized, ['CUENTA T VS']),
         ];
     }
 

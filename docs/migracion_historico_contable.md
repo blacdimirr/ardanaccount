@@ -348,3 +348,45 @@ php artisan migrate:historico:asientos --batch-id=123
 ### Qué se genera
 - `journal_entries` y `journal_items` con trazabilidad (`migration_batch_id`, `source_type`, `source_id`, `source_hash`)
 - `transaction_lines` para que los reportes financieros reflejen el histórico
+
+## 10) Generación de asientos desde hoja `CUENTA T VS` (ejecución oficial)
+
+Esta ejecución quedó estandarizada con las siguientes reglas fijas:
+
+- **Hoja origen:** `CUENTA T VS`.
+- **Cuenta banco (crédito por VALOR):** `1101010001`.
+- **Retenciones por pagar (crédito por RETENCION):** `210306`.
+- **Fecha del asiento:** se deriva del nombre del archivo Matriz (por ejemplo `01-2025` => `2025-01-31`).
+- **Ubicación del archivo Matriz:** `HistoricoContable/<MES>` (ejemplo: `HistoricoContable/ENERO 2025`).
+
+### Flujo recomendado mes a mes
+
+1. Ejecuta la migración del mes (staging/validación/importación):
+
+```bash
+php artisan migrate:historico --month="ENERO 2025"
+```
+
+2. Genera asientos del mismo mes leyendo automáticamente la Matriz de la carpeta del mes:
+
+```bash
+php artisan migrate:historico:asientos --month="ENERO 2025"
+```
+
+> El comando localiza el último batch del mes, busca el archivo `MATRIZ*.xlsx` dentro de `HistoricoContable/<MES>`, toma la hoja `CUENTA T VS` y crea los asientos.
+
+### Ejecución por `batch-id`
+
+Si deseas ejecutar por lote específico:
+
+```bash
+php artisan migrate:historico:asientos --batch-id=123
+```
+
+En este modo, el comando toma `month_folder` desde `migration_batches` para ubicar el archivo Matriz del mes correspondiente.
+
+### Verificación rápida posterior
+
+- Revisar en la salida del comando el campo `cuenta_t_vs` (cantidad de asientos creados).
+- Validar en `journal_entries`, `journal_items` y `transaction_lines` por `migration_batch_id`.
+- Confirmar cuadratura: suma débitos = suma créditos por asiento.

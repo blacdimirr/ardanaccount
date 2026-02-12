@@ -12,14 +12,16 @@ class GenerateHistoricoAsientos extends Command
     protected $signature = 'migrate:historico:asientos
         {--month= : Mes para generar asientos (e.g. "ENERO 2025" o "01-2025")}
         {--batch-id= : Batch específico}
-        {--created-by= : Usuario creador (created_by)}';
+        {--created-by= : Usuario creador (created_by)}
+        {--matriz-file= : Ruta absoluta opcional al archivo Matriz}';
 
-    protected $description = 'Genera asientos contables históricos desde documentos migrados.';
+    protected $description = 'Genera asientos contables históricos desde documentos migrados y hoja CUENTA T VS.';
 
     public function handle(HistoricoContableJournalService $service, HistoricoContableMigrationService $migrationService): int
     {
         $createdBy = (int) ($this->option('created-by') ?: config('historico_contable.defaults.created_by'));
         $batchId = $this->option('batch-id');
+        $resolvedMonth = null;
 
         if (!$batchId) {
             $monthInput = (string) $this->option('month');
@@ -41,11 +43,47 @@ class GenerateHistoricoAsientos extends Command
             }
 
             $batchId = $batch->id;
+        } else {
+            $batch = DB::table('migration_batches')->where('id', (int) $batchId)->first();
+            if (!$batch) {
+                $this->error('No se encontró el batch: ' . $batchId);
+                return self::FAILURE;
+            }
+            $resolvedMonth = $batch->month_folder;
         }
 
-        $summary = $service->generateForBatch((int) $batchId, ['created_by' => $createdBy]);
+        $matrizFile = $this->option('matriz-file');
+        if (!$matrizFile) {
+            $batchSourceFile = (string) ($batch->source_file ?? '');
+
+            if ($batchSourceFile !== '') {
+                $matrizFile = is_file($batchSourceFile)
+                    ? $batchSourceFile
+                    : base_path('HistoricoContable/' . $resolvedMonth . '/' . ltrim($batchSourceFile, '/'));
+            }
+
+            if (!$matrizFile || !is_file($matrizFile)) {
+                $monthPath = base_path('HistoricoContable/' . $resolvedMonth);
+                $matrizSelection = $migrationService->findMatrizFile($monthPath);
+                $matrizFile = $matrizSelection['selected'] ?? null;
+            }
+        }
+
+        if (!$matrizFile || !is_file($matrizFile)) {
+            $this->error('No se encontró archivo MATRIZ para el mes: ' . $resolvedMonth);
+            return self::FAILURE;
+        }
+
+        $summary = $service->generateForBatch((int) $batchId, [
+            'created_by' => $createdBy,
+            'matriz_file' => $matrizFile,
+            'cuenta_t_vs_sheet' => 'CUENTA T VS',
+            'bank_account_code' => '1101010001',
+            'withholding_account_code' => '210306',
+        ]);
 
         $this->info('Asientos generados para batch ' . $batchId);
+        $this->line('Matriz usada: ' . $matrizFile);
         $this->line(json_encode($summary, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
 
         return self::SUCCESS;
